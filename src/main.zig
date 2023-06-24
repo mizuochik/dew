@@ -6,8 +6,10 @@ const ascii = std.ascii;
 pub fn main() !void {
     const orig = try enableRawMode();
     defer disableRawMode(orig) catch unreachable;
+    defer refreshScreen() catch unreachable;
 
     while (true) {
+        try refreshScreen();
         processKeypress(try readKey()) catch |err| switch (err) {
             error.Quit => return,
             else => return err,
@@ -45,6 +47,11 @@ fn processKeypress(key: u8) !void {
     } else {
         std.debug.print("{d} ({c})\r\n", .{ key, key });
     }
+}
+
+fn refreshScreen() !void {
+    _ = try io.getStdOut().write("\x1b[2J");
+    _ = try io.getStdOut().write("\x1b[H");
 }
 
 fn enableRawMode() !os.termios {
