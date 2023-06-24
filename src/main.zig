@@ -10,7 +10,7 @@ pub fn main() !void {
     var buf = [_]u8{0} ** 32;
     while (io.getStdIn().read(&buf)) |_| {
         const c = buf[0];
-        if (buf[0] == 'q') {
+        if (buf[0] == isCtrlKey('x')) {
             break;
         } else if (ascii.isControl(c)) {
             std.debug.print("{d}\r\n", .{c});
@@ -33,6 +33,10 @@ const darwin_BRKINT: os.tcflag_t = 0x2;
 const darwin_INPCK: os.tcflag_t = 0x10;
 const darwin_ISTRIP: os.tcflag_t = 0x20;
 const darwin_CS8: os.tcflag_t = 0x300;
+
+fn isCtrlKey(comptime key: u8) u8 {
+    return key & 0x1f;
+}
 
 fn enableRawMode() !os.termios {
     const orig = try os.tcgetattr(os.STDIN_FILENO);
