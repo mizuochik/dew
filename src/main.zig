@@ -22,13 +22,14 @@ pub fn main() !void {
     }
 }
 
-const darwin_icanon = 0x100;
-const darwin_isig = 0x80;
+const darwin_ECHO: os.tcflag_t = 0x8;
+const darwin_ICANON: os.tcflag_t = 0x100;
+const darwin_ISIG: os.tcflag_t = 0x80;
 
 fn enableRawMode() !os.termios {
     const orig = try os.tcgetattr(os.STDIN_FILENO);
     var term = orig;
-    term.lflag &= ~(os.linux.ECHO | darwin_icanon | darwin_isig);
+    term.lflag &= ~(darwin_ECHO | darwin_ICANON | darwin_ISIG);
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, term);
     return orig;
 }
