@@ -26,12 +26,13 @@ const darwin_ECHO: os.tcflag_t = 0x8;
 const darwin_ICANON: os.tcflag_t = 0x100;
 const darwin_ISIG: os.tcflag_t = 0x80;
 const darwin_IXON: os.tcflag_t = 0x200;
+const darwin_IEXTEN: os.tcflag_t = 0x400;
 
 fn enableRawMode() !os.termios {
     const orig = try os.tcgetattr(os.STDIN_FILENO);
     var term = orig;
     term.iflag &= ~darwin_IXON;
-    term.lflag &= ~(darwin_ECHO | darwin_ICANON | darwin_ISIG);
+    term.lflag &= ~(darwin_ECHO | darwin_ICANON | darwin_ISIG | darwin_IEXTEN);
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, term);
     return orig;
 }
