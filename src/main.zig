@@ -4,6 +4,10 @@ const io = std.io;
 
 pub fn main() !void {
     var buf = [_]u8{0} ** 32;
-
-    while (try io.getStdIn().read(&buf) == 1) {}
+    while (io.getStdIn().read(&buf)) |_| {
+        if (buf[0] == 'q')
+            break;
+    } else |err| {
+        return err;
+    }
 }
