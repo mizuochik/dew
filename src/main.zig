@@ -1,6 +1,7 @@
 const std = @import("std");
 const os = std.os;
 const io = std.io;
+const ascii = std.ascii;
 
 pub fn main() !void {
     const orig = try enableRawMode();
@@ -8,8 +9,14 @@ pub fn main() !void {
 
     var buf = [_]u8{0} ** 32;
     while (io.getStdIn().read(&buf)) |_| {
-        if (buf[0] == 'q')
+        const c = buf[0];
+        if (buf[0] == 'q') {
             break;
+        } else if (ascii.isControl(c)) {
+            std.debug.print("{d}\n", .{c});
+        } else {
+            std.debug.print("{d} ({c})\n", .{ c, c });
+        }
     } else |err| {
         return err;
     }
