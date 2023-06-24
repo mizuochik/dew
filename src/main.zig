@@ -15,10 +15,12 @@ pub fn main() !void {
     }
 }
 
+const darwin_icanon = 0x100;
+
 fn enableRawMode() !os.termios {
     const orig = try os.tcgetattr(os.STDIN_FILENO);
     var term = orig;
-    term.lflag &= ~os.linux.ECHO;
+    term.lflag &= ~(os.linux.ECHO | darwin_icanon);
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, term);
     return orig;
 }
