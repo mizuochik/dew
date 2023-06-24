@@ -7,10 +7,8 @@ pub fn main() !void {
     const orig = try enableRawMode();
     defer disableRawMode(orig) catch unreachable;
 
-    var buf = [_]u8{0} ** 32;
-    while (io.getStdIn().read(&buf)) |_| {
-        const c = buf[0];
-        if (buf[0] == isCtrlKey('x')) {
+    while (readKey()) |c| {
+        if (c == isCtrlKey('x')) {
             break;
         } else if (ascii.isControl(c)) {
             std.debug.print("{d}\r\n", .{c});
@@ -36,6 +34,12 @@ const darwin_CS8: os.tcflag_t = 0x300;
 
 fn isCtrlKey(comptime key: u8) u8 {
     return key & 0x1f;
+}
+
+fn readKey() !u8 {
+    var buf = [_]u8{0} ** 32;
+    _ = try io.getStdIn().read(&buf);
+    return buf[0];
 }
 
 fn enableRawMode() !os.termios {
