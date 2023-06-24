@@ -7,16 +7,11 @@ pub fn main() !void {
     const orig = try enableRawMode();
     defer disableRawMode(orig) catch unreachable;
 
-    while (readKey()) |c| {
-        if (c == isCtrlKey('x')) {
-            break;
-        } else if (ascii.isControl(c)) {
-            std.debug.print("{d}\r\n", .{c});
-        } else {
-            std.debug.print("{d} ({c})\r\n", .{ c, c });
-        }
-    } else |err| {
-        return err;
+    while (true) {
+        processKeypress(try readKey()) catch |err| switch (err) {
+            error.Quit => return,
+            else => return err,
+        };
     }
 }
 
@@ -40,6 +35,16 @@ fn readKey() !u8 {
     var buf = [_]u8{0} ** 32;
     _ = try io.getStdIn().read(&buf);
     return buf[0];
+}
+
+fn processKeypress(key: u8) !void {
+    if (key == isCtrlKey('x')) {
+        return error.Quit;
+    } else if (ascii.isControl(key)) {
+        std.debug.print("{d}\r\n", .{key});
+    } else {
+        std.debug.print("{d} ({c})\r\n", .{ key, key });
+    }
 }
 
 fn enableRawMode() !os.termios {
