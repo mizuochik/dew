@@ -1,8 +1,9 @@
 const std = @import("std");
+const os = std.os;
+const io = std.io;
 
 pub fn main() !void {
-    std.debug.print("Hello rain\n", .{});
-}
+    var buf = [_]u8{0} ** 32;
 
-test "ok" {
+    while (try io.getStdIn().read(&buf) == 1) {}
 }
