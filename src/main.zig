@@ -6,7 +6,7 @@ const ascii = std.ascii;
 pub fn main() !void {
     const orig = try enableRawMode();
     defer disableRawMode(orig) catch unreachable;
-    defer refreshScreen() catch unreachable;
+    defer clearScreen() catch unreachable;
 
     while (true) {
         try refreshScreen();
@@ -52,6 +52,12 @@ fn processKeypress(key: u8) !void {
 fn refreshScreen() !void {
     _ = try io.getStdOut().write("\x1b[2J");
     _ = try io.getStdOut().write("\x1b[H");
+    try drawRows();
+}
+
+fn clearScreen() !void {
+    _ = try io.getStdOut().write("\x1b[2J");
+    _ = try io.getStdOut().write("\x1b[H");
 }
 
 fn enableRawMode() !os.termios {
@@ -67,4 +73,11 @@ fn enableRawMode() !os.termios {
 
 fn disableRawMode(orig: os.termios) !void {
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, orig);
+}
+
+fn drawRows() !void {
+    for (0..24) |_| {
+        _ = try io.getStdOut().write("~\r\n");
+    }
+    _ = try io.getStdOut().write("\x1b[H");
 }
