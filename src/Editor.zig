@@ -29,6 +29,18 @@ const Config = struct {
     c_y: i32 = 0,
 };
 
+const Key = union(enum) {
+    plain: u8,
+    arrow: Arrow,
+};
+
+const Arrow = enum {
+    up,
+    down,
+    right,
+    left,
+};
+
 allocator: mem.Allocator,
 config: Config = Config{},
 
@@ -50,19 +62,22 @@ fn isCtrlKey(comptime key: u8) u8 {
     return key & 0x1f;
 }
 
-fn readKey() !u8 {
+fn readKey() !Key {
     var buf = [_]u8{0} ** 32;
     _ = try io.getStdIn().read(&buf);
-    return buf[0];
+    return .{ .plain = buf[0] };
 }
 
-fn processKeypress(key: u8) !void {
-    if (key == isCtrlKey('x')) {
-        return error.Quit;
-    } else if (ascii.isControl(key)) {
-        std.debug.print("{d}\r\n", .{key});
-    } else {
-        std.debug.print("{d} ({c})\r\n", .{ key, key });
+fn processKeypress(key: Key) !void {
+    switch (key) {
+        .plain => |k| if (k == isCtrlKey('x')) {
+            return error.Quit;
+        } else if (ascii.isControl(k)) {
+            std.debug.print("{d}\r\n", .{k});
+        } else {
+            std.debug.print("{d} ({c})\r\n", .{ k, k });
+        },
+        else => unreachable,
     }
 }
 
