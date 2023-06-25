@@ -74,7 +74,7 @@ pub fn run(self: *Editor) !void {
     }
 }
 
-fn isCtrlKey(comptime key: u8) u8 {
+fn ctrlKey(comptime key: u8) u8 {
     return key & 0x1f;
 }
 
@@ -103,7 +103,7 @@ fn readKey() !Key {
 
 fn processKeypress(self: *Editor, key: Key) !void {
     switch (key) {
-        .control => |k| if (k == isCtrlKey('x')) {
+        .control => |k| if (k == ctrlKey('x')) {
             return error.Quit;
         } else {
             std.debug.print("{d}\r\n", .{k});
