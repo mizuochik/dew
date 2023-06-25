@@ -117,19 +117,23 @@ fn processKeypress(self: *Editor, key: Key) !void {
         .plain => |k| {
             std.debug.print("{d} ({c})\r\n", .{ k, k });
         },
-        .arrow => |k| switch (k) {
-            .up => if (self.config.c_y > 0) {
-                self.config.c_y -= 1;
-            },
-            .down => if (self.config.c_y < self.config.screen_size.rows - 1) {
-                self.config.c_y += 1;
-            },
-            .left => if (self.config.c_x > 0) {
-                self.config.c_x -= 1;
-            },
-            .right => if (self.config.c_x < self.config.screen_size.cols - 1) {
-                self.config.c_x += 1;
-            },
+        .arrow => |k| self.moveCursor(k),
+    }
+}
+
+fn moveCursor(self: *Editor, k: Arrow) void {
+    switch (k) {
+        .up => if (self.config.c_y > 0) {
+            self.config.c_y -= 1;
+        },
+        .down => if (self.config.c_y < self.config.screen_size.rows - 1) {
+            self.config.c_y += 1;
+        },
+        .left => if (self.config.c_x > 0) {
+            self.config.c_x -= 1;
+        },
+        .right => if (self.config.c_x < self.config.screen_size.cols - 1) {
+            self.config.c_x += 1;
         },
     }
 }
