@@ -100,8 +100,8 @@ fn disableRawMode(self: *const Editor) !void {
 }
 
 fn drawRows(buf: *std.ArrayList(u8)) !void {
-    try buf.appendSlice("\x1b[K");
     for (0..24) |_| {
+        try buf.appendSlice("\x1b[K");
         try buf.appendSlice("~\r\n");
     }
     try buf.appendSlice("\x1b[H");
