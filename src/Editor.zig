@@ -31,6 +31,7 @@ const Config = struct {
 
 const Key = union(enum) {
     plain: u8,
+    control: u8,
     arrow: Arrow,
 };
 
@@ -65,16 +66,20 @@ fn isCtrlKey(comptime key: u8) u8 {
 fn readKey() !Key {
     var buf = [_]u8{0} ** 32;
     _ = try io.getStdIn().read(&buf);
+    if (ascii.isControl(buf[0])) {
+        return .{ .control = buf[0] };
+    }
     return .{ .plain = buf[0] };
 }
 
 fn processKeypress(key: Key) !void {
     switch (key) {
-        .plain => |k| if (k == isCtrlKey('x')) {
+        .control => |k| if (k == isCtrlKey('x')) {
             return error.Quit;
-        } else if (ascii.isControl(k)) {
-            std.debug.print("{d}\r\n", .{k});
         } else {
+            std.debug.print("{d}\r\n", .{k});
+        },
+        .plain => |k| {
             std.debug.print("{d} ({c})\r\n", .{ k, k });
         },
         else => unreachable,
