@@ -5,6 +5,7 @@ const ascii = std.ascii;
 const mem = std.mem;
 const heap = std.heap;
 const debug = std.debug;
+const fmt = std.fmt;
 const testing = std.testing;
 const c = @import("c.zig");
 
@@ -24,6 +25,8 @@ const Editor = @This();
 
 const Config = struct {
     orig_termios: ?os.termios = null,
+    c_x: i32 = 0,
+    c_y: i32 = 0,
 };
 
 allocator: mem.Allocator,
@@ -63,23 +66,25 @@ fn processKeypress(key: u8) !void {
     }
 }
 
-fn refreshScreen(buf: *std.ArrayList(u8)) !void {
+fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
     try drawRows(buf);
-    try buf.appendSlice("\x1b[H");
+    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y + 1, self.config.c_x + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
 
-fn clearScreen(buf: *std.ArrayList(u8)) !void {
+fn clearScreen(_: *const Editor, _: mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[2J");
     try buf.appendSlice("\x1b[H");
 }
 
-fn doRender(self: *const Editor, render: *const fn (buf: *std.ArrayList(u8)) anyerror!void) !void {
+fn doRender(self: *const Editor, render: *const fn (self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) anyerror!void) !void {
+    var arena = heap.ArenaAllocator.init(self.allocator);
+    defer arena.deinit();
     var buf = std.ArrayList(u8).init(self.allocator);
     defer buf.deinit();
-    try render(&buf);
+    try render(self, arena.allocator(), &buf);
     try io.getStdOut().writeAll(buf.items);
 }
 
