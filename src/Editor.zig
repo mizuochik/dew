@@ -25,6 +25,7 @@ const Editor = @This();
 
 const Config = struct {
     orig_termios: os.termios,
+    screen_size: WindowSize,
     c_x: i32 = 0,
     c_y: i32 = 0,
 };
@@ -47,10 +48,12 @@ config: Config,
 
 pub fn init(allocator: mem.Allocator) !Editor {
     const orig = try enableRawMode();
+    const size = try getWindowSize();
     return Editor{
         .allocator = allocator,
         .config = Config{
             .orig_termios = orig,
+            .screen_size = size,
         },
     };
 }
