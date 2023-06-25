@@ -22,11 +22,16 @@ const darwin_CS8: os.tcflag_t = 0x300;
 
 const Editor = @This();
 
+const Config = struct {
+    orig_termios: os.termios,
+};
+
 allocator: mem.Allocator,
+config: ?Config,
 
 pub fn run(self: *Editor) !void {
-    const orig = try enableRawMode();
-    defer disableRawMode(orig) catch unreachable;
+    try self.enableRawMode();
+    defer self.disableRawMode() catch unreachable;
     defer self.doRender(clearScreen) catch unreachable;
 
     while (true) {
@@ -78,19 +83,22 @@ fn doRender(self: *const Editor, render: *const fn (buf: *std.ArrayList(u8)) any
     try io.getStdOut().writeAll(buf.items);
 }
 
-fn enableRawMode() !os.termios {
+fn enableRawMode(self: *Editor) !void {
     const orig = try os.tcgetattr(os.STDIN_FILENO);
+    self.config = Config{
+        .orig_termios = orig,
+    };
     var term = orig;
     term.iflag &= ~(darwin_BRKINT | darwin_IXON | darwin_ICRNL | darwin_INPCK | darwin_ISTRIP);
     term.oflag &= ~darwin_OPOST;
     term.cflag |= darwin_CS8;
     term.lflag &= ~(darwin_ECHO | darwin_ICANON | darwin_IEXTEN | darwin_ISIG);
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, term);
-    return orig;
 }
 
-fn disableRawMode(orig: os.termios) !void {
-    try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, orig);
+fn disableRawMode(self: *const Editor) !void {
+    const config = self.config orelse return;
+    try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, config.orig_termios);
 }
 
 fn drawRows(buf: *std.ArrayList(u8)) !void {
