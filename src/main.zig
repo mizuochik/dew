@@ -59,9 +59,12 @@ fn processKeypress(key: u8) !void {
 }
 
 fn refreshScreen(buf: *std.ArrayList(u8)) !void {
+    try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[2J");
     try buf.appendSlice("\x1b[H");
     try drawRows(buf);
+    try buf.appendSlice("\x1b[H");
+    try buf.appendSlice("\x1b[?25h");
 }
 
 fn clearScreen(buf: *std.ArrayList(u8)) !void {
