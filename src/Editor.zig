@@ -64,12 +64,11 @@ fn isCtrlKey(comptime key: u8) u8 {
 }
 
 fn readKey() !Key {
-    var buf = [_]u8{0} ** 32;
-    _ = try io.getStdIn().read(&buf);
-    if (ascii.isControl(buf[0])) {
-        return .{ .control = buf[0] };
+    const k = try io.getStdIn().reader().readByte();
+    if (ascii.isControl(k)) {
+        return .{ .control = k };
     }
-    return .{ .plain = buf[0] };
+    return .{ .plain = k };
 }
 
 fn processKeypress(key: Key) !void {
