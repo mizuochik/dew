@@ -49,7 +49,6 @@ pub fn run(self: *Editor) !void {
     try self.enableRawMode();
     defer self.disableRawMode() catch unreachable;
     defer self.doRender(clearScreen) catch unreachable;
-
     while (true) {
         try self.doRender(refreshScreen);
         processKeypress(try readKey()) catch |err| switch (err) {
@@ -65,6 +64,21 @@ fn isCtrlKey(comptime key: u8) u8 {
 
 fn readKey() !Key {
     const k = try io.getStdIn().reader().readByte();
+    if (k == 0x1b) {
+        const esc = try io.getStdIn().reader().readByte();
+        if (esc == '[') {
+            const a = try io.getStdIn().reader().readByte();
+            return .{
+                .arrow = switch (a) {
+                    'A' => .up,
+                    'B' => .down,
+                    'C' => .right,
+                    'D' => .left,
+                    else => unreachable,
+                },
+            };
+        }
+    }
     if (ascii.isControl(k)) {
         return .{ .control = k };
     }
@@ -81,7 +95,9 @@ fn processKeypress(key: Key) !void {
         .plain => |k| {
             std.debug.print("{d} ({c})\r\n", .{ k, k });
         },
-        else => unreachable,
+        else => |k| {
+            std.debug.print("{}\r\n", .{k});
+        },
     }
 }
 
