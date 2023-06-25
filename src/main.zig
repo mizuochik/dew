@@ -2,6 +2,8 @@ const std = @import("std");
 const os = std.os;
 const io = std.io;
 const ascii = std.ascii;
+const testing = std.testing;
+const c = @import("c.zig");
 
 pub fn main() !void {
     const orig = try enableRawMode();
@@ -80,4 +82,27 @@ fn drawRows() !void {
         _ = try io.getStdOut().write("~\r\n");
     }
     _ = try io.getStdOut().write("\x1b[H");
+}
+
+const WindowSize = struct {
+    rows: u32,
+    cols: u32,
+};
+
+fn getWindowSize() !WindowSize {
+    var ws: c.winsize = undefined;
+    const status = c.ioctl(io.getStdOut().handle, c.TIOCGWINSZ, &ws);
+    if (status != 0) {
+        return error.UnknownWinsize;
+    }
+    return WindowSize{
+        .rows = ws.ws_row,
+        .cols = ws.ws_col,
+    };
+}
+
+test "getWindowSize" {
+    const size = try getWindowSize();
+    try testing.expect(size.rows > 0);
+    try testing.expect(size.cols > 0);
 }
