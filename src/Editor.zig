@@ -23,11 +23,11 @@ const darwin_CS8: os.tcflag_t = 0x300;
 const Editor = @This();
 
 const Config = struct {
-    orig_termios: os.termios,
+    orig_termios: ?os.termios = null,
 };
 
 allocator: mem.Allocator,
-config: ?Config,
+config: Config = Config{},
 
 pub fn run(self: *Editor) !void {
     try self.enableRawMode();
@@ -85,9 +85,7 @@ fn doRender(self: *const Editor, render: *const fn (buf: *std.ArrayList(u8)) any
 
 fn enableRawMode(self: *Editor) !void {
     const orig = try os.tcgetattr(os.STDIN_FILENO);
-    self.config = Config{
-        .orig_termios = orig,
-    };
+    self.config.orig_termios = orig;
     var term = orig;
     term.iflag &= ~(darwin_BRKINT | darwin_IXON | darwin_ICRNL | darwin_INPCK | darwin_ISTRIP);
     term.oflag &= ~darwin_OPOST;
@@ -97,8 +95,8 @@ fn enableRawMode(self: *Editor) !void {
 }
 
 fn disableRawMode(self: *const Editor) !void {
-    const config = self.config orelse return;
-    try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, config.orig_termios);
+    const orig = self.config.orig_termios orelse return;
+    try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, orig);
 }
 
 fn drawRows(buf: *std.ArrayList(u8)) !void {

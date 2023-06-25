@@ -10,7 +10,6 @@ pub fn main() !void {
 
     var editor = Editor{
         .allocator = allocator,
-        .config = null,
     };
     try editor.run();
 }
