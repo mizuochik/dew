@@ -24,7 +24,7 @@ const darwin_CS8: os.tcflag_t = 0x300;
 const Editor = @This();
 
 const Config = struct {
-    orig_termios: ?os.termios = null,
+    orig_termios: os.termios,
     c_x: i32 = 0,
     c_y: i32 = 0,
 };
@@ -43,15 +43,25 @@ const Arrow = enum {
 };
 
 allocator: mem.Allocator,
-config: Config = Config{},
+config: Config,
+
+pub fn init(allocator: mem.Allocator) !Editor {
+    const orig = try enableRawMode();
+    return Editor{
+        .allocator = allocator,
+        .config = Config{
+            .orig_termios = orig,
+        },
+    };
+}
+
+pub fn deinit(self: *const Editor) !void {
+    try self.disableRawMode();
+    try self.doRender(clearScreen);
+}
 
 pub fn run(self: *Editor) !void {
-    try self.enableRawMode();
-    defer self.disableRawMode() catch unreachable;
-    defer self.doRender(clearScreen) catch unreachable;
-
     try self.doRender(clearScreen);
-
     while (true) {
         try self.doRender(refreshScreen);
         self.processKeypress(try readKey()) catch |err| switch (err) {
@@ -129,20 +139,19 @@ fn doRender(self: *const Editor, render: *const fn (self: *const Editor, arena: 
     try io.getStdOut().writeAll(buf.items);
 }
 
-fn enableRawMode(self: *Editor) !void {
+fn enableRawMode() !os.termios {
     const orig = try os.tcgetattr(os.STDIN_FILENO);
-    self.config.orig_termios = orig;
     var term = orig;
     term.iflag &= ~(darwin_BRKINT | darwin_IXON | darwin_ICRNL | darwin_INPCK | darwin_ISTRIP);
     term.oflag &= ~darwin_OPOST;
     term.cflag |= darwin_CS8;
     term.lflag &= ~(darwin_ECHO | darwin_ICANON | darwin_IEXTEN | darwin_ISIG);
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, term);
+    return orig;
 }
 
 fn disableRawMode(self: *const Editor) !void {
-    const orig = self.config.orig_termios orelse return;
-    try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, orig);
+    try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, self.config.orig_termios);
 }
 
 fn drawRows(buf: *std.ArrayList(u8)) !void {

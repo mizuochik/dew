@@ -8,9 +8,9 @@ pub fn main() !void {
     defer debug.assert(gpa.deinit() == .ok);
     const allocator = gpa.allocator();
 
-    var editor = Editor{
-        .allocator = allocator,
-    };
+    var editor = try Editor.init(allocator);
+    defer editor.deinit() catch unreachable;
+
     try editor.run();
 }
 
