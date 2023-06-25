@@ -49,6 +49,9 @@ pub fn run(self: *Editor) !void {
     try self.enableRawMode();
     defer self.disableRawMode() catch unreachable;
     defer self.doRender(clearScreen) catch unreachable;
+
+    try self.doRender(clearScreen);
+
     while (true) {
         try self.doRender(refreshScreen);
         self.processKeypress(try readKey()) catch |err| switch (err) {
