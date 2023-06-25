@@ -41,6 +41,8 @@ const Arrow = enum {
     down,
     right,
     left,
+    next_page,
+    prev_page,
 };
 
 allocator: mem.Allocator,
@@ -101,6 +103,8 @@ fn readKey() !Key {
             ctrlKey('n') => .{ .arrow = .down },
             ctrlKey('f') => .{ .arrow = .right },
             ctrlKey('b') => .{ .arrow = .left },
+            ctrlKey('y') => .{ .arrow = .prev_page },
+            ctrlKey('v') => .{ .arrow = .next_page },
             else => .{ .control = k },
         };
     }
@@ -135,6 +139,12 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         .right => if (self.config.c_x < self.config.screen_size.cols - 1) {
             self.config.c_x += 1;
         },
+        .prev_page => for (0..self.config.screen_size.rows) |_| {
+            self.moveCursor(.up);
+        },
+        .next_page => for (0..self.config.screen_size.rows) |_| {
+            self.moveCursor(.down);
+        }
     }
 }
 
