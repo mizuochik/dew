@@ -96,7 +96,13 @@ fn readKey() !Key {
         }
     }
     if (ascii.isControl(k)) {
-        return .{ .control = k };
+        return switch (k) {
+            ctrlKey('p') => .{ .arrow = .up },
+            ctrlKey('n') => .{ .arrow = .down },
+            ctrlKey('f') => .{ .arrow = .right },
+            ctrlKey('b') => .{ .arrow = .left },
+            else => .{ .control = k },
+        };
     }
     return .{ .plain = k };
 }
