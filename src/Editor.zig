@@ -51,7 +51,7 @@ pub fn run(self: *Editor) !void {
     defer self.doRender(clearScreen) catch unreachable;
     while (true) {
         try self.doRender(refreshScreen);
-        processKeypress(try readKey()) catch |err| switch (err) {
+        self.processKeypress(try readKey()) catch |err| switch (err) {
             error.Quit => return,
             else => return err,
         };
@@ -85,7 +85,7 @@ fn readKey() !Key {
     return .{ .plain = k };
 }
 
-fn processKeypress(key: Key) !void {
+fn processKeypress(self: *Editor, key: Key) !void {
     switch (key) {
         .control => |k| if (k == isCtrlKey('x')) {
             return error.Quit;
@@ -95,8 +95,11 @@ fn processKeypress(key: Key) !void {
         .plain => |k| {
             std.debug.print("{d} ({c})\r\n", .{ k, k });
         },
-        else => |k| {
-            std.debug.print("{}\r\n", .{k});
+        .arrow => |k| switch (k) {
+            .up => self.config.c_y -= 1,
+            .down => self.config.c_y += 1,
+            .left => self.config.c_x -= 1,
+            .right => self.config.c_x += 1,
         },
     }
 }
