@@ -2,16 +2,23 @@ const std = @import("std");
 const os = std.os;
 const io = std.io;
 const ascii = std.ascii;
+const mem = std.mem;
+const heap = std.heap;
+const debug = std.debug;
 const testing = std.testing;
 const c = @import("c.zig");
 
 pub fn main() !void {
+    var gpa = heap.GeneralPurposeAllocator(.{}){};
+    defer debug.assert(gpa.deinit() == .ok);
+    const allocator = gpa.allocator();
+
     const orig = try enableRawMode();
     defer disableRawMode(orig) catch unreachable;
-    defer clearScreen() catch unreachable;
+    defer doRender(allocator, clearScreen) catch unreachable;
 
     while (true) {
-        try refreshScreen();
+        try doRender(allocator, refreshScreen);
         processKeypress(try readKey()) catch |err| switch (err) {
             error.Quit => return,
             else => return err,
@@ -51,15 +58,22 @@ fn processKeypress(key: u8) !void {
     }
 }
 
-fn refreshScreen() !void {
-    _ = try io.getStdOut().write("\x1b[2J");
-    _ = try io.getStdOut().write("\x1b[H");
-    try drawRows();
+fn refreshScreen(buf: *std.ArrayList(u8)) !void {
+    try buf.appendSlice("\x1b[2J");
+    try buf.appendSlice("\x1b[H");
+    try drawRows(buf);
 }
 
-fn clearScreen() !void {
-    _ = try io.getStdOut().write("\x1b[2J");
-    _ = try io.getStdOut().write("\x1b[H");
+fn clearScreen(buf: *std.ArrayList(u8)) !void {
+    try buf.appendSlice("\x1b[2J");
+    try buf.appendSlice("\x1b[H");
+}
+
+fn doRender(allocator: mem.Allocator, render: *const fn (buf: *std.ArrayList(u8)) anyerror!void) !void {
+    var buf = std.ArrayList(u8).init(allocator);
+    defer buf.deinit();
+    try render(&buf);
+    try io.getStdOut().writeAll(buf.items);
 }
 
 fn enableRawMode() !os.termios {
@@ -77,11 +91,11 @@ fn disableRawMode(orig: os.termios) !void {
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, orig);
 }
 
-fn drawRows() !void {
+fn drawRows(buf: *std.ArrayList(u8)) !void {
     for (0..24) |_| {
-        _ = try io.getStdOut().write("~\r\n");
+        try buf.appendSlice("~\r\n");
     }
-    _ = try io.getStdOut().write("\x1b[H");
+    try buf.appendSlice("\x1b[H");
 }
 
 const WindowSize = struct {
