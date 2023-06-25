@@ -112,10 +112,18 @@ fn processKeypress(self: *Editor, key: Key) !void {
             std.debug.print("{d} ({c})\r\n", .{ k, k });
         },
         .arrow => |k| switch (k) {
-            .up => self.config.c_y -= 1,
-            .down => self.config.c_y += 1,
-            .left => self.config.c_x -= 1,
-            .right => self.config.c_x += 1,
+            .up => if (self.config.c_y > 0) {
+                self.config.c_y -= 1;
+            },
+            .down => if (self.config.c_y < self.config.screen_size.rows - 1) {
+                self.config.c_y += 1;
+            },
+            .left => if (self.config.c_x > 0) {
+                self.config.c_x -= 1;
+            },
+            .right => if (self.config.c_x < self.config.screen_size.cols - 1) {
+                self.config.c_x += 1;
+            },
         },
     }
 }
