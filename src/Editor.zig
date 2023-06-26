@@ -28,6 +28,7 @@ const Config = struct {
     screen_size: WindowSize,
     c_x: i32 = 0,
     c_y: i32 = 0,
+    rows: std.ArrayList(std.ArrayList(u8)),
 };
 
 const Key = union(enum) {
@@ -51,11 +52,13 @@ config: Config,
 pub fn init(allocator: mem.Allocator) !Editor {
     const orig = try enableRawMode();
     const size = try getWindowSize();
+
     return Editor{
         .allocator = allocator,
         .config = Config{
             .orig_termios = orig,
             .screen_size = size,
+            .rows = std.ArrayList(std.ArrayList(u8)).init(allocator),
         },
     };
 }
@@ -63,6 +66,8 @@ pub fn init(allocator: mem.Allocator) !Editor {
 pub fn deinit(self: *const Editor) !void {
     try self.disableRawMode();
     try self.doRender(clearScreen);
+    for (self.config.rows.items) |row| row.deinit();
+    self.config.rows.deinit();
 }
 
 pub fn run(self: *Editor) !void {
@@ -144,7 +149,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         },
         .next_page => for (0..self.config.screen_size.rows) |_| {
             self.moveCursor(.down);
-        }
+        },
     }
 }
 
