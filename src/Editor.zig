@@ -213,9 +213,9 @@ fn disableRawMode(self: *const Editor) !void {
 }
 
 fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
-    for (0..self.config.rows.items.len) |i| {
+    for (0..self.config.screen_size.rows - 1) |i| {
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(self.config.rows.items[i].items);
+        try buf.appendSlice(if (i >= self.config.rows.items.len) "~" else self.config.rows.items[i].items);
         try buf.appendSlice("\r\n");
     }
     try buf.appendSlice("\x1b[H");
