@@ -11,6 +11,8 @@ pub fn main() !void {
     var editor = try Editor.init(allocator);
     defer editor.deinit() catch unreachable;
 
+    try editor.openFile("build.zig");
+
     try editor.run();
 }
 
