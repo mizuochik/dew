@@ -29,6 +29,7 @@ const Config = struct {
     screen_size: WindowSize,
     c_x: i32 = 0,
     c_y: i32 = 0,
+    row_offset: usize = 0,
     rows: std.ArrayList(std.ArrayList(u8)),
 };
 
@@ -214,8 +215,9 @@ fn disableRawMode(self: *const Editor) !void {
 
 fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
     for (0..self.config.screen_size.rows - 1) |i| {
+        const j = i + self.config.row_offset;
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(if (i >= self.config.rows.items.len) "~" else self.config.rows.items[i].items);
+        try buf.appendSlice(if (j >= self.config.rows.items.len) "~" else self.config.rows.items[j].items);
         try buf.appendSlice("\r\n");
     }
     try buf.appendSlice("\x1b[H");
