@@ -6,6 +6,7 @@ const mem = std.mem;
 const heap = std.heap;
 const debug = std.debug;
 const fmt = std.fmt;
+const fs = std.fs;
 const testing = std.testing;
 const c = @import("c.zig");
 
@@ -68,6 +69,27 @@ pub fn deinit(self: *const Editor) !void {
     try self.doRender(clearScreen);
     for (self.config.rows.items) |row| row.deinit();
     self.config.rows.deinit();
+}
+
+pub fn openFile(self: *Editor, path: []const u8) !void {
+    var f = try fs.cwd().openFile(path, .{});
+    var reader = f.reader();
+
+    var new_rows = std.ArrayList(std.ArrayList(u8)).init(self.allocator);
+    errdefer new_rows.deinit();
+    while (true) {
+        var new_row = std.ArrayList(u8).init(self.allocator);
+        errdefer new_row.deinit();
+        reader.streamUntilDelimiter(new_row.writer(), '\n', null) catch |err| switch (err) {
+            error.EndOfStream => break,
+            else => return err,
+        };
+        try new_rows.append(new_row);
+    }
+
+    for (self.config.rows.items) |row| row.deinit();
+    self.config.rows.deinit();
+    self.config.rows = new_rows;
 }
 
 pub fn run(self: *Editor) !void {
