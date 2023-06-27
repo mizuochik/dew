@@ -178,7 +178,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
-    try drawRows(buf);
+    try self.drawRows(buf);
     try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y + 1, self.config.c_x + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
@@ -212,10 +212,11 @@ fn disableRawMode(self: *const Editor) !void {
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, self.config.orig_termios);
 }
 
-fn drawRows(buf: *std.ArrayList(u8)) !void {
-    for (0..24) |_| {
+fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
+    for (0..self.config.rows.items.len) |i| {
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice("~\r\n");
+        try buf.appendSlice(self.config.rows.items[i].items);
+        try buf.appendSlice("\r\n");
     }
     try buf.appendSlice("\x1b[H");
 }
