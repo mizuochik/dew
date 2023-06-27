@@ -168,10 +168,18 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             self.config.c_x += 1;
         },
         .prev_page => for (0..self.config.screen_size.rows) |_| {
-            self.moveCursor(.up);
+            if (self.config.row_offset > self.config.screen_size.rows - 1) {
+                self.config.row_offset -= self.config.screen_size.rows - 1;
+            } else {
+                self.config.row_offset = 0;
+            }
         },
         .next_page => for (0..self.config.screen_size.rows) |_| {
-            self.moveCursor(.down);
+            self.config.row_offset += (self.config.screen_size.rows - 1);
+            const offset_limit = self.config.rows.items.len - self.config.screen_size.rows;
+            if (self.config.row_offset > offset_limit) {
+                self.config.row_offset = offset_limit;
+            }
         },
     }
 }
