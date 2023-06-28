@@ -27,8 +27,8 @@ const Editor = @This();
 const Config = struct {
     orig_termios: os.termios,
     screen_size: WindowSize,
-    c_x: i32 = 0,
-    c_y: i32 = 0,
+    c_x: usize = 0,
+    c_y: usize = 0,
     row_offset: usize = 0,
     rows: std.ArrayList(std.ArrayList(u8)),
 };
@@ -169,6 +169,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             } else {
                 self.config.row_offset = 0;
             }
+            self.normalizeCursor();
         },
         .next_page => for (0..self.config.screen_size.rows) |_| {
             const offset_limit = if (self.config.rows.items.len > self.config.screen_size.rows)
@@ -179,8 +180,21 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             if (self.config.row_offset > offset_limit) {
                 self.config.row_offset = offset_limit;
             }
+            self.normalizeCursor();
         },
     }
+}
+
+fn normalizeCursor(self: *Editor) void {
+    const top_edge = self.config.row_offset;
+    const bottom_edge = b: {
+        const offset = self.config.row_offset + self.config.screen_size.rows - 1;
+        break :b if (offset < self.config.rows.items.len) offset else self.config.rows.items.len;
+    };
+    if (self.config.c_y < top_edge)
+        self.config.c_y = top_edge;
+    if (self.config.c_y >= bottom_edge)
+        self.config.c_y = bottom_edge - 1;
 }
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
