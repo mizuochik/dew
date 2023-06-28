@@ -143,12 +143,8 @@ fn processKeypress(self: *Editor, key: Key) !void {
     switch (key) {
         .control => |k| if (k == ctrlKey('x')) {
             return error.Quit;
-        } else {
-            std.debug.print("{d}\r\n", .{k});
-        },
-        .plain => |k| {
-            std.debug.print("{d} ({c})\r\n", .{ k, k });
-        },
+        } else {},
+        .plain => |_| {},
         .arrow => |k| self.moveCursor(k),
     }
 }
@@ -175,8 +171,11 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             }
         },
         .next_page => for (0..self.config.screen_size.rows) |_| {
+            const offset_limit = if (self.config.rows.items.len > self.config.screen_size.rows)
+                self.config.rows.items.len - self.config.screen_size.rows + 1
+            else
+                0;
             self.config.row_offset += (self.config.screen_size.rows - 1);
-            const offset_limit = self.config.rows.items.len - self.config.screen_size.rows;
             if (self.config.row_offset > offset_limit) {
                 self.config.row_offset = offset_limit;
             }
