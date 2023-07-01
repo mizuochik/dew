@@ -153,9 +153,11 @@ fn moveCursor(self: *Editor, k: Arrow) void {
     switch (k) {
         .up => if (self.config.c_y > 0) {
             self.config.c_y -= 1;
+            self.normalizeScrolling();
         },
         .down => if (self.config.c_y < self.config.rows.items.len - 1) {
             self.config.c_y += 1;
+            self.normalizeScrolling();
         },
         .left => if (self.config.c_x > 0) {
             self.config.c_x -= 1;
@@ -185,6 +187,24 @@ fn normalizeCursor(self: *Editor) void {
         self.config.c_y = self.get_top_y_of_screen();
     if (self.config.c_y >= self.get_bottom_y_of_screen() - 1)
         self.config.c_y = self.get_bottom_y_of_screen() - 1;
+}
+
+fn normalizeScrolling(self: *Editor) void {
+    const half_of_screen: i64 = self.config.screen_size.rows / 2;
+    if (self.config.c_y < self.get_top_y_of_screen() or self.get_bottom_y_of_screen() <= self.config.c_y)
+        self.scrollTo(@intCast(i64, self.config.c_y) - half_of_screen);
+}
+
+fn scrollTo(self: *Editor, y_offset: i64) void {
+    if (y_offset < 0) {
+        self.config.row_offset = 0;
+        return;
+    }
+    if (y_offset + self.config.screen_size.rows > self.config.rows.items.len) {
+        self.config.row_offset = self.config.rows.items.len - self.config.screen_size.rows;
+        return;
+    }
+    self.config.row_offset = @intCast(usize, y_offset);
 }
 
 fn get_top_y_of_screen(self: *const Editor) usize {
