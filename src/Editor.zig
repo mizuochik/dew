@@ -154,13 +154,13 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         .up => if (self.config.c_y > 0) {
             self.config.c_y -= 1;
         },
-        .down => if (self.config.c_y < self.config.screen_size.rows - 1) {
+        .down => if (self.config.c_y < self.config.rows.items.len - 1) {
             self.config.c_y += 1;
         },
         .left => if (self.config.c_x > 0) {
             self.config.c_x -= 1;
         },
-        .right => if (self.config.c_x < self.config.screen_size.cols - 1) {
+        .right => if (self.config.c_x < self.config.rows.items[self.config.c_y].items.len) {
             self.config.c_x += 1;
         },
         .prev_page => {
