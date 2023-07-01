@@ -169,7 +169,6 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             } else {
                 self.config.row_offset = 0;
             }
-            self.normalizeCursor();
         },
         .next_page => {
             const offset_limit = if (self.config.rows.items.len > self.config.screen_size.rows)
@@ -180,21 +179,25 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             if (self.config.row_offset > offset_limit) {
                 self.config.row_offset = offset_limit;
             }
-            self.normalizeCursor();
         },
     }
+    self.normalizeCursor();
 }
 
 fn normalizeCursor(self: *Editor) void {
-    const top_edge = self.config.row_offset;
-    const bottom_edge = b: {
-        const offset = self.config.row_offset + self.config.screen_size.rows - 1;
-        break :b if (offset < self.config.rows.items.len) offset else self.config.rows.items.len;
-    };
-    if (self.config.c_y < top_edge)
-        self.config.c_y = top_edge;
-    if (self.config.c_y >= bottom_edge)
-        self.config.c_y = bottom_edge;
+    if (self.config.c_y < self.get_top_y_of_screen())
+        self.config.c_y = self.get_top_y_of_screen();
+    if (self.config.c_y >= self.get_bottom_y_of_screen() - 1)
+        self.config.c_y = self.get_bottom_y_of_screen() - 1;
+}
+
+fn get_top_y_of_screen(self: *const Editor) usize {
+    return self.config.row_offset;
+}
+
+fn get_bottom_y_of_screen(self: *const Editor) usize {
+    const offset = self.config.row_offset + self.config.screen_size.rows;
+    return if (offset < self.config.rows.items.len) offset else self.config.rows.items.len;
 }
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
