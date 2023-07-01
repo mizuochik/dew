@@ -44,6 +44,8 @@ const Arrow = enum {
     down,
     right,
     left,
+    begin_of_line,
+    end_of_line,
     next_page,
     prev_page,
 };
@@ -131,6 +133,8 @@ fn readKey() !Key {
             ctrlKey('n') => .{ .arrow = .down },
             ctrlKey('f') => .{ .arrow = .right },
             ctrlKey('b') => .{ .arrow = .left },
+            ctrlKey('a') => .{ .arrow = .begin_of_line },
+            ctrlKey('e') => .{ .arrow = .end_of_line },
             ctrlKey('y') => .{ .arrow = .prev_page },
             ctrlKey('v') => .{ .arrow = .next_page },
             else => .{ .control = k },
@@ -164,6 +168,12 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         },
         .right => if (self.config.c_x < self.config.rows.items[self.config.c_y].items.len) {
             self.config.c_x += 1;
+        },
+        .begin_of_line => {
+            self.config.c_x = 0;
+        },
+        .end_of_line => {
+            self.config.c_x = self.config.rows.items[self.config.c_y].items.len;
         },
         .prev_page => {
             if (self.config.row_offset > self.config.screen_size.rows - 1) {
