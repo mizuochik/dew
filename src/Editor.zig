@@ -29,6 +29,7 @@ const Config = struct {
     screen_size: WindowSize,
     c_x: usize = 0,
     c_y: usize = 0,
+    c_x_pre: usize = 0,
     row_offset: usize = 0,
     rows: std.ArrayList(std.ArrayList(u8)),
 };
@@ -164,16 +165,16 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             self.normalizeScrolling();
         },
         .left => if (self.config.c_x > 0) {
-            self.config.c_x -= 1;
+            self.config.c_x_pre -= 1;
         },
         .right => if (self.config.c_x < self.config.rows.items[self.config.c_y].items.len) {
-            self.config.c_x += 1;
+            self.config.c_x_pre += 1;
         },
         .begin_of_line => {
-            self.config.c_x = 0;
+            self.config.c_x_pre = 0;
         },
         .end_of_line => {
-            self.config.c_x = self.config.rows.items[self.config.c_y].items.len;
+            self.config.c_x_pre = self.config.rows.items[self.config.c_y].items.len;
         },
         .prev_page => {
             if (self.config.row_offset > self.config.screen_size.rows - 1) {
@@ -197,6 +198,12 @@ fn normalizeCursor(self: *Editor) void {
         self.config.c_y = self.get_top_y_of_screen();
     if (self.config.c_y >= self.get_bottom_y_of_screen() - 1)
         self.config.c_y = self.get_bottom_y_of_screen() - 1;
+    if (self.config.rows.items[self.config.c_y].items.len <= 0)
+        self.config.c_x = 0
+    else if (self.config.c_x_pre > self.config.rows.items[self.config.c_y].items.len)
+        self.config.c_x = self.config.rows.items[self.config.c_y].items.len - 1
+    else
+        self.config.c_x = self.config.c_x_pre;
 }
 
 fn normalizeScrolling(self: *Editor) void {
