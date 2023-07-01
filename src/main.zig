@@ -6,9 +6,31 @@ const io = std.io;
 const time = std.time;
 const debug = std.debug;
 const mem = std.mem;
+const log = std.log;
+const fs = std.fs;
 const Editor = @import("Editor.zig");
 
+var log_file: ?fs.File = null;
+const log_file_name = "dew.log";
+
+fn writeLog(comptime message_level: log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
+    _ = scope;
+    _ = message_level;
+    const f = log_file orelse return;
+    f.writer().print(format ++ "\n", args) catch unreachable;
+}
+
+pub const std_options = struct {
+    pub const log_level = .info;
+    pub const logFn = writeLog;
+};
+
 pub fn main() !void {
+    log_file = try fs.cwd().createFile(log_file_name, .{ .truncate = false });
+    defer if (log_file) |f| f.close();
+    const stat = try log_file.?.stat();
+    try log_file.?.seekTo(stat.size);
+
     var gpa = heap.GeneralPurposeAllocator(.{}){};
     defer debug.assert(gpa.deinit() == .ok);
     const allocator = gpa.allocator();
