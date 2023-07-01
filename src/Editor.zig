@@ -163,7 +163,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         .right => if (self.config.c_x < self.config.screen_size.cols - 1) {
             self.config.c_x += 1;
         },
-        .prev_page => for (0..self.config.screen_size.rows) |_| {
+        .prev_page => {
             if (self.config.row_offset > self.config.screen_size.rows - 1) {
                 self.config.row_offset -= self.config.screen_size.rows - 1;
             } else {
@@ -171,7 +171,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             }
             self.normalizeCursor();
         },
-        .next_page => for (0..self.config.screen_size.rows) |_| {
+        .next_page => {
             const offset_limit = if (self.config.rows.items.len > self.config.screen_size.rows)
                 self.config.rows.items.len - self.config.screen_size.rows + 1
             else
@@ -194,14 +194,14 @@ fn normalizeCursor(self: *Editor) void {
     if (self.config.c_y < top_edge)
         self.config.c_y = top_edge;
     if (self.config.c_y >= bottom_edge)
-        self.config.c_y = bottom_edge - 1;
+        self.config.c_y = bottom_edge;
 }
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);
-    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y + 1, self.config.c_x + 1 }));
+    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y - self.config.row_offset + 1, self.config.c_x + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
 
