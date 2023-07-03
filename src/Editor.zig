@@ -149,7 +149,7 @@ fn processKeypress(self: *Editor, key: Key) !void {
         .control => |k| if (k == ctrlKey('x')) {
             return error.Quit;
         } else {},
-        .plain => |_| {},
+        .plain => |k| try self.insertChar(k),
         .arrow => |k| self.moveCursor(k),
     }
 }
@@ -302,6 +302,12 @@ fn getWindowSize() !WindowSize {
         .rows = ws.ws_row,
         .cols = ws.ws_col,
     };
+}
+
+fn insertChar(self: *Editor, char: u8) !void {
+    var row = &self.config.rows.items[self.config.c_y];
+    try row.insert(self.config.c_x, char);
+    self.moveCursor(.right);
 }
 
 test "getWindowSize" {
