@@ -175,8 +175,8 @@ fn readKey() !Key {
 fn processKeypress(self: *Editor, key: Key) !void {
     switch (key) {
         .control => |k| switch (k) {
-            ctrlKey('x') => return error.Quit,
-            ctrlKey('o') => try self.saveFile(),
+            ctrlKey('q') => return error.Quit,
+            ctrlKey('s') => try self.saveFile(),
             @enumToInt(ControlKeys.DEL) => {
                 try self.deleteChar();
             },
