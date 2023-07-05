@@ -33,6 +33,7 @@ const Config = struct {
     row_offset: usize = 0,
     rows: std.ArrayList(std.ArrayList(u8)),
     file_path: ?[]const u8 = null,
+    status_message: []const u8,
 };
 
 const Key = union(enum) {
@@ -58,13 +59,15 @@ config: Config,
 pub fn init(allocator: mem.Allocator) !Editor {
     const orig = try enableRawMode();
     const size = try getWindowSize();
-
+    const status = try fmt.allocPrint(allocator, "Initialized", .{});
+    errdefer allocator.free(status);
     return Editor{
         .allocator = allocator,
         .config = Config{
             .orig_termios = orig,
             .screen_size = size,
             .rows = std.ArrayList(std.ArrayList(u8)).init(allocator),
+            .status_message = status,
         },
     };
 }
@@ -74,6 +77,7 @@ pub fn deinit(self: *const Editor) !void {
     try self.doRender(clearScreen);
     for (self.config.rows.items) |row| row.deinit();
     self.config.rows.deinit();
+    self.allocator.free(self.config.status_message);
 }
 
 pub fn openFile(self: *Editor, path: []const u8) !void {
@@ -298,6 +302,9 @@ fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
         try buf.appendSlice("\x1b[K");
         try buf.appendSlice(if (j >= self.config.rows.items.len) "~" else self.config.rows.items[j].items);
     }
+    try buf.appendSlice("\r\n");
+    try buf.appendSlice("\x1b[K");
+    try buf.appendSlice(self.config.status_message);
     try buf.appendSlice("\x1b[H");
 }
 
@@ -313,7 +320,7 @@ fn getWindowSize() !WindowSize {
         return error.UnknownWinsize;
     }
     return WindowSize{
-        .rows = ws.ws_row,
+        .rows = ws.ws_row - 1, // status bar uses the last line
         .cols = ws.ws_col,
     };
 }
