@@ -22,6 +22,10 @@ const darwin_INPCK: os.tcflag_t = 0x10;
 const darwin_ISTRIP: os.tcflag_t = 0x20;
 const darwin_CS8: os.tcflag_t = 0x300;
 
+const ControlKeys = enum(u8) {
+    DEL = 127,
+};
+
 const Editor = @This();
 
 const Config = struct {
@@ -173,6 +177,9 @@ fn processKeypress(self: *Editor, key: Key) !void {
         .control => |k| switch (k) {
             ctrlKey('x') => return error.Quit,
             ctrlKey('o') => try self.saveFile(),
+            @enumToInt(ControlKeys.DEL) => {
+                try self.deleteChar();
+            },
             else => {},
         },
         .plain => |k| try self.insertChar(k),
@@ -272,6 +279,30 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
     try self.drawRows(buf);
     try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y - self.config.row_offset + 1, self.config.c_x + 1 }));
     try buf.appendSlice("\x1b[?25h");
+}
+
+fn deleteChar(self: *Editor) !void {
+    self.moveBackwardChar();
+    var row = &self.config.rows.items[self.config.c_y];
+    if (row.items.len > 0) {
+        _ = row.orderedRemove(self.config.c_x);
+    }
+}
+
+fn moveBackwardChar(self: *Editor) void {
+    if (self.config.c_x > 0) {
+        self.config.c_x -= 1;
+        return;
+    }
+    if (self.config.c_y > 0) {
+        self.config.c_y -= 1;
+        const row = &self.config.rows.items[self.config.c_y];
+        if (row.items.len > 0) {
+            self.config.c_x = row.items.len - 1;
+        } else {
+            self.config.c_x = 0;
+        }
+    }
 }
 
 fn clearScreen(_: *const Editor, _: mem.Allocator, buf: *std.ArrayList(u8)) !void {
