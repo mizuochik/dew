@@ -110,6 +110,14 @@ pub fn saveFile(self: *Editor) !void {
         _ = try f.write(row.items);
         _ = try f.write("\n");
     }
+    const new_status = try fmt.allocPrint(self.allocator, "Saved: {s}", .{self.config.file_path.?});
+    errdefer self.allocator.free(new_status);
+    self.setStatusMessage(new_status);
+}
+
+pub fn setStatusMessage(self: *Editor, status_message: []const u8) void {
+    self.allocator.free(self.config.status_message);
+    self.config.status_message = status_message;
 }
 
 pub fn run(self: *Editor) !void {
