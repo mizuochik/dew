@@ -32,6 +32,7 @@ const Config = struct {
     c_x_pre: usize = 0,
     row_offset: usize = 0,
     rows: std.ArrayList(std.ArrayList(u8)),
+    file_path: ?[]const u8 = null,
 };
 
 const Key = union(enum) {
@@ -94,6 +95,17 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
     for (self.config.rows.items) |row| row.deinit();
     self.config.rows.deinit();
     self.config.rows = new_rows;
+
+    self.config.file_path = path;
+}
+
+pub fn saveFile(self: *Editor) !void {
+    var f = try fs.cwd().createFile(self.config.file_path.?, .{});
+    defer f.close();
+    for (self.config.rows.items) |row| {
+        _ = try f.write(row.items);
+        _ = try f.write("\n");
+    }
 }
 
 pub fn run(self: *Editor) !void {
@@ -146,9 +158,11 @@ fn readKey() !Key {
 
 fn processKeypress(self: *Editor, key: Key) !void {
     switch (key) {
-        .control => |k| if (k == ctrlKey('x')) {
-            return error.Quit;
-        } else {},
+        .control => |k| switch (k) {
+            ctrlKey('x') => return error.Quit,
+            ctrlKey('o') => try self.saveFile(),
+            else => {},
+        },
         .plain => |k| try self.insertChar(k),
         .arrow => |k| self.moveCursor(k),
     }
