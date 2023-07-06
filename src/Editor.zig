@@ -195,7 +195,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
     switch (k) {
         .up => self.moveToPreviousLine(),
         .down => self.moveToNextLine(),
-        .left => self.moveBackwardChar(),
+        .left => _ = self.moveBackwardChar(),
         .right => self.moveForwardChar(),
         .begin_of_line => {
             self.config.c_x_pre = 0;
@@ -276,21 +276,25 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
 }
 
 fn deleteChar(self: *Editor) !void {
-    self.moveBackwardChar();
+    _ = self.moveBackwardChar();
     var row = &self.config.rows.items[self.config.c_y];
-    if (row.items.len > 0) {
+    if (self.config.c_x < row.items.len) {
         _ = row.orderedRemove(self.config.c_x);
     }
 }
 
-fn moveBackwardChar(self: *Editor) void {
+fn moveBackwardChar(self: *Editor) bool {
+    var moved = false;
     if (self.config.c_x > 0) {
         self.config.c_x_pre = self.config.c_x - 1;
+        moved = true;
     } else if (self.config.c_y > 0) {
         self.config.c_y -= 1;
         self.config.c_x_pre = self.config.rows.items[self.config.c_y].items.len;
+        moved = true;
     }
     self.normalizeScrolling();
+    return moved;
 }
 
 fn moveForwardChar(self: *Editor) void {
