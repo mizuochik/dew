@@ -99,6 +99,9 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
         };
         try new_rows.append(new_row);
     }
+    var last_row = std.ArrayList(u8).init(self.allocator);
+    errdefer last_row.deinit();
+    try new_rows.append(last_row);
 
     for (self.config.rows.items) |row| row.deinit();
     self.config.rows.deinit();
@@ -110,9 +113,10 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
 pub fn saveFile(self: *Editor) !void {
     var f = try fs.cwd().createFile(self.config.file_path.?, .{});
     defer f.close();
-    for (self.config.rows.items) |row| {
+    for (self.config.rows.items, 0..) |row, i| {
         _ = try f.write(row.items);
-        _ = try f.write("\n");
+        if (i < self.config.rows.items.len - 1)
+            _ = try f.write("\n");
     }
     const new_status = try fmt.allocPrint(self.allocator, "Saved: {s}", .{self.config.file_path.?});
     errdefer self.allocator.free(new_status);
@@ -189,14 +193,8 @@ fn processKeypress(self: *Editor, key: Key) !void {
 
 fn moveCursor(self: *Editor, k: Arrow) void {
     switch (k) {
-        .up => if (self.config.c_y > 0) {
-            self.config.c_y -= 1;
-            self.normalizeScrolling();
-        },
-        .down => if (self.config.c_y < self.config.rows.items.len - 1) {
-            self.config.c_y += 1;
-            self.normalizeScrolling();
-        },
+        .up => self.moveToPreviousLine(),
+        .down => self.moveToNextLine(),
         .left => self.moveBackwardChar(),
         .right => self.moveForwardChar(),
         .begin_of_line => {
@@ -225,12 +223,12 @@ fn moveCursor(self: *Editor, k: Arrow) void {
 fn normalizeCursor(self: *Editor) void {
     if (self.config.c_y < self.get_top_y_of_screen())
         self.config.c_y = self.get_top_y_of_screen();
-    if (self.config.c_y >= self.get_bottom_y_of_screen() - 1)
-        self.config.c_y = self.get_bottom_y_of_screen() - 1;
+    if (self.config.c_y > self.get_bottom_y_of_screen())
+        self.config.c_y = self.get_bottom_y_of_screen();
     if (self.config.rows.items[self.config.c_y].items.len <= 0)
         self.config.c_x = 0
     else if (self.config.c_x_pre > self.config.rows.items[self.config.c_y].items.len)
-        self.config.c_x = self.config.rows.items[self.config.c_y].items.len - 1
+        self.config.c_x = self.config.rows.items[self.config.c_y].items.len
     else
         self.config.c_x = self.config.c_x_pre;
 }
@@ -292,15 +290,31 @@ fn moveBackwardChar(self: *Editor) void {
         self.config.c_y -= 1;
         self.config.c_x_pre = self.config.rows.items[self.config.c_y].items.len;
     }
+    self.normalizeScrolling();
 }
 
 fn moveForwardChar(self: *Editor) void {
     const row = self.config.rows.items[self.config.c_y];
     if (self.config.c_x < row.items.len) {
         self.config.c_x_pre = self.config.c_x + 1;
-    } else if (self.config.c_y < self.config.rows.items.len) {
+    } else if (self.config.c_y < self.config.rows.items.len - 1) {
         self.config.c_y += 1;
         self.config.c_x_pre = 0;
+    }
+    self.normalizeScrolling();
+}
+
+fn moveToPreviousLine(self: *Editor) void {
+    if (self.config.c_y > 0) {
+        self.config.c_y -= 1;
+        self.normalizeScrolling();
+    }
+}
+
+fn moveToNextLine(self: *Editor) void {
+    if (self.config.c_y < self.config.rows.items.len - 1) {
+        self.config.c_y += 1;
+        self.normalizeScrolling();
     }
 }
 
