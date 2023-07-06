@@ -197,12 +197,8 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             self.config.c_y += 1;
             self.normalizeScrolling();
         },
-        .left => if (self.config.c_x > 0) {
-            self.config.c_x_pre -= 1;
-        },
-        .right => if (self.config.c_x < self.config.rows.items[self.config.c_y].items.len) {
-            self.config.c_x_pre += 1;
-        },
+        .left => self.moveBackwardChar(),
+        .right => self.moveForwardChar(),
         .begin_of_line => {
             self.config.c_x_pre = 0;
         },
@@ -291,17 +287,20 @@ fn deleteChar(self: *Editor) !void {
 
 fn moveBackwardChar(self: *Editor) void {
     if (self.config.c_x > 0) {
-        self.config.c_x -= 1;
-        return;
-    }
-    if (self.config.c_y > 0) {
+        self.config.c_x_pre = self.config.c_x - 1;
+    } else if (self.config.c_y > 0) {
         self.config.c_y -= 1;
-        const row = &self.config.rows.items[self.config.c_y];
-        if (row.items.len > 0) {
-            self.config.c_x = row.items.len - 1;
-        } else {
-            self.config.c_x = 0;
-        }
+        self.config.c_x_pre = self.config.rows.items[self.config.c_y].items.len;
+    }
+}
+
+fn moveForwardChar(self: *Editor) void {
+    const row = self.config.rows.items[self.config.c_y];
+    if (self.config.c_x < row.items.len) {
+        self.config.c_x_pre = self.config.c_x + 1;
+    } else if (self.config.c_y < self.config.rows.items.len) {
+        self.config.c_y += 1;
+        self.config.c_x_pre = 0;
     }
 }
 
