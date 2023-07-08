@@ -182,6 +182,7 @@ fn processKeypress(self: *Editor, key: Key) !void {
         .control => |k| switch (k) {
             ctrlKey('q') => return error.Quit,
             ctrlKey('s') => try self.saveFile(),
+            ctrlKey('k') => try self.killLine(),
             @enumToInt(ControlKeys.DEL) => {
                 try self.deleteChar();
             },
@@ -301,11 +302,16 @@ fn breakLine(self: *Editor) !void {
     errdefer next_row.deinit();
     try next_row.appendSlice(row.items[self.config.c_x..]);
     try self.config.rows.insert(self.config.c_y + 1, next_row);
+    try self.killLine();
+    self.moveForwardChar();
+    self.normalizeCursor();
+}
+
+fn killLine(self: *Editor) !void {
+    var row = &self.config.rows.items[self.config.c_y];
     for (0..row.items.len - self.config.c_x) |_| {
         _ = row.pop();
     }
-    self.moveForwardChar();
-    self.normalizeCursor();
 }
 
 fn moveBackwardChar(self: *Editor) bool {
