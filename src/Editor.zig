@@ -184,7 +184,7 @@ fn processKeypress(self: *Editor, key: Key) !void {
             ctrlKey('s') => try self.saveFile(),
             ctrlKey('k') => try self.killLine(),
             @enumToInt(ControlKeys.DEL) => {
-                try self.deleteChar();
+                try self.deleteBackwardChar();
             },
             @enumToInt(ControlKeys.RETURN) => {
                 try self.breakLine();
@@ -281,10 +281,6 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
 }
 
 fn deleteChar(self: *Editor) !void {
-    if (!self.moveBackwardChar()) {
-        return;
-    }
-    self.normalizeCursor();
     var row = &self.config.rows.items[self.config.c_y];
     if (self.config.c_x >= row.items.len) {
         var next_row = &self.config.rows.items[self.config.c_y + 1];
@@ -294,6 +290,14 @@ fn deleteChar(self: *Editor) !void {
         return;
     }
     _ = row.orderedRemove(self.config.c_x);
+}
+
+fn deleteBackwardChar(self: *Editor) !void {
+    if (!self.moveBackwardChar()) {
+        return;
+    }
+    self.normalizeCursor();
+    try self.deleteChar();
 }
 
 fn breakLine(self: *Editor) !void {
