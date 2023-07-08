@@ -24,6 +24,7 @@ const darwin_CS8: os.tcflag_t = 0x300;
 
 const ControlKeys = enum(u8) {
     DEL = 127,
+    RETURN = 0x0d,
 };
 
 const Editor = @This();
@@ -184,6 +185,9 @@ fn processKeypress(self: *Editor, key: Key) !void {
             @enumToInt(ControlKeys.DEL) => {
                 try self.deleteChar();
             },
+            @enumToInt(ControlKeys.RETURN) => {
+                try self.breakLine();
+            },
             else => {},
         },
         .plain => |k| try self.insertChar(k),
@@ -289,6 +293,19 @@ fn deleteChar(self: *Editor) !void {
         return;
     }
     _ = row.orderedRemove(self.config.c_x);
+}
+
+fn breakLine(self: *Editor) !void {
+    var row = &self.config.rows.items[self.config.c_y];
+    var next_row = std.ArrayList(u8).init(self.allocator);
+    errdefer next_row.deinit();
+    try next_row.appendSlice(row.items[self.config.c_x..]);
+    try self.config.rows.insert(self.config.c_y + 1, next_row);
+    for (0..row.items.len - self.config.c_x) |_| {
+        _ = row.pop();
+    }
+    self.moveForwardChar();
+    self.normalizeCursor();
 }
 
 fn moveBackwardChar(self: *Editor) bool {
