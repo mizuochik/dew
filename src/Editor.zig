@@ -276,13 +276,19 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
 }
 
 fn deleteChar(self: *Editor) !void {
-    if (self.moveBackwardChar()) {
-        self.normalizeCursor();
-        var row = &self.config.rows.items[self.config.c_y];
-        if (self.config.c_x < row.items.len) {
-            _ = row.orderedRemove(self.config.c_x);
-        }
+    if (!self.moveBackwardChar()) {
+        return;
     }
+    self.normalizeCursor();
+    var row = &self.config.rows.items[self.config.c_y];
+    if (self.config.c_x >= row.items.len) {
+        var next_row = &self.config.rows.items[self.config.c_y + 1];
+        try row.appendSlice(next_row.items);
+        next_row.deinit();
+        _ = self.config.rows.orderedRemove(self.config.c_y + 1);
+        return;
+    }
+    _ = row.orderedRemove(self.config.c_x);
 }
 
 fn moveBackwardChar(self: *Editor) bool {
