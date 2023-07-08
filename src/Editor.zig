@@ -183,7 +183,8 @@ fn processKeypress(self: *Editor, key: Key) !void {
             ctrlKey('q') => return error.Quit,
             ctrlKey('s') => try self.saveFile(),
             ctrlKey('k') => try self.killLine(),
-            @enumToInt(ControlKeys.DEL) => {
+            ctrlKey('d') => try self.deleteChar(),
+            @enumToInt(ControlKeys.DEL), ctrlKey('h') => {
                 try self.deleteBackwardChar();
             },
             @enumToInt(ControlKeys.RETURN) => {
