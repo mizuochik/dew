@@ -8,7 +8,7 @@ const debug = std.debug;
 const mem = std.mem;
 const log = std.log;
 const fs = std.fs;
-const Editor = @import("Editor.zig");
+const dew = @import("dew.zig");
 
 var log_file: ?fs.File = null;
 const log_file_name = "dew.log";
@@ -41,13 +41,9 @@ pub fn main() !void {
     }
     const path: []const u8 = mem.span(os.argv[1]);
 
-    var editor = try Editor.init(allocator);
+    var editor = try dew.Editor.init(allocator);
     defer editor.deinit() catch unreachable;
 
     try editor.openFile(path);
     try editor.run();
-}
-
-test {
-    _ = Editor;
 }

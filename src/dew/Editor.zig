@@ -8,7 +8,8 @@ const debug = std.debug;
 const fmt = std.fmt;
 const fs = std.fs;
 const testing = std.testing;
-const c = @import("c.zig");
+const dew = @import("../dew.zig");
+const c = dew.c;
 
 const darwin_ECHO: os.tcflag_t = 0x8;
 const darwin_ICANON: os.tcflag_t = 0x100;
