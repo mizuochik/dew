@@ -28,6 +28,11 @@ pub fn insert(self: *UnicodeLineBuffer, i: usize, c: u21) !void {
     try self.refreshU8Index();
 }
 
+pub fn appendSlice(self: *UnicodeLineBuffer, s: []const u8) !void {
+    try self.buffer.appendSlice(s);
+    try self.refreshU8Index();
+}
+
 pub fn remove(self: *UnicodeLineBuffer, i: usize) !void {
     const from = self.u8_index.items[i];
     const to = self.u8_index.items[i + 1];
@@ -67,11 +72,7 @@ test "UnicodeLineBuffer: insert" {
 test "UnicodeLineBuffer: remove" {
     var lb = try UnicodeLineBuffer.init(testing.allocator);
     defer lb.deinit();
-    try lb.insert(0, 'こ');
-    try lb.insert(1, 'ん');
-    try lb.insert(2, 'に');
-    try lb.insert(3, 'ち');
-    try lb.insert(4, 'は');
+    try lb.appendSlice("こんにちは");
     std.debug.assert(mem.eql(u8, "こんにちは", lb.buffer.items));
 
     try lb.remove(2);
