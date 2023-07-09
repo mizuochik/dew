@@ -12,7 +12,7 @@ pub fn init(allocator: mem.Allocator) !UnicodeLineBuffer {
         .buffer = std.ArrayList(u8).init(allocator),
         .u8_index = std.ArrayList(usize).init(allocator),
     };
-    try buf.refreshCodePoints();
+    try buf.refreshU8Index();
     return buf;
 }
 
@@ -25,7 +25,7 @@ pub fn insert(self: *UnicodeLineBuffer, i: usize, c: u21) !void {
     var enc: [4]u8 = undefined;
     const to = try unicode.utf8Encode(c, &enc);
     try self.buffer.insertSlice(self.u8_index.items[i], enc[0..to]);
-    try self.refreshCodePoints();
+    try self.refreshU8Index();
 }
 
 pub fn remove(self: *UnicodeLineBuffer, i: usize) !void {
@@ -34,10 +34,10 @@ pub fn remove(self: *UnicodeLineBuffer, i: usize) !void {
     for (from..to) |_| {
         _ = self.buffer.orderedRemove(from);
     }
-    try self.refreshCodePoints();
+    try self.refreshU8Index();
 }
 
-pub fn refreshCodePoints(self: *UnicodeLineBuffer) !void {
+pub fn refreshU8Index(self: *UnicodeLineBuffer) !void {
     var new_u8_index = std.ArrayList(usize).init(self.buffer.allocator);
     errdefer new_u8_index.deinit();
 
@@ -61,8 +61,7 @@ test "UnicodeLineBuffer: insert" {
     try lb.insert(1, '界');
 
     try testing.expectFmt("世界", "{s}", .{lb.buffer.items});
-    const cps: []const usize = &[_]usize{ 0, 3, 6 };
-    try testing.expectEqualDeep(cps, lb.u8_index.items);
+    try testing.expectFmt("{ 0, 3, 6 }", "{any}", .{lb.u8_index.items});
 }
 
 test "UnicodeLineBuffer: remove" {
