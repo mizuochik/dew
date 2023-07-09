@@ -28,6 +28,15 @@ pub fn insert(self: *UnicodeLineBuffer, i: usize, c: u21) !void {
     try self.refreshCodePoints();
 }
 
+pub fn remove(self: *UnicodeLineBuffer, i: usize) !void {
+    const from = self.u8_index.items[i];
+    const to = self.u8_index.items[i + 1];
+    for (from..to) |_| {
+        _ = self.buffer.orderedRemove(from);
+    }
+    try self.refreshCodePoints();
+}
+
 pub fn refreshCodePoints(self: *UnicodeLineBuffer) !void {
     var new_u8_index = std.ArrayList(usize).init(self.buffer.allocator);
     errdefer new_u8_index.deinit();
@@ -54,4 +63,20 @@ test "UnicodeLineBuffer: insert" {
     try testing.expectFmt("世界", "{s}", .{lb.buffer.items});
     const cps: []const usize = &[_]usize{ 0, 3, 6 };
     try testing.expectEqualDeep(cps, lb.u8_index.items);
+}
+
+test "UnicodeLineBuffer: remove" {
+    var lb = try UnicodeLineBuffer.init(testing.allocator);
+    defer lb.deinit();
+    try lb.insert(0, 'こ');
+    try lb.insert(1, 'ん');
+    try lb.insert(2, 'に');
+    try lb.insert(3, 'ち');
+    try lb.insert(4, 'は');
+    std.debug.assert(mem.eql(u8, "こんにちは", lb.buffer.items));
+
+    try lb.remove(2);
+
+    try testing.expectFmt("こんちは", "{s}", .{lb.buffer.items});
+    try testing.expectFmt("{ 0, 3, 6, 9, 12 }", "{any}", .{lb.u8_index.items});
 }
