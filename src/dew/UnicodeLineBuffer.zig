@@ -16,7 +16,7 @@ pub fn init(allocator: mem.Allocator) !UnicodeLineBuffer {
     return buf;
 }
 
-pub fn deinit(self: *UnicodeLineBuffer) void {
+pub fn deinit(self: *const UnicodeLineBuffer) void {
     self.buffer.deinit();
     self.u8_index.deinit();
 }
