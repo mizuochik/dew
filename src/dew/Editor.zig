@@ -38,6 +38,7 @@ const Config = struct {
     c_x_pre: usize = 0,
     row_offset: usize = 0,
     rows: std.ArrayList(std.ArrayList(u8)),
+    u_rows: std.ArrayList(dew.UnicodeLineBuffer),
     file_path: ?[]const u8 = null,
     status_message: []const u8,
 };
@@ -73,6 +74,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
             .orig_termios = orig,
             .screen_size = size,
             .rows = std.ArrayList(std.ArrayList(u8)).init(allocator),
+            .u_rows = std.ArrayList(dew.UnicodeLineBuffer).init(allocator),
             .status_message = status,
         },
     };
@@ -83,6 +85,8 @@ pub fn deinit(self: *const Editor) !void {
     try self.doRender(clearScreen);
     for (self.config.rows.items) |row| row.deinit();
     self.config.rows.deinit();
+    for (self.config.u_rows.items) |u_row| u_row.deinit();
+    self.config.u_rows.deinit();
     self.allocator.free(self.config.status_message);
 }
 
@@ -92,6 +96,10 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
 
     var new_rows = std.ArrayList(std.ArrayList(u8)).init(self.allocator);
     errdefer new_rows.deinit();
+
+    var new_u_rows = std.ArrayList(dew.UnicodeLineBuffer).init(self.allocator);
+    errdefer new_u_rows.deinit();
+
     while (true) {
         var new_row = std.ArrayList(u8).init(self.allocator);
         errdefer new_row.deinit();
@@ -100,14 +108,27 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
             else => return err,
         };
         try new_rows.append(new_row);
+
+        var new_u_row = try dew.UnicodeLineBuffer.init(self.allocator);
+        errdefer new_u_row.deinit();
+        try new_u_row.appendSlice(new_row.items);
+        try new_u_rows.append(new_u_row);
     }
     var last_row = std.ArrayList(u8).init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
 
+    var last_u_row = try dew.UnicodeLineBuffer.init(self.allocator);
+    errdefer last_u_row.deinit();
+    try new_u_rows.append(last_u_row);
+
     for (self.config.rows.items) |row| row.deinit();
     self.config.rows.deinit();
     self.config.rows = new_rows;
+
+    for (self.config.u_rows.items) |u_row| u_row.deinit();
+    self.config.u_rows.deinit();
+    self.config.u_rows = new_u_rows;
 
     self.config.file_path = path;
 }
@@ -277,7 +298,8 @@ fn get_offset_limit(self: *const Editor) usize {
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
-    try self.drawRows(buf);
+    // try self.drawRows(buf);
+    try self.drawURows(buf);
     try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y - self.config.row_offset + 1, self.config.c_x + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
@@ -394,6 +416,19 @@ fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
         const j = i + self.config.row_offset;
         try buf.appendSlice("\x1b[K");
         try buf.appendSlice(if (j >= self.config.rows.items.len) "~" else self.config.rows.items[j].items);
+    }
+    try buf.appendSlice("\r\n");
+    try buf.appendSlice("\x1b[K");
+    try buf.appendSlice(self.config.status_message);
+    try buf.appendSlice("\x1b[H");
+}
+
+fn drawURows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
+    for (0..self.config.screen_size.rows) |i| {
+        if (i > 0) try buf.appendSlice("\r\n");
+        const j = i + self.config.row_offset;
+        try buf.appendSlice("\x1b[K");
+        try buf.appendSlice(if (j >= self.config.rows.items.len) "~" else self.config.u_rows.items[i].buffer.items);
     }
     try buf.appendSlice("\r\n");
     try buf.appendSlice("\x1b[K");
