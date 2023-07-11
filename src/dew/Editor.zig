@@ -229,7 +229,8 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             self.config.c_x_pre = 0;
         },
         .end_of_line => {
-            self.config.c_x_pre = self.config.rows.items[self.config.c_y].items.len;
+            const row = self.config.u_rows.items[self.config.c_y];
+            self.config.c_x_pre = row.width_index.items[row.getLen()];
         },
         .prev_page => {
             if (self.config.row_offset > self.config.screen_size.rows - 1) {
@@ -253,12 +254,18 @@ fn normalizeCursor(self: *Editor) void {
         self.config.c_y = self.get_top_y_of_screen();
     if (self.config.c_y > self.get_bottom_y_of_screen())
         self.config.c_y = self.get_bottom_y_of_screen();
-    if (self.config.rows.items[self.config.c_y].items.len <= 0)
+    if (self.config.u_rows.items[self.config.c_y].getLen() <= 0)
         self.config.c_x = 0
-    else if (self.config.c_x_pre > self.config.rows.items[self.config.c_y].items.len)
-        self.config.c_x = self.config.rows.items[self.config.c_y].items.len
-    else
-        self.config.c_x = self.config.c_x_pre;
+    else if (self.config.c_x_pre > self.config.u_rows.items[self.config.c_y].getWidth())
+        self.config.c_x = self.config.u_rows.items[self.config.c_y].getWidth()
+    else {
+        const row = self.config.u_rows.items[self.config.c_y];
+        for (row.width_index.items, 0..) |w, i| {
+            if (self.config.c_x_pre >= w)
+                self.config.c_x = i;
+        }
+    }
+    self.config.c_x = self.config.c_x_pre;
 }
 
 fn normalizeScrolling(self: *Editor) void {
