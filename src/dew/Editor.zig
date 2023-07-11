@@ -250,22 +250,23 @@ fn moveCursor(self: *Editor, k: Arrow) void {
 }
 
 fn normalizeCursor(self: *Editor) void {
+    const row = self.config.u_rows.items[self.config.c_y];
     if (self.config.c_y < self.get_top_y_of_screen())
         self.config.c_y = self.get_top_y_of_screen();
     if (self.config.c_y > self.get_bottom_y_of_screen())
         self.config.c_y = self.get_bottom_y_of_screen();
-    if (self.config.u_rows.items[self.config.c_y].getLen() <= 0)
+    if (row.getLen() <= 0)
         self.config.c_x = 0
-    else if (self.config.c_x_pre > self.config.u_rows.items[self.config.c_y].getWidth())
-        self.config.c_x = self.config.u_rows.items[self.config.c_y].getWidth()
+    else if (self.config.c_x_pre > row.getWidth())
+        self.config.c_x = row.getLen()
     else {
-        const row = self.config.u_rows.items[self.config.c_y];
         for (row.width_index.items, 0..) |w, i| {
-            if (self.config.c_x_pre >= w)
+            if (self.config.c_x_pre <= w) {
                 self.config.c_x = i;
+                break;
+            }
         }
     }
-    self.config.c_x = self.config.c_x_pre;
 }
 
 fn normalizeScrolling(self: *Editor) void {
@@ -305,9 +306,9 @@ fn get_offset_limit(self: *const Editor) usize {
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
-    // try self.drawRows(buf);
     try self.drawURows(buf);
-    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y - self.config.row_offset + 1, self.config.c_x + 1 }));
+    const row = self.config.u_rows.items[self.config.c_y];
+    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y - self.config.row_offset + 1, row.width_index.items[self.config.c_x] + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
 
@@ -364,9 +365,9 @@ fn moveBackwardChar(self: *Editor) bool {
 }
 
 fn moveForwardChar(self: *Editor) void {
-    const row = self.config.rows.items[self.config.c_y];
-    if (self.config.c_x < row.items.len) {
-        self.config.c_x_pre = self.config.c_x + 1;
+    const row = self.config.u_rows.items[self.config.c_y];
+    if (self.config.c_x < row.getLen()) {
+        self.config.c_x_pre = row.width_index.items[self.config.c_x + 1];
     } else if (self.config.c_y < self.config.rows.items.len - 1) {
         self.config.c_y += 1;
         self.config.c_x_pre = 0;
