@@ -79,6 +79,10 @@ fn refreshCursorIndex(self: *UnicodeLineBuffer) !void {
     self.cursor_index = new_cursor_index;
 }
 
+fn getLen(self: *const UnicodeLineBuffer) usize {
+    return self.u8_index.items.len - 1;
+}
+
 test "UnicodeLineBuffer: insert" {
     var lb = try UnicodeLineBuffer.init(testing.allocator);
     defer lb.deinit();
@@ -89,6 +93,7 @@ test "UnicodeLineBuffer: insert" {
     try testing.expectFmt("世界", "{s}", .{lb.buffer.items});
     try testing.expectFmt("{ 0, 3, 6 }", "{any}", .{lb.u8_index.items});
     try testing.expectFmt("{ 0, 2, 4 }", "{any}", .{lb.cursor_index.items});
+    try testing.expectEqual(@as(usize, 2), lb.getLen());
 }
 
 test "UnicodeLineBuffer: remove" {
@@ -102,4 +107,5 @@ test "UnicodeLineBuffer: remove" {
     try testing.expectFmt("こんちは", "{s}", .{lb.buffer.items});
     try testing.expectFmt("{ 0, 3, 6, 9, 12 }", "{any}", .{lb.u8_index.items});
     try testing.expectFmt("{ 0, 2, 4, 6, 8 }", "{any}", .{lb.cursor_index.items});
+    try testing.expectEqual(@as(usize, 4), lb.getLen());
 }
