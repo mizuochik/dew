@@ -344,9 +344,9 @@ fn breakLine(self: *Editor) !void {
 }
 
 fn killLine(self: *Editor) !void {
-    var row = &self.config.rows.items[self.config.c_y];
-    for (0..row.items.len - self.config.c_x) |_| {
-        _ = row.pop();
+    var row = &self.config.u_rows.items[self.config.c_y];
+    for (0..row.getLen() - self.config.c_x) |_| {
+        try row.remove(self.config.c_x);
     }
 }
 
