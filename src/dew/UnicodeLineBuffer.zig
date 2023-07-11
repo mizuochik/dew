@@ -79,11 +79,11 @@ fn refreshWidthIndex(self: *UnicodeLineBuffer) !void {
     self.width_index = new_width_index;
 }
 
-fn getLen(self: *const UnicodeLineBuffer) usize {
+pub fn getLen(self: *const UnicodeLineBuffer) usize {
     return self.u8_index.items.len - 1;
 }
 
-fn getWidth(self: *const UnicodeLineBuffer) usize {
+pub fn getWidth(self: *const UnicodeLineBuffer) usize {
     return self.width_index.items[self.width_index.items.len - 1];
 }
 
