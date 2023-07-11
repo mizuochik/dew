@@ -353,11 +353,11 @@ fn killLine(self: *Editor) !void {
 fn moveBackwardChar(self: *Editor) bool {
     var moved = false;
     if (self.config.c_x > 0) {
-        self.config.c_x_pre = self.config.c_x - 1;
+        self.config.c_x_pre = self.config.u_rows.items[self.config.c_y].width_index.items[self.config.c_x - 1];
         moved = true;
     } else if (self.config.c_y > 0) {
         self.config.c_y -= 1;
-        self.config.c_x_pre = self.config.rows.items[self.config.c_y].items.len;
+        self.config.c_x_pre = self.config.u_rows.items[self.config.c_y].getWidth();
         moved = true;
     }
     self.normalizeScrolling();
