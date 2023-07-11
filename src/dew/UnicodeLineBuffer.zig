@@ -6,13 +6,13 @@ const UnicodeLineBuffer = @This();
 
 buffer: std.ArrayList(u8),
 u8_index: std.ArrayList(usize),
-cursor_index: std.ArrayList(usize),
+width_index: std.ArrayList(usize),
 
 pub fn init(allocator: mem.Allocator) !UnicodeLineBuffer {
     var buf = UnicodeLineBuffer{
         .buffer = std.ArrayList(u8).init(allocator),
         .u8_index = std.ArrayList(usize).init(allocator),
-        .cursor_index = std.ArrayList(usize).init(allocator),
+        .width_index = std.ArrayList(usize).init(allocator),
     };
     try buf.refreshIndex();
     return buf;
@@ -21,7 +21,7 @@ pub fn init(allocator: mem.Allocator) !UnicodeLineBuffer {
 pub fn deinit(self: *const UnicodeLineBuffer) void {
     self.buffer.deinit();
     self.u8_index.deinit();
-    self.cursor_index.deinit();
+    self.width_index.deinit();
 }
 
 pub fn insert(self: *UnicodeLineBuffer, i: usize, c: u21) !void {
@@ -47,7 +47,7 @@ pub fn remove(self: *UnicodeLineBuffer, i: usize) !void {
 
 fn refreshIndex(self: *UnicodeLineBuffer) !void {
     try self.refreshU8Index();
-    try self.refreshCursorIndex();
+    try self.refreshWidthIndex();
 }
 
 fn refreshU8Index(self: *UnicodeLineBuffer) !void {
@@ -66,17 +66,17 @@ fn refreshU8Index(self: *UnicodeLineBuffer) !void {
     self.u8_index = new_u8_index;
 }
 
-fn refreshCursorIndex(self: *UnicodeLineBuffer) !void {
-    var new_cursor_index = std.ArrayList(usize).init(self.buffer.allocator);
-    errdefer new_cursor_index.deinit();
+fn refreshWidthIndex(self: *UnicodeLineBuffer) !void {
+    var new_width_index = std.ArrayList(usize).init(self.buffer.allocator);
+    errdefer new_width_index.deinit();
     var j: usize = 0;
-    try new_cursor_index.append(j);
+    try new_width_index.append(j);
     for (0..self.u8_index.items.len - 1) |i| {
         j += if (self.u8_index.items[i + 1] - self.u8_index.items[i] > 1) 2 else 1;
-        try new_cursor_index.append(j);
+        try new_width_index.append(j);
     }
-    self.cursor_index.deinit();
-    self.cursor_index = new_cursor_index;
+    self.width_index.deinit();
+    self.width_index = new_width_index;
 }
 
 fn getLen(self: *const UnicodeLineBuffer) usize {
@@ -92,7 +92,7 @@ test "UnicodeLineBuffer: insert" {
 
     try testing.expectFmt("世界", "{s}", .{lb.buffer.items});
     try testing.expectFmt("{ 0, 3, 6 }", "{any}", .{lb.u8_index.items});
-    try testing.expectFmt("{ 0, 2, 4 }", "{any}", .{lb.cursor_index.items});
+    try testing.expectFmt("{ 0, 2, 4 }", "{any}", .{lb.width_index.items});
     try testing.expectEqual(@as(usize, 2), lb.getLen());
 }
 
@@ -106,6 +106,6 @@ test "UnicodeLineBuffer: remove" {
 
     try testing.expectFmt("こんちは", "{s}", .{lb.buffer.items});
     try testing.expectFmt("{ 0, 3, 6, 9, 12 }", "{any}", .{lb.u8_index.items});
-    try testing.expectFmt("{ 0, 2, 4, 6, 8 }", "{any}", .{lb.cursor_index.items});
+    try testing.expectFmt("{ 0, 2, 4, 6, 8 }", "{any}", .{lb.width_index.items});
     try testing.expectEqual(@as(usize, 4), lb.getLen());
 }
