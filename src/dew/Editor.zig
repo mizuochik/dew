@@ -154,11 +154,13 @@ fn ctrlKey(comptime key: u8) u8 {
 }
 
 fn readKey() !Key {
-    const k = try io.getStdIn().reader().readByte();
-    if (k == 0x1b) {
-        const esc = try io.getStdIn().reader().readByte();
+    var buf: [4]u8 = undefined;
+    const n = try io.getStdIn().reader().read(&buf);
+    const k = buf[0];
+    if (n == 3 and k == 0x1b) {
+        const esc = buf[1];
         if (esc == '[') {
-            const a = try io.getStdIn().reader().readByte();
+            const a = buf[2];
             return .{
                 .arrow = switch (a) {
                     'A' => .up,
@@ -170,7 +172,7 @@ fn readKey() !Key {
             };
         }
     }
-    if (ascii.isControl(k)) {
+    if (n == 1 and ascii.isControl(k)) {
         return switch (k) {
             ctrlKey('p') => .{ .arrow = .up },
             ctrlKey('n') => .{ .arrow = .down },
