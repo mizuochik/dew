@@ -37,8 +37,7 @@ const Config = struct {
     c_y: usize = 0,
     c_x_pre: usize = 0,
     row_offset: usize = 0,
-    rows: std.ArrayList(std.ArrayList(u8)),
-    u_rows: std.ArrayList(dew.UnicodeLineBuffer),
+    rows: std.ArrayList(dew.UnicodeLineBuffer),
     file_path: ?[]const u8 = null,
     status_message: []const u8,
 };
@@ -73,8 +72,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
         .config = Config{
             .orig_termios = orig,
             .screen_size = size,
-            .rows = std.ArrayList(std.ArrayList(u8)).init(allocator),
-            .u_rows = std.ArrayList(dew.UnicodeLineBuffer).init(allocator),
+            .rows = std.ArrayList(dew.UnicodeLineBuffer).init(allocator),
             .status_message = status,
         },
     };
@@ -83,10 +81,8 @@ pub fn init(allocator: mem.Allocator) !Editor {
 pub fn deinit(self: *const Editor) !void {
     try self.disableRawMode();
     try self.doRender(clearScreen);
-    for (self.config.rows.items) |row| row.deinit();
+    for (self.config.rows.items) |u_row| u_row.deinit();
     self.config.rows.deinit();
-    for (self.config.u_rows.items) |u_row| u_row.deinit();
-    self.config.u_rows.deinit();
     self.allocator.free(self.config.status_message);
 }
 
@@ -94,41 +90,29 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
     var f = try fs.cwd().openFile(path, .{});
     var reader = f.reader();
 
-    var new_rows = std.ArrayList(std.ArrayList(u8)).init(self.allocator);
+    var new_rows = std.ArrayList(dew.UnicodeLineBuffer).init(self.allocator);
     errdefer new_rows.deinit();
 
-    var new_u_rows = std.ArrayList(dew.UnicodeLineBuffer).init(self.allocator);
-    errdefer new_u_rows.deinit();
-
     while (true) {
-        var new_row = std.ArrayList(u8).init(self.allocator);
-        errdefer new_row.deinit();
-        reader.streamUntilDelimiter(new_row.writer(), '\n', null) catch |err| switch (err) {
+        var buf = std.ArrayList(u8).init(self.allocator);
+        errdefer buf.deinit();
+        reader.streamUntilDelimiter(buf.writer(), '\n', null) catch |err| switch (err) {
             error.EndOfStream => break,
             else => return err,
         };
+        var new_row = try dew.UnicodeLineBuffer.init(self.allocator);
+        errdefer new_row.deinit();
+        try new_row.appendSlice(buf.items);
         try new_rows.append(new_row);
-
-        var new_u_row = try dew.UnicodeLineBuffer.init(self.allocator);
-        errdefer new_u_row.deinit();
-        try new_u_row.appendSlice(new_row.items);
-        try new_u_rows.append(new_u_row);
     }
-    var last_row = std.ArrayList(u8).init(self.allocator);
+
+    var last_row = try dew.UnicodeLineBuffer.init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
-
-    var last_u_row = try dew.UnicodeLineBuffer.init(self.allocator);
-    errdefer last_u_row.deinit();
-    try new_u_rows.append(last_u_row);
 
     for (self.config.rows.items) |row| row.deinit();
     self.config.rows.deinit();
     self.config.rows = new_rows;
-
-    for (self.config.u_rows.items) |u_row| u_row.deinit();
-    self.config.u_rows.deinit();
-    self.config.u_rows = new_u_rows;
 
     self.config.file_path = path;
 }
@@ -137,7 +121,7 @@ pub fn saveFile(self: *Editor) !void {
     var f = try fs.cwd().createFile(self.config.file_path.?, .{});
     defer f.close();
     for (self.config.rows.items, 0..) |row, i| {
-        _ = try f.write(row.items);
+        _ = try f.write(row.buffer.items);
         if (i < self.config.rows.items.len - 1)
             _ = try f.write("\n");
     }
@@ -229,7 +213,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             self.config.c_x_pre = 0;
         },
         .end_of_line => {
-            const row = self.config.u_rows.items[self.config.c_y];
+            const row = self.config.rows.items[self.config.c_y];
             self.config.c_x_pre = row.width_index.items[row.getLen()];
         },
         .prev_page => {
@@ -250,7 +234,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
 }
 
 fn normalizeCursor(self: *Editor) void {
-    const row = self.config.u_rows.items[self.config.c_y];
+    const row = self.config.rows.items[self.config.c_y];
     if (self.config.c_y < self.getTopYOfScreen())
         self.config.c_y = self.getTopYOfScreen();
     if (self.config.c_y > self.getBottomYOfScreen())
@@ -293,7 +277,7 @@ fn getTopYOfScreen(self: *const Editor) usize {
 
 fn getBottomYOfScreen(self: *const Editor) usize {
     const offset = self.config.row_offset + self.config.screen_size.rows;
-    return if (offset < self.config.u_rows.items.len) offset else self.config.u_rows.items.len;
+    return if (offset < self.config.rows.items.len) offset else self.config.rows.items.len;
 }
 
 fn getOffSetLimit(self: *const Editor) usize {
@@ -307,18 +291,18 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
     try self.drawURows(buf);
-    const row = self.config.u_rows.items[self.config.c_y];
+    const row = self.config.rows.items[self.config.c_y];
     try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y - self.config.row_offset + 1, row.width_index.items[self.config.c_x] + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
 
 fn deleteChar(self: *Editor) !void {
-    var row = &self.config.u_rows.items[self.config.c_y];
+    var row = &self.config.rows.items[self.config.c_y];
     if (self.config.c_x >= row.getLen()) {
-        var next_row = &self.config.u_rows.items[self.config.c_y + 1];
+        var next_row = &self.config.rows.items[self.config.c_y + 1];
         try row.appendSlice(next_row.buffer.items);
         next_row.deinit();
-        _ = self.config.u_rows.orderedRemove(self.config.c_y + 1);
+        _ = self.config.rows.orderedRemove(self.config.c_y + 1);
         return;
     }
     _ = try row.remove(self.config.c_x);
@@ -333,18 +317,18 @@ fn deleteBackwardChar(self: *Editor) !void {
 }
 
 fn breakLine(self: *Editor) !void {
-    var row = &self.config.u_rows.items[self.config.c_y];
+    var row = &self.config.rows.items[self.config.c_y];
     var next_row = try dew.UnicodeLineBuffer.init(self.allocator);
     errdefer next_row.deinit();
     try next_row.appendSlice(row.buffer.items[row.u8_index.items[self.config.c_x]..]);
-    try self.config.u_rows.insert(self.config.c_y + 1, next_row);
+    try self.config.rows.insert(self.config.c_y + 1, next_row);
     try self.killLine();
     self.moveForwardChar();
     self.normalizeCursor();
 }
 
 fn killLine(self: *Editor) !void {
-    var row = &self.config.u_rows.items[self.config.c_y];
+    var row = &self.config.rows.items[self.config.c_y];
     for (0..row.getLen() - self.config.c_x) |_| {
         try row.remove(self.config.c_x);
     }
@@ -353,11 +337,11 @@ fn killLine(self: *Editor) !void {
 fn moveBackwardChar(self: *Editor) bool {
     var moved = false;
     if (self.config.c_x > 0) {
-        self.config.c_x_pre = self.config.u_rows.items[self.config.c_y].width_index.items[self.config.c_x - 1];
+        self.config.c_x_pre = self.config.rows.items[self.config.c_y].width_index.items[self.config.c_x - 1];
         moved = true;
     } else if (self.config.c_y > 0) {
         self.config.c_y -= 1;
-        self.config.c_x_pre = self.config.u_rows.items[self.config.c_y].getWidth();
+        self.config.c_x_pre = self.config.rows.items[self.config.c_y].getWidth();
         moved = true;
     }
     self.normalizeScrolling();
@@ -365,10 +349,10 @@ fn moveBackwardChar(self: *Editor) bool {
 }
 
 fn moveForwardChar(self: *Editor) void {
-    const row = self.config.u_rows.items[self.config.c_y];
+    const row = self.config.rows.items[self.config.c_y];
     if (self.config.c_x < row.getLen()) {
         self.config.c_x_pre = row.width_index.items[self.config.c_x + 1];
-    } else if (self.config.c_y < self.config.u_rows.items.len - 1) {
+    } else if (self.config.c_y < self.config.rows.items.len - 1) {
         self.config.c_y += 1;
         self.config.c_x_pre = 0;
     }
@@ -383,7 +367,7 @@ fn moveToPreviousLine(self: *Editor) void {
 }
 
 fn moveToNextLine(self: *Editor) void {
-    if (self.config.c_y < self.config.u_rows.items.len - 1) {
+    if (self.config.c_y < self.config.rows.items.len - 1) {
         self.config.c_y += 1;
         self.normalizeScrolling();
     }
@@ -418,25 +402,12 @@ fn disableRawMode(self: *const Editor) !void {
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, self.config.orig_termios);
 }
 
-fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
-    for (0..self.config.screen_size.rows) |i| {
-        if (i > 0) try buf.appendSlice("\r\n");
-        const j = i + self.config.row_offset;
-        try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(if (j >= self.config.rows.items.len) "~" else self.config.rows.items[j].items);
-    }
-    try buf.appendSlice("\r\n");
-    try buf.appendSlice("\x1b[K");
-    try buf.appendSlice(self.config.status_message);
-    try buf.appendSlice("\x1b[H");
-}
-
 fn drawURows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
     for (0..self.config.screen_size.rows) |i| {
         if (i > 0) try buf.appendSlice("\r\n");
         const j = i + self.config.row_offset;
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(if (j >= self.config.u_rows.items.len) "~" else self.config.u_rows.items[j].buffer.items);
+        try buf.appendSlice(if (j >= self.config.rows.items.len) "~" else self.config.rows.items[j].buffer.items);
     }
     try buf.appendSlice("\r\n");
     try buf.appendSlice("\x1b[K");
@@ -462,7 +433,7 @@ fn getWindowSize() !WindowSize {
 }
 
 fn insertChar(self: *Editor, char: u8) !void {
-    var row = &self.config.u_rows.items[self.config.c_y];
+    var row = &self.config.rows.items[self.config.c_y];
     try row.insert(self.config.c_x, char);
     self.moveCursor(.right);
 }
