@@ -241,8 +241,8 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         },
         .next_page => {
             self.config.row_offset += (self.config.screen_size.rows - 1);
-            if (self.config.row_offset > self.get_offset_limit()) {
-                self.config.row_offset = self.get_offset_limit();
+            if (self.config.row_offset > self.getOffSetLimit()) {
+                self.config.row_offset = self.getOffSetLimit();
             }
         },
     }
@@ -251,10 +251,10 @@ fn moveCursor(self: *Editor, k: Arrow) void {
 
 fn normalizeCursor(self: *Editor) void {
     const row = self.config.u_rows.items[self.config.c_y];
-    if (self.config.c_y < self.get_top_y_of_screen())
-        self.config.c_y = self.get_top_y_of_screen();
-    if (self.config.c_y > self.get_bottom_y_of_screen())
-        self.config.c_y = self.get_bottom_y_of_screen();
+    if (self.config.c_y < self.getTopYOfScreen())
+        self.config.c_y = self.getTopYOfScreen();
+    if (self.config.c_y > self.getBottomYOfScreen())
+        self.config.c_y = self.getBottomYOfScreen();
     if (row.getLen() <= 0)
         self.config.c_x = 0
     else if (self.config.c_x_pre > row.getWidth())
@@ -271,7 +271,7 @@ fn normalizeCursor(self: *Editor) void {
 
 fn normalizeScrolling(self: *Editor) void {
     const half_of_screen: i64 = self.config.screen_size.rows / 2;
-    if (self.config.c_y < self.get_top_y_of_screen() or self.get_bottom_y_of_screen() <= self.config.c_y)
+    if (self.config.c_y < self.getTopYOfScreen() or self.getBottomYOfScreen() <= self.config.c_y)
         self.scrollTo(@intCast(i64, self.config.c_y) - half_of_screen);
 }
 
@@ -287,16 +287,16 @@ fn scrollTo(self: *Editor, y_offset: i64) void {
     self.config.row_offset = @intCast(usize, y_offset);
 }
 
-fn get_top_y_of_screen(self: *const Editor) usize {
+fn getTopYOfScreen(self: *const Editor) usize {
     return self.config.row_offset;
 }
 
-fn get_bottom_y_of_screen(self: *const Editor) usize {
+fn getBottomYOfScreen(self: *const Editor) usize {
     const offset = self.config.row_offset + self.config.screen_size.rows;
     return if (offset < self.config.u_rows.items.len) offset else self.config.u_rows.items.len;
 }
 
-fn get_offset_limit(self: *const Editor) usize {
+fn getOffSetLimit(self: *const Editor) usize {
     return if (self.config.rows.items.len > self.config.screen_size.rows)
         self.config.rows.items.len - self.config.screen_size.rows + 1
     else
