@@ -200,8 +200,6 @@ fn readKey() !Key {
 }
 
 fn processKeypress(self: *Editor, key: Key) !void {
-    std.log.info("processKeypress/before rows = {}\n", .{self.config.u_rows.items.len});
-
     switch (key) {
         .control => |k| switch (k) {
             ctrlKey('q') => return error.Quit,
@@ -219,7 +217,6 @@ fn processKeypress(self: *Editor, key: Key) !void {
         .plain => |k| try self.insertChar(k),
         .arrow => |k| self.moveCursor(k),
     }
-    std.log.info("processKeypress/after rows = {}\n", .{self.config.u_rows.items.len});
 }
 
 fn moveCursor(self: *Editor, k: Arrow) void {
@@ -296,7 +293,7 @@ fn get_top_y_of_screen(self: *const Editor) usize {
 
 fn get_bottom_y_of_screen(self: *const Editor) usize {
     const offset = self.config.row_offset + self.config.screen_size.rows;
-    return if (offset < self.config.rows.items.len) offset else self.config.rows.items.len;
+    return if (offset < self.config.u_rows.items.len) offset else self.config.u_rows.items.len;
 }
 
 fn get_offset_limit(self: *const Editor) usize {
@@ -371,7 +368,7 @@ fn moveForwardChar(self: *Editor) void {
     const row = self.config.u_rows.items[self.config.c_y];
     if (self.config.c_x < row.getLen()) {
         self.config.c_x_pre = row.width_index.items[self.config.c_x + 1];
-    } else if (self.config.c_y < self.config.rows.items.len - 1) {
+    } else if (self.config.c_y < self.config.u_rows.items.len - 1) {
         self.config.c_y += 1;
         self.config.c_x_pre = 0;
     }
@@ -386,7 +383,7 @@ fn moveToPreviousLine(self: *Editor) void {
 }
 
 fn moveToNextLine(self: *Editor) void {
-    if (self.config.c_y < self.config.rows.items.len - 1) {
+    if (self.config.c_y < self.config.u_rows.items.len - 1) {
         self.config.c_y += 1;
         self.normalizeScrolling();
     }
@@ -439,7 +436,7 @@ fn drawURows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
         if (i > 0) try buf.appendSlice("\r\n");
         const j = i + self.config.row_offset;
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(if (j >= self.config.u_rows.items.len) "~" else self.config.u_rows.items[i].buffer.items);
+        try buf.appendSlice(if (j >= self.config.u_rows.items.len) "~" else self.config.u_rows.items[j].buffer.items);
     }
     try buf.appendSlice("\r\n");
     try buf.appendSlice("\x1b[K");
