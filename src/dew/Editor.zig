@@ -91,11 +91,14 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
     var reader = f.reader();
 
     var new_rows = std.ArrayList(dew.UnicodeLineBuffer).init(self.allocator);
-    errdefer new_rows.deinit();
+    errdefer {
+        for (new_rows.items) |row| row.deinit();
+        new_rows.deinit();
+    }
 
     while (true) {
         var buf = std.ArrayList(u8).init(self.allocator);
-        errdefer buf.deinit();
+        defer buf.deinit();
         reader.streamUntilDelimiter(buf.writer(), '\n', null) catch |err| switch (err) {
             error.EndOfStream => break,
             else => return err,
