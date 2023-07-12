@@ -200,6 +200,8 @@ fn readKey() !Key {
 }
 
 fn processKeypress(self: *Editor, key: Key) !void {
+    std.log.info("processKeypress/before rows = {}\n", .{self.config.u_rows.items.len});
+
     switch (key) {
         .control => |k| switch (k) {
             ctrlKey('q') => return error.Quit,
@@ -217,6 +219,7 @@ fn processKeypress(self: *Editor, key: Key) !void {
         .plain => |k| try self.insertChar(k),
         .arrow => |k| self.moveCursor(k),
     }
+    std.log.info("processKeypress/after rows = {}\n", .{self.config.u_rows.items.len});
 }
 
 fn moveCursor(self: *Editor, k: Arrow) void {
@@ -333,11 +336,11 @@ fn deleteBackwardChar(self: *Editor) !void {
 }
 
 fn breakLine(self: *Editor) !void {
-    var row = &self.config.rows.items[self.config.c_y];
-    var next_row = std.ArrayList(u8).init(self.allocator);
+    var row = &self.config.u_rows.items[self.config.c_y];
+    var next_row = try dew.UnicodeLineBuffer.init(self.allocator);
     errdefer next_row.deinit();
-    try next_row.appendSlice(row.items[self.config.c_x..]);
-    try self.config.rows.insert(self.config.c_y + 1, next_row);
+    try next_row.appendSlice(row.buffer.items[row.u8_index.items[self.config.c_x]..]);
+    try self.config.u_rows.insert(self.config.c_y + 1, next_row);
     try self.killLine();
     self.moveForwardChar();
     self.normalizeCursor();
@@ -436,7 +439,7 @@ fn drawURows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
         if (i > 0) try buf.appendSlice("\r\n");
         const j = i + self.config.row_offset;
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(if (j >= self.config.rows.items.len) "~" else self.config.u_rows.items[i].buffer.items);
+        try buf.appendSlice(if (j >= self.config.u_rows.items.len) "~" else self.config.u_rows.items[i].buffer.items);
     }
     try buf.appendSlice("\r\n");
     try buf.appendSlice("\x1b[K");
@@ -462,7 +465,7 @@ fn getWindowSize() !WindowSize {
 }
 
 fn insertChar(self: *Editor, char: u8) !void {
-    var row = &self.config.rows.items[self.config.c_y];
+    var row = &self.config.u_rows.items[self.config.c_y];
     try row.insert(self.config.c_x, char);
     self.moveCursor(.right);
 }
