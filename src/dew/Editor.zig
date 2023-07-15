@@ -143,7 +143,7 @@ pub fn run(self: *Editor) !void {
     try self.doRender(clearScreen);
     while (true) {
         try self.doRender(refreshScreen);
-        const key = try readKey(self.allocator);
+        const key = try readKey();
         self.processKeypress(key) catch |err| switch (err) {
             error.Quit => return,
             else => return err,
@@ -155,15 +155,12 @@ fn ctrlKey(comptime key: u8) u8 {
     return key & 0x1f;
 }
 
-fn readKey(allocator: mem.Allocator) !Key {
-    _ = allocator;
-    var buf: [4]u8 = undefined;
-    const n = try io.getStdIn().reader().read(&buf);
-    const k = buf[0];
-    if (n == 3 and k == 0x1b) {
-        const esc = buf[1];
+fn readKey() !Key {
+    const h = try io.getStdIn().reader().readByte();
+    if (h == 0x1b) {
+        const esc = try io.getStdIn().reader().readByte();
         if (esc == '[') {
-            const a = buf[2];
+            const a = try io.getStdIn().reader().readByte();
             return .{
                 .arrow = switch (a) {
                     'A' => .up,
@@ -174,9 +171,10 @@ fn readKey(allocator: mem.Allocator) !Key {
                 },
             };
         }
+        unreachable;
     }
-    if (n == 1 and ascii.isControl(k)) {
-        return switch (k) {
+    if (ascii.isControl(h)) {
+        return switch (h) {
             ctrlKey('p') => .{ .arrow = .up },
             ctrlKey('n') => .{ .arrow = .down },
             ctrlKey('f') => .{ .arrow = .right },
@@ -185,10 +183,16 @@ fn readKey(allocator: mem.Allocator) !Key {
             ctrlKey('e') => .{ .arrow = .end_of_line },
             ctrlKey('y') => .{ .arrow = .prev_page },
             ctrlKey('v') => .{ .arrow = .next_page },
-            else => .{ .control = k },
+            else => .{ .control = h },
         };
     }
-    return .{ .plain = try unicode.utf8Decode(buf[0..n]) };
+    var buf: [4]u8 = undefined;
+    buf[0] = h;
+    const l = try unicode.utf8ByteSequenceLength(h);
+    for (1..l) |i| {
+        buf[i] = try io.getStdIn().reader().readByte();
+    }
+    return .{ .plain = try unicode.utf8Decode(buf[0..l]) };
 }
 
 fn processKeypress(self: *Editor, key: Key) !void {
