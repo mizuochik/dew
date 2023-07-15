@@ -300,11 +300,10 @@ fn getOffSetLimit(self: *const Editor) usize {
 }
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
+    _ = arena;
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
     try self.drawURows(buf);
-    const row = self.config.rows.items[self.config.c_y];
-    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ self.config.c_y - self.config.row_offset + 1, row.width_index.items[self.config.c_x] + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
 
@@ -337,7 +336,9 @@ fn breakLine(self: *Editor) !void {
     errdefer next_row.deinit();
     try next_row.appendSlice(row.buffer.items[row.u8_index.items[self.config.c_x]..]);
     try self.config.rows.insert(self.config.c_y + 1, next_row);
-    try self.killLine();
+    for (0..row.getLen() - self.config.c_x) |_| {
+        try row.remove(self.config.c_x);
+    }
     self.moveForwardChar();
     self.normalizeCursor();
 }
@@ -422,16 +423,50 @@ fn disableRawMode(self: *const Editor) !void {
 }
 
 fn drawURows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
-    for (0..self.config.screen_size.rows) |i| {
-        if (i > 0) try buf.appendSlice("\r\n");
-        const j = i + self.config.row_offset;
+    var screen_y: usize = 0;
+    var row_y = self.config.row_offset;
+    var screen_c_x: usize = 0;
+    var screen_c_y: usize = 0;
+    while (screen_y < self.config.screen_size.rows) : (screen_y += 1) {
+        if (screen_y > 0) try buf.appendSlice("\r\n");
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(if (j >= self.config.rows.items.len) "~" else self.config.rows.items[j].buffer.items);
+        if (row_y >= self.config.rows.items.len) {
+            try buf.appendSlice("~");
+        } else {
+            const row = &self.config.rows.items[row_y];
+            var width: usize = 0;
+            for (0..row.getLen()) |i| {
+                if (self.config.c_x == i and self.config.c_y == row_y) {
+                    screen_c_x = width;
+                    screen_c_y = screen_y;
+                }
+                const w = row.width_index.items[i + 1] - row.width_index.items[i];
+                if (width + w > self.config.screen_size.cols) {
+                    screen_y += 1;
+                    if (screen_y >= self.config.screen_size.rows) {
+                        break;
+                    }
+                    width = 0;
+                    try buf.appendSlice("\r\n");
+                    try buf.appendSlice("\x1b[K");
+                }
+                width += w;
+                try buf.appendSlice(row.buffer.items[row.u8_index.items[i]..row.u8_index.items[i + 1]]);
+            }
+            if (self.config.c_x == row.getLen() and self.config.c_y == row_y) {
+                screen_c_x = width;
+                screen_c_y = screen_y;
+            }
+            row_y += 1;
+        }
     }
     try buf.appendSlice("\r\n");
     try buf.appendSlice("\x1b[K");
     try buf.appendSlice(self.config.status_message);
     try buf.appendSlice("\x1b[H");
+    var cursor = try fmt.allocPrint(self.allocator, "\x1b[{d};{d}H", .{ screen_c_y + 1, screen_c_x + 1 });
+    defer self.allocator.free(cursor);
+    try buf.appendSlice(cursor);
 }
 
 const WindowSize = struct {
