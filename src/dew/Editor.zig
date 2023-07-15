@@ -311,6 +311,9 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
 fn deleteChar(self: *Editor) !void {
     var row = &self.config.rows.items[self.config.c_y];
     if (self.config.c_x >= row.getLen()) {
+        if (self.config.c_y + 1 >= self.config.rows.items.len) {
+            return;
+        }
         var next_row = &self.config.rows.items[self.config.c_y + 1];
         try row.appendSlice(next_row.buffer.items);
         next_row.deinit();
@@ -341,6 +344,10 @@ fn breakLine(self: *Editor) !void {
 
 fn killLine(self: *Editor) !void {
     var row = &self.config.rows.items[self.config.c_y];
+    if (self.config.c_x >= row.getLen()) {
+        try self.deleteChar();
+        return;
+    }
     for (0..row.getLen() - self.config.c_x) |_| {
         try row.remove(self.config.c_x);
     }
