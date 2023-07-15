@@ -38,7 +38,7 @@ const Config = struct {
     c_y: usize = 0,
     c_x_pre: usize = 0,
     row_offset: usize = 0,
-    rows: std.ArrayList(dew.UnicodeLineBuffer),
+    rows: std.ArrayList(dew.UnicodeString),
     file_path: ?[]const u8 = null,
     status_message: []const u8,
 };
@@ -73,7 +73,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
         .config = Config{
             .orig_termios = orig,
             .screen_size = size,
-            .rows = std.ArrayList(dew.UnicodeLineBuffer).init(allocator),
+            .rows = std.ArrayList(dew.UnicodeString).init(allocator),
             .status_message = status,
         },
     };
@@ -91,7 +91,7 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
     var f = try fs.cwd().openFile(path, .{});
     var reader = f.reader();
 
-    var new_rows = std.ArrayList(dew.UnicodeLineBuffer).init(self.allocator);
+    var new_rows = std.ArrayList(dew.UnicodeString).init(self.allocator);
     errdefer {
         for (new_rows.items) |row| row.deinit();
         new_rows.deinit();
@@ -104,13 +104,13 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
             error.EndOfStream => break,
             else => return err,
         };
-        var new_row = try dew.UnicodeLineBuffer.init(self.allocator);
+        var new_row = try dew.UnicodeString.init(self.allocator);
         errdefer new_row.deinit();
         try new_row.appendSlice(buf.items);
         try new_rows.append(new_row);
     }
 
-    var last_row = try dew.UnicodeLineBuffer.init(self.allocator);
+    var last_row = try dew.UnicodeString.init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
 
@@ -303,7 +303,7 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
     _ = arena;
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
-    try self.drawURows(buf);
+    try self.drawRows(buf);
     try buf.appendSlice("\x1b[?25h");
 }
 
@@ -332,7 +332,7 @@ fn deleteBackwardChar(self: *Editor) !void {
 
 fn breakLine(self: *Editor) !void {
     var row = &self.config.rows.items[self.config.c_y];
-    var next_row = try dew.UnicodeLineBuffer.init(self.allocator);
+    var next_row = try dew.UnicodeString.init(self.allocator);
     errdefer next_row.deinit();
     try next_row.appendSlice(row.buffer.items[row.u8_index.items[self.config.c_x]..]);
     try self.config.rows.insert(self.config.c_y + 1, next_row);
@@ -422,7 +422,7 @@ fn disableRawMode(self: *const Editor) !void {
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, self.config.orig_termios);
 }
 
-fn drawURows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
+fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
     var screen_y: usize = 0;
     var row_y = self.config.row_offset;
     var screen_c_x: usize = 0;

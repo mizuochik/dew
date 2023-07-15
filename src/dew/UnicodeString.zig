@@ -2,14 +2,14 @@ const std = @import("std");
 const mem = std.mem;
 const unicode = std.unicode;
 const testing = std.testing;
-const UnicodeLineBuffer = @This();
+const UnicodeString = @This();
 
 buffer: std.ArrayList(u8),
 u8_index: std.ArrayList(usize),
 width_index: std.ArrayList(usize),
 
-pub fn init(allocator: mem.Allocator) !UnicodeLineBuffer {
-    var buf = UnicodeLineBuffer{
+pub fn init(allocator: mem.Allocator) !UnicodeString {
+    var buf = UnicodeString{
         .buffer = std.ArrayList(u8).init(allocator),
         .u8_index = std.ArrayList(usize).init(allocator),
         .width_index = std.ArrayList(usize).init(allocator),
@@ -18,25 +18,25 @@ pub fn init(allocator: mem.Allocator) !UnicodeLineBuffer {
     return buf;
 }
 
-pub fn deinit(self: *const UnicodeLineBuffer) void {
+pub fn deinit(self: *const UnicodeString) void {
     self.buffer.deinit();
     self.u8_index.deinit();
     self.width_index.deinit();
 }
 
-pub fn insert(self: *UnicodeLineBuffer, i: usize, c: u21) !void {
+pub fn insert(self: *UnicodeString, i: usize, c: u21) !void {
     var enc: [4]u8 = undefined;
     const to = try unicode.utf8Encode(c, &enc);
     try self.buffer.insertSlice(self.u8_index.items[i], enc[0..to]);
     try self.refreshIndex();
 }
 
-pub fn appendSlice(self: *UnicodeLineBuffer, s: []const u8) !void {
+pub fn appendSlice(self: *UnicodeString, s: []const u8) !void {
     try self.buffer.appendSlice(s);
     try self.refreshIndex();
 }
 
-pub fn remove(self: *UnicodeLineBuffer, i: usize) !void {
+pub fn remove(self: *UnicodeString, i: usize) !void {
     const from = self.u8_index.items[i];
     const to = self.u8_index.items[i + 1];
     for (from..to) |_| {
@@ -45,12 +45,12 @@ pub fn remove(self: *UnicodeLineBuffer, i: usize) !void {
     try self.refreshIndex();
 }
 
-fn refreshIndex(self: *UnicodeLineBuffer) !void {
+fn refreshIndex(self: *UnicodeString) !void {
     try self.refreshU8Index();
     try self.refreshWidthIndex();
 }
 
-fn refreshU8Index(self: *UnicodeLineBuffer) !void {
+fn refreshU8Index(self: *UnicodeString) !void {
     var new_u8_index = std.ArrayList(usize).init(self.buffer.allocator);
     errdefer new_u8_index.deinit();
 
@@ -66,7 +66,7 @@ fn refreshU8Index(self: *UnicodeLineBuffer) !void {
     self.u8_index = new_u8_index;
 }
 
-fn refreshWidthIndex(self: *UnicodeLineBuffer) !void {
+fn refreshWidthIndex(self: *UnicodeString) !void {
     var new_width_index = std.ArrayList(usize).init(self.buffer.allocator);
     errdefer new_width_index.deinit();
     var j: usize = 0;
@@ -79,16 +79,16 @@ fn refreshWidthIndex(self: *UnicodeLineBuffer) !void {
     self.width_index = new_width_index;
 }
 
-pub fn getLen(self: *const UnicodeLineBuffer) usize {
+pub fn getLen(self: *const UnicodeString) usize {
     return self.u8_index.items.len - 1;
 }
 
-pub fn getWidth(self: *const UnicodeLineBuffer) usize {
+pub fn getWidth(self: *const UnicodeString) usize {
     return self.width_index.items[self.width_index.items.len - 1];
 }
 
-test "UnicodeLineBuffer: insert" {
-    var lb = try UnicodeLineBuffer.init(testing.allocator);
+test "UnicodeString: insert" {
+    var lb = try UnicodeString.init(testing.allocator);
     defer lb.deinit();
 
     try lb.insert(0, '世');
@@ -101,8 +101,8 @@ test "UnicodeLineBuffer: insert" {
     try testing.expectEqual(@as(usize, 4), lb.getWidth());
 }
 
-test "UnicodeLineBuffer: remove" {
-    var lb = try UnicodeLineBuffer.init(testing.allocator);
+test "UnicodeString: remove" {
+    var lb = try UnicodeString.init(testing.allocator);
     defer lb.deinit();
     try lb.appendSlice("こんにちは");
     std.debug.assert(mem.eql(u8, "こんにちは", lb.buffer.items));
