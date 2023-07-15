@@ -7,6 +7,7 @@ const heap = std.heap;
 const debug = std.debug;
 const fmt = std.fmt;
 const fs = std.fs;
+const unicode = std.unicode;
 const testing = std.testing;
 const dew = @import("../dew.zig");
 const c = dew.c;
@@ -43,7 +44,7 @@ const Config = struct {
 };
 
 const Key = union(enum) {
-    plain: u8,
+    plain: u21,
     control: u8,
     arrow: Arrow,
 };
@@ -142,7 +143,8 @@ pub fn run(self: *Editor) !void {
     try self.doRender(clearScreen);
     while (true) {
         try self.doRender(refreshScreen);
-        self.processKeypress(try readKey()) catch |err| switch (err) {
+        const key = try readKey(self.allocator);
+        self.processKeypress(key) catch |err| switch (err) {
             error.Quit => return,
             else => return err,
         };
@@ -153,7 +155,8 @@ fn ctrlKey(comptime key: u8) u8 {
     return key & 0x1f;
 }
 
-fn readKey() !Key {
+fn readKey(allocator: mem.Allocator) !Key {
+    _ = allocator;
     var buf: [4]u8 = undefined;
     const n = try io.getStdIn().reader().read(&buf);
     const k = buf[0];
@@ -185,7 +188,7 @@ fn readKey() !Key {
             else => .{ .control = k },
         };
     }
-    return .{ .plain = k };
+    return .{ .plain = try unicode.utf8Decode(buf[0..n]) };
 }
 
 fn processKeypress(self: *Editor, key: Key) !void {
@@ -437,7 +440,7 @@ fn getWindowSize() !WindowSize {
     };
 }
 
-fn insertChar(self: *Editor, char: u8) !void {
+fn insertChar(self: *Editor, char: u21) !void {
     var row = &self.config.rows.items[self.config.c_y];
     try row.insert(self.config.c_x, char);
     self.moveCursor(.right);
