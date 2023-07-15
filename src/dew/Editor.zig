@@ -242,11 +242,11 @@ fn moveCursor(self: *Editor, k: Arrow) void {
 }
 
 fn normalizeCursor(self: *Editor) void {
-    const row = self.config.rows.items[self.config.c_y];
     if (self.config.c_y < self.getTopYOfScreen())
         self.config.c_y = self.getTopYOfScreen();
     if (self.config.c_y > self.getBottomYOfScreen())
         self.config.c_y = self.getBottomYOfScreen();
+    const row = self.config.rows.items[self.config.c_y];
     if (row.getLen() <= 0)
         self.config.c_x = 0
     else if (self.config.c_x_pre > row.getWidth())
@@ -284,7 +284,7 @@ fn getTopYOfScreen(self: *const Editor) usize {
 }
 
 fn getBottomYOfScreen(self: *const Editor) usize {
-    const offset = self.config.row_offset + self.config.screen_size.rows;
+    const offset = self.config.row_offset + self.config.screen_size.rows - 1;
     return if (offset < self.config.rows.items.len) offset else self.config.rows.items.len;
 }
 
