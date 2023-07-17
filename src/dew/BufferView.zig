@@ -39,7 +39,25 @@ pub fn deinit(self: *const BufferView) void {
     self.rows.deinit();
 }
 
-pub fn update(self: *BufferView) !void {
+pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
+    const offset = y + self.y_scroll;
+    if (offset < 0)
+        return empty;
+    if (offset >= self.rows.items.len)
+        return empty;
+    const row_slice = self.rows.items[offset];
+    return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
+}
+
+pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
+    self.y_scroll = if (y_scroll > self.rows.items.len)
+        self.rows.items.len
+    else
+        y_scroll;
+}
+
+fn update(ctx: *anyopaque) !void {
+    const self = @ptrCast(*BufferView, @alignCast(@alignOf(BufferView), ctx));
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     for (self.buffer.rows.items, 0..) |row, y| {
@@ -67,21 +85,13 @@ pub fn update(self: *BufferView) !void {
     self.rows = new_rows;
 }
 
-pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
-    const offset = y + self.y_scroll;
-    if (offset < 0)
-        return empty;
-    if (offset >= self.rows.items.len)
-        return empty;
-    const row_slice = self.rows.items[offset];
-    return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
-}
-
-pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
-    self.y_scroll = if (y_scroll > self.rows.items.len)
-        self.rows.items.len
-    else
-        y_scroll;
+pub fn asView(self: *BufferView) dew.View {
+    return .{
+        .ptr = self,
+        .vtable = &.{
+            .update = update,
+        },
+    };
 }
 
 test "BufferView: init" {
@@ -107,7 +117,8 @@ test "BufferView: scrollTo" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 99, 4);
     defer bv.deinit();
-    try bv.update();
+    try buf.bindView(bv.asView());
+    try buf.updateViews();
 
     try testing.expectEqualStrings("a", bv.getRowView(0));
     try testing.expectEqualStrings("d", bv.getRowView(3));
@@ -140,8 +151,8 @@ test "BufferView: update" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
     defer bv.deinit();
-
-    try bv.update();
+    try buf.bindView(bv.asView());
+    try buf.updateViews();
 
     try testing.expectEqual(@as(usize, 6), bv.rows.items.len);
     try testing.expectEqualStrings("abcde", bv.getRowView(0));

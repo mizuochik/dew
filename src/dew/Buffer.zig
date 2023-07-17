@@ -10,12 +10,13 @@ const Buffer = @This();
 rows: std.ArrayList(dew.UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
+bound_views: std.ArrayList(dew.View),
 allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator) Buffer {
-    var rows = std.ArrayList(dew.UnicodeString).init(allocator);
     return .{
-        .rows = rows,
+        .rows = std.ArrayList(dew.UnicodeString).init(allocator),
+        .bound_views = std.ArrayList(dew.View).init(allocator),
         .allocator = allocator,
     };
 }
@@ -23,6 +24,7 @@ pub fn init(allocator: mem.Allocator) Buffer {
 pub fn deinit(self: *const Buffer) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
+    self.bound_views.deinit();
 }
 
 pub fn setCursor(self: *Buffer, x: usize, y: usize) void {
@@ -45,6 +47,16 @@ pub fn getCurrentRow(self: *Buffer) ?*dew.UnicodeString {
         return null;
     }
     return &self.rows.items[self.c_y];
+}
+
+pub fn updateViews(self: *const Buffer) !void {
+    for (self.bound_views.items) |view| {
+        try view.update();
+    }
+}
+
+pub fn bindView(self: *Buffer, view: dew.View) !void {
+    try self.bound_views.append(view);
 }
 
 test "Buffer: moveForward" {
