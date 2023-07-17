@@ -63,6 +63,7 @@ const Arrow = enum {
 allocator: mem.Allocator,
 config: Config,
 buffer: dew.Buffer,
+buffer_view: dew.BufferView,
 
 pub fn init(allocator: mem.Allocator) !Editor {
     const orig = try enableRawMode();
@@ -71,7 +72,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
     errdefer allocator.free(status);
     const buffer = dew.Buffer.init(allocator);
     errdefer buffer.deinit();
-    return Editor{
+    var editor = Editor{
         .allocator = allocator,
         .config = Config{
             .orig_termios = orig,
@@ -80,7 +81,12 @@ pub fn init(allocator: mem.Allocator) !Editor {
             .status_message = status,
         },
         .buffer = buffer,
+        .buffer_view = undefined,
     };
+    const buffer_view = try dew.BufferView.init(allocator, &editor.buffer);
+    errdefer buffer_view.deinit();
+    editor.buffer_view = buffer_view;
+    return editor;
 }
 
 pub fn deinit(self: *const Editor) !void {
@@ -89,6 +95,7 @@ pub fn deinit(self: *const Editor) !void {
     self.allocator.free(self.config.status_message);
     self.config.rows.deinit();
     self.buffer.deinit();
+    self.buffer_view.deinit();
 }
 
 pub fn openFile(self: *Editor, path: []const u8) !void {
