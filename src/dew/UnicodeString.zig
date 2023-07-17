@@ -45,6 +45,10 @@ pub fn remove(self: *UnicodeString, i: usize) !void {
     try self.refreshIndex();
 }
 
+pub fn sliceAsRaw(self: *const UnicodeString, i: usize, j: usize) []u8 {
+    return self.buffer.items[self.u8_index.items[i]..self.u8_index.items[j]];
+}
+
 fn refreshIndex(self: *UnicodeString) !void {
     try self.refreshU8Index();
     try self.refreshWidthIndex();
