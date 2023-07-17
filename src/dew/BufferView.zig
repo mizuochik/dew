@@ -15,6 +15,7 @@ buffer: *const dew.Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
+y_scroll: usize = 0,
 allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator, buffer: *const dew.Buffer, width: usize, height: usize) !BufferView {
