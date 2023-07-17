@@ -14,15 +14,17 @@ const RowSlice = struct {
 buffer: *const dew.Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
+height: usize,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, buffer: *const dew.Buffer, width: usize) !BufferView {
+pub fn init(allocator: mem.Allocator, buffer: *const dew.Buffer, width: usize, height: usize) !BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
         .buffer = buffer,
         .rows = rows,
         .width = width,
+        .height = height,
         .allocator = allocator,
     };
 }
@@ -67,7 +69,7 @@ pub fn getRowView(self: *const BufferView, y: usize) []u8 {
 test "BufferView: init" {
     const buf = dew.Buffer.init(testing.allocator);
     defer buf.deinit();
-    const bv = try BufferView.init(testing.allocator, &buf, 10);
+    const bv = try BufferView.init(testing.allocator, &buf, 10, 10);
     defer bv.deinit();
 }
 
@@ -84,7 +86,7 @@ test "BufferView: update" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf, 5);
+    var bv = try BufferView.init(testing.allocator, &buf, 5, 5);
     defer bv.deinit();
 
     try bv.update();

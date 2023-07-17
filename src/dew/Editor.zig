@@ -83,7 +83,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
         .buffer = buffer,
         .buffer_view = undefined,
     };
-    const buffer_view = try dew.BufferView.init(allocator, &editor.buffer, size.cols);
+    const buffer_view = try dew.BufferView.init(allocator, &editor.buffer, size.cols, size.rows);
     errdefer buffer_view.deinit();
     editor.buffer_view = buffer_view;
     return editor;
