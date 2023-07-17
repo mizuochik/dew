@@ -62,12 +62,15 @@ const Arrow = enum {
 
 allocator: mem.Allocator,
 config: Config,
+buffer: dew.Buffer,
 
 pub fn init(allocator: mem.Allocator) !Editor {
     const orig = try enableRawMode();
     const size = try getWindowSize();
     const status = try fmt.allocPrint(allocator, "Initialized", .{});
     errdefer allocator.free(status);
+    const buffer = dew.Buffer.init(allocator);
+    errdefer buffer.deinit();
     return Editor{
         .allocator = allocator,
         .config = Config{
@@ -76,15 +79,16 @@ pub fn init(allocator: mem.Allocator) !Editor {
             .rows = std.ArrayList(dew.UnicodeString).init(allocator),
             .status_message = status,
         },
+        .buffer = buffer,
     };
 }
 
 pub fn deinit(self: *const Editor) !void {
     try self.disableRawMode();
     try self.doRender(clearScreen);
-    for (self.config.rows.items) |u_row| u_row.deinit();
-    self.config.rows.deinit();
     self.allocator.free(self.config.status_message);
+    self.config.rows.deinit();
+    self.buffer.deinit();
 }
 
 pub fn openFile(self: *Editor, path: []const u8) !void {
@@ -97,6 +101,9 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
         new_rows.deinit();
     }
 
+    var new_buffer = dew.Buffer.init(self.allocator);
+    errdefer new_buffer.deinit();
+
     while (true) {
         var buf = std.ArrayList(u8).init(self.allocator);
         defer buf.deinit();
@@ -108,16 +115,18 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
         errdefer new_row.deinit();
         try new_row.appendSlice(buf.items);
         try new_rows.append(new_row);
+        try new_buffer.rows.append(new_row);
     }
 
     var last_row = try dew.UnicodeString.init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
+    try new_buffer.rows.append(last_row);
 
-    for (self.config.rows.items) |row| row.deinit();
+    self.buffer.deinit();
+    self.buffer = new_buffer;
     self.config.rows.deinit();
     self.config.rows = new_rows;
-
     self.config.file_path = path;
 }
 
