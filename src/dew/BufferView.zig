@@ -11,6 +11,11 @@ const RowSlice = struct {
     buf_x_end: usize,
 };
 
+const empty: []const u8 = b: {
+    const s: [0]u8 = undefined;
+    break :b &s;
+};
+
 buffer: *const dew.Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
@@ -62,15 +67,18 @@ pub fn update(self: *BufferView) !void {
     self.rows = new_rows;
 }
 
-pub fn getRowView(self: *const BufferView, y: usize) []u8 {
-    const row_slice = self.rows.items[y];
+pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
+    const offset = y + self.y_scroll;
+    if (offset < 0)
+        return empty;
+    if (offset >= self.rows.items.len)
+        return empty;
+    const row_slice = self.rows.items[offset];
     return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
 }
 
 pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
-    self.y_scroll = if (y_scroll < 0)
-        0
-    else if (y_scroll > self.rows.items.len)
+    self.y_scroll = if (y_scroll > self.rows.items.len)
         self.rows.items.len
     else
         y_scroll;
@@ -81,6 +89,40 @@ test "BufferView: init" {
     defer buf.deinit();
     const bv = try BufferView.init(testing.allocator, &buf, 10, 10);
     defer bv.deinit();
+}
+
+test "BufferView: scrollTo" {
+    var buf = dew.Buffer.init(testing.allocator);
+    defer buf.deinit();
+    for ([_][]const u8{
+        "a",
+        "b",
+        "c",
+        "d",
+    }) |line| {
+        var s = try dew.UnicodeString.init(testing.allocator);
+        errdefer s.deinit();
+        try s.appendSlice(line);
+        try buf.rows.append(s);
+    }
+    var bv = try BufferView.init(testing.allocator, &buf, 99, 4);
+    defer bv.deinit();
+    try bv.update();
+
+    try testing.expectEqualStrings("a", bv.getRowView(0));
+    try testing.expectEqualStrings("d", bv.getRowView(3));
+
+    bv.scrollTo(1);
+    try testing.expectEqualStrings("b", bv.getRowView(0));
+    try testing.expectEqualStrings("", bv.getRowView(4));
+
+    bv.scrollTo(4);
+    try testing.expectEqualStrings("", bv.getRowView(0));
+    try testing.expectEqualStrings("", bv.getRowView(4));
+
+    bv.scrollTo(5);
+    try testing.expectEqualStrings("", bv.getRowView(0));
+    try testing.expectEqualStrings("", bv.getRowView(4));
 }
 
 test "BufferView: update" {
@@ -96,7 +138,7 @@ test "BufferView: update" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf, 5, 5);
+    var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
     defer bv.deinit();
 
     try bv.update();
