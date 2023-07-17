@@ -67,6 +67,15 @@ pub fn getRowView(self: *const BufferView, y: usize) []u8 {
     return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
 }
 
+pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
+    self.y_scroll = if (y_scroll < 0)
+        0
+    else if (y_scroll > self.rows.items.len)
+        self.rows.items.len
+    else
+        y_scroll;
+}
+
 test "BufferView: init" {
     const buf = dew.Buffer.init(testing.allocator);
     defer buf.deinit();
