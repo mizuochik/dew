@@ -62,17 +62,28 @@ const Arrow = enum {
 
 allocator: mem.Allocator,
 config: Config,
-buffer: dew.Buffer,
-buffer_view: dew.BufferView,
+buffer: *dew.Buffer,
+buffer_view: *dew.BufferView,
 
 pub fn init(allocator: mem.Allocator) !Editor {
     const orig = try enableRawMode();
     const size = try getWindowSize();
     const status = try fmt.allocPrint(allocator, "Initialized", .{});
     errdefer allocator.free(status);
-    const buffer = dew.Buffer.init(allocator);
+
+    const buffer = try allocator.create(dew.Buffer);
+    errdefer allocator.destroy(buffer);
+    buffer.* = dew.Buffer.init(allocator);
     errdefer buffer.deinit();
-    var editor = Editor{
+
+    const buffer_view = try allocator.create(dew.BufferView);
+    errdefer allocator.destroy(buffer_view);
+    buffer_view.* = try dew.BufferView.init(allocator, buffer, size.cols, size.rows - 1);
+    errdefer buffer_view.deinit();
+
+    try buffer.bindView(buffer_view.asView());
+
+    return Editor{
         .allocator = allocator,
         .config = Config{
             .orig_termios = orig,
@@ -81,21 +92,18 @@ pub fn init(allocator: mem.Allocator) !Editor {
             .status_message = status,
         },
         .buffer = buffer,
-        .buffer_view = undefined,
+        .buffer_view = buffer_view,
     };
-    const buffer_view = try dew.BufferView.init(allocator, &editor.buffer, size.cols, size.rows);
-    errdefer buffer_view.deinit();
-    editor.buffer_view = buffer_view;
-    return editor;
 }
 
 pub fn deinit(self: *const Editor) !void {
     try self.disableRawMode();
     try self.doRender(clearScreen);
     self.allocator.free(self.config.status_message);
-    self.config.rows.deinit();
     self.buffer.deinit();
+    self.allocator.destroy(self.buffer);
     self.buffer_view.deinit();
+    self.allocator.destroy(self.buffer_view);
 }
 
 pub fn openFile(self: *Editor, path: []const u8) !void {
@@ -108,9 +116,6 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
         new_rows.deinit();
     }
 
-    var new_buffer = dew.Buffer.init(self.allocator);
-    errdefer new_buffer.deinit();
-
     while (true) {
         var buf = std.ArrayList(u8).init(self.allocator);
         defer buf.deinit();
@@ -122,16 +127,17 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
         errdefer new_row.deinit();
         try new_row.appendSlice(buf.items);
         try new_rows.append(new_row);
-        try new_buffer.rows.append(new_row);
     }
 
     var last_row = try dew.UnicodeString.init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
-    try new_buffer.rows.append(last_row);
 
-    self.buffer.deinit();
-    self.buffer = new_buffer;
+    for (self.buffer.rows.items) |row| row.deinit();
+    self.buffer.rows.deinit();
+    self.buffer.rows = new_rows;
+    try self.buffer.updateViews();
+
     self.config.rows.deinit();
     self.config.rows = new_rows;
     self.config.file_path = path;
@@ -317,6 +323,7 @@ fn getOffSetLimit(self: *const Editor) usize {
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
     _ = arena;
+    try self.buffer.updateViews();
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);
@@ -439,50 +446,14 @@ fn disableRawMode(self: *const Editor) !void {
 }
 
 fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
-    var screen_y: usize = 0;
-    var row_y = self.config.row_offset;
-    var screen_c_x: usize = 0;
-    var screen_c_y: usize = 0;
-    while (screen_y < self.config.screen_size.rows) : (screen_y += 1) {
-        if (screen_y > 0) try buf.appendSlice("\r\n");
+    for (0..self.buffer_view.height) |y| {
+        if (y > 0) try buf.appendSlice("\r\n");
         try buf.appendSlice("\x1b[K");
-        if (row_y >= self.config.rows.items.len) {
-            try buf.appendSlice("~");
-        } else {
-            const row = &self.config.rows.items[row_y];
-            var width: usize = 0;
-            for (0..row.getLen()) |i| {
-                if (self.config.c_x == i and self.config.c_y == row_y) {
-                    screen_c_x = width;
-                    screen_c_y = screen_y;
-                }
-                const w = row.width_index.items[i + 1] - row.width_index.items[i];
-                if (width + w > self.config.screen_size.cols) {
-                    screen_y += 1;
-                    if (screen_y >= self.config.screen_size.rows) {
-                        break;
-                    }
-                    width = 0;
-                    try buf.appendSlice("\r\n");
-                    try buf.appendSlice("\x1b[K");
-                }
-                width += w;
-                try buf.appendSlice(row.buffer.items[row.u8_index.items[i]..row.u8_index.items[i + 1]]);
-            }
-            if (self.config.c_x == row.getLen() and self.config.c_y == row_y) {
-                screen_c_x = width;
-                screen_c_y = screen_y;
-            }
-            row_y += 1;
-        }
+        try buf.appendSlice(self.buffer_view.getRowView(y));
     }
     try buf.appendSlice("\r\n");
     try buf.appendSlice("\x1b[K");
     try buf.appendSlice(self.config.status_message);
-    try buf.appendSlice("\x1b[H");
-    var cursor = try fmt.allocPrint(self.allocator, "\x1b[{d};{d}H", .{ screen_c_y + 1, screen_c_x + 1 });
-    defer self.allocator.free(cursor);
-    try buf.appendSlice(cursor);
 }
 
 const WindowSize = struct {
