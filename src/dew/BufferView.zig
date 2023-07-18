@@ -49,11 +49,15 @@ pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
     return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
 }
 
-pub fn getCursor(self: *const BufferView) dew.Position {
+pub fn getCursor(self: *const BufferView) ?dew.Position {
     const y = for (self.rows.items, 0..) |row, j| {
         if (row.buf_y == self.buffer.c_y and row.buf_x_start <= self.buffer.c_x and self.buffer.c_x < row.buf_x_end)
             break j;
     } else 0;
+
+    if (y < self.y_scroll or self.y_scroll + self.height <= y)
+        return null;
+
     const row_slice = self.rows.items[y];
     var x = for (row_slice.buf_x_start..row_slice.buf_x_end) |i| {
         if (i == self.buffer.c_x) {
@@ -61,9 +65,10 @@ pub fn getCursor(self: *const BufferView) dew.Position {
             break buf_row.width_index.items[i] - buf_row.width_index.items[row_slice.buf_x_start];
         }
     } else 0;
+
     return .{
         .x = x,
-        .y = y,
+        .y = y - self.y_scroll,
     };
 }
 
@@ -201,6 +206,27 @@ test "BufferView: getCursor" {
 
     buf.c_x = 1;
     buf.c_y = 2;
+    bv.scrollTo(0);
+    try testing.expectFmt("(2, 5)", "({}, {})", .{ bv.getCursor().?.x, bv.getCursor().?.y });
 
-    try testing.expectFmt("(2, 5)", "({}, {})", .{ bv.getCursor().x, bv.getCursor().y });
+    buf.c_x = 1;
+    buf.c_y = 2;
+    bv.scrollTo(1);
+    try testing.expectFmt("(2, 4)", "({}, {})", .{ bv.getCursor().?.x, bv.getCursor().?.y });
+
+    buf.c_x = 0;
+    buf.c_y = 0;
+    bv.scrollTo(0);
+    try testing.expectFmt("(0, 0)", "({}, {})", .{ bv.getCursor().?.x, bv.getCursor().?.y });
+    bv.scrollTo(1);
+    try testing.expectEqual(@as(?dew.Position, null), bv.getCursor());
+
+    buf.c_x = 1;
+    buf.c_y = 2;
+    bv.scrollTo(0);
+    try testing.expectFmt("(2, 5)", "({}, {})", .{ bv.getCursor().?.x, bv.getCursor().?.y });
+    bv.scrollTo(5);
+    try testing.expectFmt("(2, 0)", "({}, {})", .{ bv.getCursor().?.x, bv.getCursor().?.y });
+    bv.scrollTo(6);
+    try testing.expectEqual(@as(?dew.Position, null), bv.getCursor());
 }
