@@ -42,7 +42,7 @@ pub fn moveForward(self: *Buffer) void {
     }
 }
 
-pub fn getCurrentRow(self: *Buffer) ?*dew.UnicodeString {
+pub fn getCurrentRow(self: *const Buffer) ?*dew.UnicodeString {
     if (self.c_y >= self.rows.items.len) {
         return null;
     }

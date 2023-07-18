@@ -49,6 +49,24 @@ pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
     return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
 }
 
+pub fn getCursor(self: *const BufferView) dew.Position {
+    const y = for (self.rows.items, 0..) |row, j| {
+        if (row.buf_y == self.buffer.c_y and row.buf_x_start <= self.buffer.c_x and self.buffer.c_x < row.buf_x_end)
+            break j;
+    } else 0;
+    const row_slice = self.rows.items[y];
+    var x = for (row_slice.buf_x_start..row_slice.buf_x_end) |i| {
+        if (i == self.buffer.c_x) {
+            const buf_row = self.buffer.getCurrentRow() orelse unreachable;
+            break buf_row.width_index.items[i] - buf_row.width_index.items[row_slice.buf_x_start];
+        }
+    } else 0;
+    return .{
+        .x = x,
+        .y = y,
+    };
+}
+
 pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
     self.y_scroll = if (y_scroll > self.rows.items.len)
         self.rows.items.len
@@ -161,4 +179,28 @@ test "BufferView: update" {
     try testing.expectEqualStrings("うえ", bv.getRowView(3));
     try testing.expectEqualStrings("お", bv.getRowView(4));
     try testing.expectEqualStrings("松竹", bv.getRowView(5));
+}
+
+test "BufferView: getCursor" {
+    var buf = dew.Buffer.init(testing.allocator);
+    defer buf.deinit();
+    for ([_][]const u8{
+        "abcdefghij",
+        "あいうえお",
+        "松竹",
+    }) |line| {
+        var s = try dew.UnicodeString.init(testing.allocator);
+        errdefer s.deinit();
+        try s.appendSlice(line);
+        try buf.rows.append(s);
+    }
+    var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
+    defer bv.deinit();
+    try buf.bindView(bv.asView());
+    try buf.updateViews();
+
+    buf.c_x = 1;
+    buf.c_y = 2;
+
+    try testing.expectFmt("(2, 5)", "({}, {})", .{ bv.getCursor().x, bv.getCursor().y });
 }
