@@ -61,7 +61,7 @@ pub fn getCursor(self: *const BufferView) ?dew.Position {
     const row_slice = self.rows.items[y];
     var x = for (row_slice.buf_x_start..row_slice.buf_x_end) |i| {
         if (i == self.buffer.c_x) {
-            const buf_row = self.buffer.getCurrentRow() orelse unreachable;
+            const buf_row = self.buffer.getCurrentRow();
             break buf_row.width_index.items[i] - buf_row.width_index.items[row_slice.buf_x_start];
         }
     } else 0;

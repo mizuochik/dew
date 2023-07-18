@@ -33,19 +33,16 @@ pub fn setCursor(self: *Buffer, x: usize, y: usize) void {
 }
 
 pub fn moveForward(self: *Buffer) void {
-    const row = self.getCurrentRow() orelse return;
+    const row = self.getCurrentRow();
     if (self.c_x < row.getLen()) {
         self.c_x += 1;
-    } else if (self.c_y < self.rows.items.len) {
+    } else if (self.c_y < self.rows.items.len - 1) {
         self.c_y += 1;
         self.c_x = 0;
     }
 }
 
-pub fn getCurrentRow(self: *const Buffer) ?*dew.UnicodeString {
-    if (self.c_y >= self.rows.items.len) {
-        return null;
-    }
+pub fn getCurrentRow(self: *const Buffer) *dew.UnicodeString {
     return &self.rows.items[self.c_y];
 }
 
@@ -65,6 +62,7 @@ test "Buffer: moveForward" {
     const lines = [_][]const u8{
         "ab",
         "cd",
+        "",
     };
     for (lines) |line| {
         var l = try dew.UnicodeString.init(testing.allocator);
