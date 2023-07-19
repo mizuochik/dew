@@ -64,6 +64,22 @@ pub fn getCursor(self: *const BufferView) ?dew.Position {
     };
 }
 
+pub fn getBufferPopsition(self: *const BufferView, view_position: dew.Position) dew.Position {
+    const row_slice = self.rows.items[view_position.y];
+    const buffer_row = self.buffer.rows.items[row_slice.buf_y];
+    const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
+    const buf_x = for (row_slice.buf_x_start..row_slice.buf_x_end) |bx| {
+        const view_x = buffer_row.width_index.items[bx] - start_width;
+        if (view_x >= view_position.x) {
+            break bx;
+        }
+    } else row_slice.buf_x_end;
+    return .{
+        .x = buf_x,
+        .y = row_slice.buf_y,
+    };
+}
+
 pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
     self.y_scroll = if (self.rows.items.len < y_scroll)
         self.rows.items.len
@@ -192,4 +208,35 @@ test "BufferView: getCursor" {
     buf.c_x = 1;
     buf.c_y = 2;
     try testing.expectFmt("(2, 5)", "({}, {})", .{ bv.getCursor().?.x, bv.getCursor().?.y });
+}
+
+test "BufferView: getBufferPosition" {
+    var buf = dew.Buffer.init(testing.allocator);
+    defer buf.deinit();
+    for ([_][]const u8{
+        "abcdefghij",
+        "あいうえお",
+        "松竹",
+    }) |line| {
+        var s = try dew.UnicodeString.init(testing.allocator);
+        errdefer s.deinit();
+        try s.appendSlice(line);
+        try buf.rows.append(s);
+    }
+    var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
+    defer bv.deinit();
+    try bv.asView().update();
+
+    {
+        const actual = bv.getBufferPopsition(.{ .x = 0, .y = 0 });
+        try testing.expectFmt("(0, 0)", "({}, {})", .{ actual.x, actual.y });
+    }
+    {
+        const actual = bv.getBufferPopsition(.{ .x = 1, .y = 1 });
+        try testing.expectFmt("(6, 0)", "({}, {})", .{ actual.x, actual.y });
+    }
+    {
+        const actual = bv.getBufferPopsition(.{ .x = 2, .y = 2 });
+        try testing.expectFmt("(1, 1)", "({}, {})", .{ actual.x, actual.y });
+    }
 }
