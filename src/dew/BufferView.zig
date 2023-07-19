@@ -94,14 +94,13 @@ fn update(ctx: *anyopaque) !void {
                 });
                 x_start = x;
             }
-            if (x + 1 >= row.getLen()) {
-                try new_rows.append(RowSlice{
-                    .buf_y = y,
-                    .buf_x_start = x_start,
-                    .buf_x_end = row.getLen(),
-                });
-                x_start = 0;
-            }
+        }
+        if (row.getLen() <= 0 or x_start < row.getLen()) {
+            try new_rows.append(RowSlice{
+                .buf_y = y,
+                .buf_x_start = x_start,
+                .buf_x_end = row.getLen(),
+            });
         }
     }
     self.rows.deinit();
@@ -166,6 +165,8 @@ test "BufferView: update" {
         "abcdefghij",
         "あいうえお",
         "松竹",
+        "",
+        "あ",
     }) |line| {
         var s = try dew.UnicodeString.init(testing.allocator);
         errdefer s.deinit();
@@ -177,13 +178,15 @@ test "BufferView: update" {
     try buf.bindView(bv.asView());
     try buf.updateViews();
 
-    try testing.expectEqual(@as(usize, 6), bv.rows.items.len);
+    try testing.expectEqual(@as(usize, 8), bv.rows.items.len);
     try testing.expectEqualStrings("abcde", bv.getRowView(0));
     try testing.expectEqualStrings("fghij", bv.getRowView(1));
     try testing.expectEqualStrings("あい", bv.getRowView(2));
     try testing.expectEqualStrings("うえ", bv.getRowView(3));
     try testing.expectEqualStrings("お", bv.getRowView(4));
     try testing.expectEqualStrings("松竹", bv.getRowView(5));
+    try testing.expectEqualStrings("", bv.getRowView(6));
+    try testing.expectEqualStrings("あ", bv.getRowView(7));
 }
 
 test "BufferView: getCursor" {
