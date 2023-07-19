@@ -327,7 +327,7 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);
     if (self.buffer_view.getCursor()) |cursor| {
-        try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor.y + 1, cursor.x + 1 }));
+        try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor.y + self.buffer_view.y_scroll + 1, cursor.x + 1 }));
         try buf.appendSlice("\x1b[?25h");
     }
 }
@@ -451,7 +451,7 @@ fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
     for (0..self.buffer_view.height) |y| {
         if (y > 0) try buf.appendSlice("\r\n");
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(self.buffer_view.getRowView(y));
+        try buf.appendSlice(self.buffer_view.getRowView(y + self.buffer_view.y_scroll));
     }
     try buf.appendSlice("\r\n");
     try buf.appendSlice("\x1b[K");
