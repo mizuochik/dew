@@ -42,6 +42,15 @@ pub fn moveForward(self: *Buffer) void {
     }
 }
 
+pub fn moveBackward(self: *Buffer) void {
+    if (self.c_x > 0) {
+        self.c_x -= 1;
+    } else if (self.c_y > 0) {
+        self.c_y -= 1;
+        self.c_x = self.getCurrentRow().getLen();
+    }
+}
+
 pub fn getCurrentRow(self: *const Buffer) *dew.UnicodeString {
     return &self.rows.items[self.c_y];
 }

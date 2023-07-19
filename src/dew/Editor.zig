@@ -241,7 +241,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
     switch (k) {
         .up => self.moveToPreviousLine(),
         .down => self.moveToNextLine(),
-        .left => _ = self.moveBackwardChar(),
+        .left => _ = self.buffer.moveBackward(),
         .right => self.buffer.moveForward(),
         .begin_of_line => {
             self.config.c_x_pre = 0;
