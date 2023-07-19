@@ -242,7 +242,7 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         .up => self.moveToPreviousLine(),
         .down => self.moveToNextLine(),
         .left => _ = self.moveBackwardChar(),
-        .right => self.moveForwardChar(),
+        .right => self.buffer.moveForward(),
         .begin_of_line => {
             self.config.c_x_pre = 0;
         },
@@ -322,12 +322,14 @@ fn getOffSetLimit(self: *const Editor) usize {
 }
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    _ = arena;
     try self.buffer.updateViews();
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);
-    try buf.appendSlice("\x1b[?25h");
+    if (self.buffer_view.getCursor()) |cursor| {
+        try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor.y + 1, cursor.x + 1 }));
+        try buf.appendSlice("\x1b[?25h");
+    }
 }
 
 fn deleteChar(self: *Editor) !void {
