@@ -497,9 +497,8 @@ fn getWindowSize() !WindowSize {
 }
 
 fn insertChar(self: *Editor, char: u21) !void {
-    var row = &self.config.rows.items[self.config.c_y];
-    try row.insert(self.config.c_x, char);
-    self.moveCursor(.right);
+    try self.buffer.insertChar(char);
+    self.updateLastViewX();
 }
 
 test "getWindowSize" {

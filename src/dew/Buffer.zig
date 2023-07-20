@@ -73,6 +73,11 @@ pub fn bindView(self: *Buffer, view: dew.View) !void {
     try self.bound_views.append(view);
 }
 
+pub fn insertChar(self: *Buffer, c: u21) !void {
+    try self.getCurrentRow().insert(self.c_x, c);
+    self.moveForward();
+}
+
 test "Buffer: moveForward" {
     var buf = Buffer.init(testing.allocator);
     defer buf.deinit();
