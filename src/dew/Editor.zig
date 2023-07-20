@@ -243,13 +243,8 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         .down => self.moveToNextLine(),
         .left => _ = self.buffer.moveBackward(),
         .right => self.buffer.moveForward(),
-        .begin_of_line => {
-            self.config.c_x_pre = 0;
-        },
-        .end_of_line => {
-            const row = self.config.rows.items[self.config.c_y];
-            self.config.c_x_pre = row.width_index.items[row.getLen()];
-        },
+        .begin_of_line => self.buffer.moveToBeginningOfLine(),
+        .end_of_line => self.buffer.moveToEndOfLine(),
         .prev_page => {
             if (self.config.row_offset > self.config.screen_size.rows - 1) {
                 self.config.row_offset -= self.config.screen_size.rows - 1;

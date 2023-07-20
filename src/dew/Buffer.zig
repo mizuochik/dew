@@ -51,6 +51,14 @@ pub fn moveBackward(self: *Buffer) void {
     }
 }
 
+pub fn moveToBeginningOfLine(self: *Buffer) void {
+    self.c_x = 0;
+}
+
+pub fn moveToEndOfLine(self: *Buffer) void {
+    self.c_x = self.getCurrentRow().getLen();
+}
+
 pub fn getCurrentRow(self: *const Buffer) *dew.UnicodeString {
     return &self.rows.items[self.c_y];
 }
