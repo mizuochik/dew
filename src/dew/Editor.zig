@@ -286,7 +286,6 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             }
         },
     }
-    self.normalizeCursor();
 }
 
 fn normalizeCursor(self: *Editor) void {
@@ -364,16 +363,8 @@ fn deleteBackwardChar(self: *Editor) !void {
 }
 
 fn breakLine(self: *Editor) !void {
-    var row = &self.config.rows.items[self.config.c_y];
-    var next_row = try dew.UnicodeString.init(self.allocator);
-    errdefer next_row.deinit();
-    try next_row.appendSlice(row.buffer.items[row.u8_index.items[self.config.c_x]..]);
-    try self.config.rows.insert(self.config.c_y + 1, next_row);
-    for (0..row.getLen() - self.config.c_x) |_| {
-        try row.remove(self.config.c_x);
-    }
-    self.moveForwardChar();
-    self.normalizeCursor();
+    try self.buffer.breakLine();
+    self.updateLastViewX();
 }
 
 fn killLine(self: *Editor) !void {

@@ -112,6 +112,20 @@ pub fn killLine(self: *Buffer) !void {
     }
 }
 
+pub fn breakLine(self: *Buffer) !void {
+    var new_row = try dew.UnicodeString.init(self.allocator);
+    errdefer new_row.deinit();
+    if (self.c_x < self.getCurrentRow().getLen()) {
+        for (0..self.getCurrentRow().getLen() - self.c_x) |_| {
+            const r = self.getCurrentRow();
+            try new_row.appendSlice(r.buffer.items[r.u8_index.items[self.c_x]..r.u8_index.items[self.c_x + 1]]);
+            try self.deleteChar();
+        }
+    }
+    try self.rows.insert(self.c_y + 1, new_row);
+    self.moveForward();
+}
+
 test "Buffer: moveForward" {
     var buf = Buffer.init(testing.allocator);
     defer buf.deinit();
