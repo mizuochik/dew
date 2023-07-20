@@ -354,26 +354,13 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
 }
 
 fn deleteChar(self: *Editor) !void {
-    var row = &self.config.rows.items[self.config.c_y];
-    if (self.config.c_x >= row.getLen()) {
-        if (self.config.c_y + 1 >= self.config.rows.items.len) {
-            return;
-        }
-        var next_row = &self.config.rows.items[self.config.c_y + 1];
-        try row.appendSlice(next_row.buffer.items);
-        next_row.deinit();
-        _ = self.config.rows.orderedRemove(self.config.c_y + 1);
-        return;
-    }
-    _ = try row.remove(self.config.c_x);
+    try self.buffer.deleteChar();
+    self.updateLastViewX();
 }
 
 fn deleteBackwardChar(self: *Editor) !void {
-    if (!self.moveBackwardChar()) {
-        return;
-    }
-    self.normalizeCursor();
-    try self.deleteChar();
+    try self.buffer.deleteBackwardChar();
+    self.updateLastViewX();
 }
 
 fn breakLine(self: *Editor) !void {

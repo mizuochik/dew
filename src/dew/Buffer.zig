@@ -78,6 +78,29 @@ pub fn insertChar(self: *Buffer, c: u21) !void {
     self.moveForward();
 }
 
+pub fn deleteChar(self: *Buffer) !void {
+    if (self.c_x >= self.getCurrentRow().getLen()) {
+        try self.joinLine();
+        return;
+    }
+    try self.getCurrentRow().remove(self.c_x);
+}
+
+pub fn deleteBackwardChar(self: *Buffer) !void {
+    self.moveBackward();
+    try self.deleteChar();
+}
+
+pub fn joinLine(self: *Buffer) !void {
+    if (self.c_y >= self.rows.items.len - 1) {
+        return;
+    }
+    var next_row = self.rows.items[self.c_y + 1];
+    try self.getCurrentRow().appendSlice(next_row.buffer.items);
+    next_row.deinit();
+    _ = self.rows.orderedRemove(self.c_y + 1);
+}
+
 test "Buffer: moveForward" {
     var buf = Buffer.init(testing.allocator);
     defer buf.deinit();
