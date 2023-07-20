@@ -101,6 +101,17 @@ pub fn joinLine(self: *Buffer) !void {
     _ = self.rows.orderedRemove(self.c_y + 1);
 }
 
+pub fn killLine(self: *Buffer) !void {
+    const row = self.getCurrentRow();
+    if (self.c_x >= row.getLen()) {
+        try self.deleteChar();
+        return;
+    }
+    for (0..row.getLen() - self.c_x) |_| {
+        try self.deleteChar();
+    }
+}
+
 test "Buffer: moveForward" {
     var buf = Buffer.init(testing.allocator);
     defer buf.deinit();

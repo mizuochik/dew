@@ -377,14 +377,8 @@ fn breakLine(self: *Editor) !void {
 }
 
 fn killLine(self: *Editor) !void {
-    var row = &self.config.rows.items[self.config.c_y];
-    if (self.config.c_x >= row.getLen()) {
-        try self.deleteChar();
-        return;
-    }
-    for (0..row.getLen() - self.config.c_x) |_| {
-        try row.remove(self.config.c_x);
-    }
+    try self.buffer.killLine();
+    self.updateLastViewX();
 }
 
 fn moveBackwardChar(self: *Editor) bool {
