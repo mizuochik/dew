@@ -207,7 +207,7 @@ test "BufferView: getCursor" {
 
     buf.c_x = 1;
     buf.c_y = 2;
-    try testing.expectFmt("(2, 5)", "({}, {})", .{ bv.getCursor().x, bv.getCursor().y });
+    try testing.expectFmt("(2, 5)", "{}", .{bv.getCursor()});
 }
 
 test "BufferView: getBufferPosition" {
@@ -229,14 +229,14 @@ test "BufferView: getBufferPosition" {
 
     {
         const actual = bv.getBufferPopsition(.{ .x = 0, .y = 0 });
-        try testing.expectFmt("(0, 0)", "({}, {})", .{ actual.x, actual.y });
+        try testing.expectFmt("(0, 0)", "{}", .{actual});
     }
     {
         const actual = bv.getBufferPopsition(.{ .x = 1, .y = 1 });
-        try testing.expectFmt("(6, 0)", "({}, {})", .{ actual.x, actual.y });
+        try testing.expectFmt("(6, 0)", "{}", .{actual});
     }
     {
         const actual = bv.getBufferPopsition(.{ .x = 2, .y = 2 });
-        try testing.expectFmt("(1, 1)", "({}, {})", .{ actual.x, actual.y });
+        try testing.expectFmt("(1, 1)", "{}", .{actual});
     }
 }
