@@ -62,6 +62,7 @@ const Arrow = enum {
 
 allocator: mem.Allocator,
 config: Config,
+last_view_x: usize = 0,
 buffer: *dew.Buffer,
 buffer_view: *dew.BufferView,
 
@@ -173,6 +174,10 @@ pub fn run(self: *Editor) !void {
     }
 }
 
+fn updateLastViewX(self: *Editor) void {
+    self.last_view_x = self.buffer_view.getCursor().x;
+}
+
 fn ctrlKey(comptime key: u8) u8 {
     return key & 0x1f;
 }
@@ -239,12 +244,34 @@ fn processKeypress(self: *Editor, key: Key) !void {
 
 fn moveCursor(self: *Editor, k: Arrow) void {
     switch (k) {
-        .up => self.moveToPreviousLine(),
-        .down => self.moveToNextLine(),
-        .left => _ = self.buffer.moveBackward(),
-        .right => self.buffer.moveForward(),
-        .begin_of_line => self.buffer.moveToBeginningOfLine(),
-        .end_of_line => self.buffer.moveToEndOfLine(),
+        .up => {
+            const y = self.buffer_view.getCursor().y;
+            if (y > 0) {
+                const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.last_view_x, .y = y - 1 });
+                self.buffer.setCursor(new_cursor.x, new_cursor.y);
+            }
+        },
+        .down => {
+            const y = self.buffer_view.getCursor().y;
+            const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.last_view_x, .y = y + 1 });
+            self.buffer.setCursor(new_cursor.x, new_cursor.y);
+        },
+        .left => {
+            self.buffer.moveBackward();
+            self.updateLastViewX();
+        },
+        .right => {
+            self.buffer.moveForward();
+            self.updateLastViewX();
+        },
+        .begin_of_line => {
+            self.buffer.moveToBeginningOfLine();
+            self.updateLastViewX();
+        },
+        .end_of_line => {
+            self.buffer.moveToEndOfLine();
+            self.updateLastViewX();
+        },
         .prev_page => {
             if (self.config.row_offset > self.config.screen_size.rows - 1) {
                 self.config.row_offset -= self.config.screen_size.rows - 1;
@@ -321,10 +348,9 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);
-    if (self.buffer_view.getCursor()) |cursor| {
-        try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor.y + self.buffer_view.y_scroll + 1, cursor.x + 1 }));
-        try buf.appendSlice("\x1b[?25h");
-    }
+    const cursor = self.buffer_view.getCursor();
+    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor.y + self.buffer_view.y_scroll + 1, cursor.x + 1 }));
+    try buf.appendSlice("\x1b[?25h");
 }
 
 fn deleteChar(self: *Editor) !void {
