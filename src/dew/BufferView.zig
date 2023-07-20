@@ -46,7 +46,7 @@ pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
     return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
 }
 
-pub fn getCursor(self: *const BufferView) ?dew.Position {
+pub fn getCursor(self: *const BufferView) dew.Position {
     const y = for (self.rows.items, 0..) |row, j| {
         if (row.buf_y == self.buffer.c_y and row.buf_x_start <= self.buffer.c_x and self.buffer.c_x <= row.buf_x_end)
             break j;
@@ -207,7 +207,7 @@ test "BufferView: getCursor" {
 
     buf.c_x = 1;
     buf.c_y = 2;
-    try testing.expectFmt("(2, 5)", "({}, {})", .{ bv.getCursor().?.x, bv.getCursor().?.y });
+    try testing.expectFmt("(2, 5)", "({}, {})", .{ bv.getCursor().x, bv.getCursor().y });
 }
 
 test "BufferView: getBufferPosition" {
