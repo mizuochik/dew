@@ -147,10 +147,10 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
 pub fn saveFile(self: *Editor) !void {
     var f = try fs.cwd().createFile(self.config.file_path.?, .{});
     defer f.close();
-    for (self.config.rows.items, 0..) |row, i| {
-        _ = try f.write(row.buffer.items);
-        if (i < self.config.rows.items.len - 1)
+    for (self.buffer.rows.items, 0..) |row, i| {
+        if (i > 0)
             _ = try f.write("\n");
+        _ = try f.write(row.buffer.items);
     }
     const new_status = try fmt.allocPrint(self.allocator, "Saved: {s}", .{self.config.file_path.?});
     errdefer self.allocator.free(new_status);
