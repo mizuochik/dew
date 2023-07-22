@@ -253,8 +253,10 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         },
         .down => {
             const y = self.buffer_view.getCursor().y;
-            const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.last_view_x, .y = y + 1 });
-            self.buffer.setCursor(new_cursor.x, new_cursor.y);
+            if (y < self.buffer_view.rows.items.len - 1) {
+                const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.last_view_x, .y = y + 1 });
+                self.buffer.setCursor(new_cursor.x, new_cursor.y);
+            }
         },
         .left => {
             self.buffer.moveBackward();
