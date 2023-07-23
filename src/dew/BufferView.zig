@@ -124,6 +124,21 @@ pub fn asView(self: *BufferView) dew.View {
     };
 }
 
+pub fn scrollUp(self: *BufferView, diff: usize) void {
+    if (self.y_scroll < diff)
+        self.y_scroll = 0
+    else
+        self.y_scroll -= diff;
+}
+
+pub fn scrollDown(self: *BufferView, diff: usize) void {
+    const max_scroll = self.rows.items.len - 1;
+    if (self.y_scroll + diff > max_scroll)
+        self.y_scroll = max_scroll
+    else
+        self.y_scroll += diff;
+}
+
 test "BufferView: init" {
     const buf = dew.Buffer.init(testing.allocator);
     defer buf.deinit();

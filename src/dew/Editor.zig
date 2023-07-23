@@ -274,19 +274,8 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             self.buffer.moveToEndOfLine();
             self.updateLastViewX();
         },
-        .prev_page => {
-            if (self.config.row_offset > self.config.screen_size.rows - 1) {
-                self.config.row_offset -= self.config.screen_size.rows - 1;
-            } else {
-                self.config.row_offset = 0;
-            }
-        },
-        .next_page => {
-            self.config.row_offset += (self.config.screen_size.rows - 1);
-            if (self.config.row_offset > self.getOffSetLimit()) {
-                self.config.row_offset = self.getOffSetLimit();
-            }
-        },
+        .prev_page => self.buffer_view.scrollUp(self.buffer_view.height / 2),
+        .next_page => self.buffer_view.scrollDown(self.buffer_view.height / 2),
     }
 }
 
