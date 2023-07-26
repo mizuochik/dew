@@ -183,22 +183,19 @@ fn ctrlKey(comptime key: u8) u8 {
 }
 
 fn readKey() !Key {
-    const h = try io.getStdIn().reader().readByte();
+    var h = try io.getStdIn().reader().readByte();
     if (h == 0x1b) {
-        const esc = try io.getStdIn().reader().readByte();
-        if (esc == '[') {
-            const a = try io.getStdIn().reader().readByte();
-            return .{
-                .arrow = switch (a) {
-                    'A' => .up,
-                    'B' => .down,
-                    'C' => .right,
-                    'D' => .left,
-                    else => unreachable,
-                },
-            };
+        h = try io.getStdIn().reader().readByte();
+        if (h == '[') {
+            h = try io.getStdIn().reader().readByte();
+            switch (h) {
+                'A' => return .{ .arrow = .up },
+                'B' => return .{ .arrow = .down },
+                'C' => return .{ .arrow = .right },
+                'D' => return .{ .arrow = .left },
+                else => {},
+            }
         }
-        unreachable;
     }
     if (ascii.isControl(h)) {
         return switch (h) {
