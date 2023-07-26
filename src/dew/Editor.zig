@@ -196,6 +196,8 @@ fn readKey() !Key {
                 else => {},
             }
         }
+        if (h == 'v')
+            return .{ .arrow = .prev_page };
     }
     if (ascii.isControl(h)) {
         return switch (h) {
@@ -205,7 +207,6 @@ fn readKey() !Key {
             ctrlKey('b') => .{ .arrow = .left },
             ctrlKey('a') => .{ .arrow = .begin_of_line },
             ctrlKey('e') => .{ .arrow = .end_of_line },
-            ctrlKey('y') => .{ .arrow = .prev_page },
             ctrlKey('v') => .{ .arrow = .next_page },
             else => .{ .control = h },
         };
