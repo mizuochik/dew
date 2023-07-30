@@ -26,7 +26,7 @@ pub fn Keyboard(comptime Reader: type) type {
                 }
             }
             if (ascii.isControl(k)) {
-                return .{ .ctrl = k & 0x1f };
+                return .{ .ctrl = k + 0x40 };
             }
             var buf: [4]u8 = undefined;
             buf[0] = k;
@@ -53,8 +53,8 @@ const Key = union(enum) {
 
 test "Keyboard: inputKey" {
     const cases = .{
-        .{ .given = "\x00", .expected = Key{ .ctrl = 0x00 } },
-        .{ .given = "\x08", .expected = Key{ .ctrl = 0x08 } },
+        .{ .given = "\x00", .expected = Key{ .ctrl = '@' } },
+        .{ .given = "\x08", .expected = Key{ .ctrl = 'H' } },
         .{ .given = "A", .expected = Key{ .plain = 'A' } },
         .{ .given = "あ", .expected = Key{ .plain = 'あ' } },
         .{ .given = "\x1b[A", .expected = Key{ .arrow = .up } },
