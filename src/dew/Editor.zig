@@ -65,6 +65,7 @@ config: Config,
 last_view_x: usize = 0,
 buffer: *dew.Buffer,
 buffer_view: *dew.BufferView,
+keyboard: dew.Keyboard(fs.File.Reader),
 
 pub fn init(allocator: mem.Allocator) !Editor {
     const orig = try enableRawMode();
@@ -94,6 +95,9 @@ pub fn init(allocator: mem.Allocator) !Editor {
         },
         .buffer = buffer,
         .buffer_view = buffer_view,
+        .keyboard = dew.Keyboard(fs.File.Reader){
+            .reader = io.getStdIn().reader(),
+        },
     };
 }
 
@@ -166,7 +170,7 @@ pub fn run(self: *Editor) !void {
     try self.doRender(clearScreen);
     while (true) {
         try self.doRender(refreshScreen);
-        const key = try readKey();
+        const key = try self.keyboard.inputKey();
         self.processKeypress(key) catch |err| switch (err) {
             error.Quit => return,
             else => return err,
@@ -220,27 +224,41 @@ fn readKey() !Key {
     return .{ .plain = try unicode.utf8Decode(buf[0..l]) };
 }
 
-fn processKeypress(self: *Editor, key: Key) !void {
+fn processKeypress(self: *Editor, key: dew.Key) !void {
     switch (key) {
-        .control => |k| switch (k) {
-            ctrlKey('q') => return error.Quit,
-            ctrlKey('s') => try self.saveFile(),
-            ctrlKey('k') => try self.killLine(),
-            ctrlKey('d') => try self.deleteChar(),
-            @enumToInt(ControlKeys.DEL), ctrlKey('h') => {
+        .ctrl => |k| switch (k) {
+            'Q' => return error.Quit,
+            'S' => try self.saveFile(),
+            'K' => try self.killLine(),
+            'D' => try self.deleteChar(),
+            'H' => {
                 try self.deleteBackwardChar();
             },
-            @enumToInt(ControlKeys.RETURN) => {
+            'M' => {
                 try self.breakLine();
             },
+            'P' => self.moveCursor(.up),
+            'N' => self.moveCursor(.down),
+            'F' => self.moveCursor(.right),
+            'B' => self.moveCursor(.left),
+            'A' => {
+                self.buffer.moveToBeginningOfLine();
+                self.updateLastViewX();
+            },
+            'E' => {
+                self.buffer.moveToEndOfLine();
+                self.updateLastViewX();
+            },
+            'V' => self.buffer_view.scrollDown(self.buffer_view.height * 15 / 16),
             else => {},
         },
         .plain => |k| try self.insertChar(k),
         .arrow => |k| self.moveCursor(k),
+        else => {},
     }
 }
 
-fn moveCursor(self: *Editor, k: Arrow) void {
+fn moveCursor(self: *Editor, k: dew.Arrow) void {
     switch (k) {
         .up => {
             const y = self.buffer_view.getCursor().y;
@@ -264,16 +282,8 @@ fn moveCursor(self: *Editor, k: Arrow) void {
             self.buffer.moveForward();
             self.updateLastViewX();
         },
-        .begin_of_line => {
-            self.buffer.moveToBeginningOfLine();
-            self.updateLastViewX();
-        },
-        .end_of_line => {
-            self.buffer.moveToEndOfLine();
-            self.updateLastViewX();
-        },
-        .prev_page => self.buffer_view.scrollUp(self.buffer_view.height / 2),
-        .next_page => self.buffer_view.scrollDown(self.buffer_view.height / 2),
+        // .prev_page => self.buffer_view.scrollUp(self.buffer_view.height / 2),
+        // .next_page => self.buffer_view.scrollDown(self.buffer_view.height / 2),
     }
 }
 
