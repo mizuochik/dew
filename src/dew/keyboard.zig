@@ -39,16 +39,18 @@ pub fn Keyboard(comptime Reader: type) type {
     };
 }
 
-const Key = union(enum) {
+pub const Key = union(enum) {
     plain: u21,
     ctrl: u8,
     meta: u8,
-    arrow: enum {
-        up,
-        down,
-        right,
-        left,
-    },
+    arrow: Arrow,
+};
+
+pub const Arrow = enum {
+    up,
+    down,
+    right,
+    left,
 };
 
 test "Keyboard: inputKey" {
