@@ -6,6 +6,7 @@ pub const Buffer = @import("dew/Buffer.zig");
 pub const View = @import("dew/View.zig");
 pub const BufferView = @import("dew/BufferView.zig");
 pub const Position = @import("dew/Position.zig");
+pub const Reader = @import("dew/Reader.zig");
 pub const c = @import("dew/c.zig");
 
 test {
