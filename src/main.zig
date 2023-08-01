@@ -17,7 +17,7 @@ fn writeLog(comptime message_level: log.Level, comptime scope: @TypeOf(.enum_lit
     _ = scope;
     _ = message_level;
     const f = log_file orelse return;
-    f.writer().print(format ++ "\n", args) catch unreachable;
+    f.writer().print(format ++ "\n", args) catch return;
 }
 
 pub const std_options = struct {
