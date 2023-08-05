@@ -4,40 +4,40 @@ const ascii = std.ascii;
 const unicode = std.unicode;
 const testing = std.testing;
 
-pub fn Keyboard(comptime Reader: type) type {
-    return struct {
-        const Self = @This();
+const dew = @import("../dew.zig");
 
-        reader: Reader,
+const Keyboard = @This();
 
-        pub fn inputKey(self: *Self) !Key {
-            var k = try self.reader.readByte();
-            if (k == 0x1b) {
-                k = try self.reader.readByte();
-                if (k == '[') {
-                    k = try self.reader.readByte();
-                    switch (k) {
-                        'A' => return .{ .arrow = .up },
-                        'B' => return .{ .arrow = .down },
-                        'C' => return .{ .arrow = .right },
-                        'D' => return .{ .arrow = .left },
-                        else => {},
-                    }
-                }
-                return .{ .meta = k };
+const Self = @This();
+
+reader: dew.Reader,
+
+pub fn inputKey(self: *Self) !Key {
+    var k = try self.reader.readByte();
+    if (k == 0x1b) {
+        k = try self.reader.readByte();
+        if (k == '[') {
+            k = try self.reader.readByte();
+            switch (k) {
+                'A' => return .{ .arrow = .up },
+                'B' => return .{ .arrow = .down },
+                'C' => return .{ .arrow = .right },
+                'D' => return .{ .arrow = .left },
+                else => {},
             }
-            if (ascii.isControl(k)) {
-                return .{ .ctrl = k + 0x40 };
-            }
-            var buf: [4]u8 = undefined;
-            buf[0] = k;
-            const l = try unicode.utf8ByteSequenceLength(k);
-            for (1..l) |i| {
-                buf[i] = try self.reader.readByte();
-            }
-            return .{ .plain = try unicode.utf8Decode(buf[0..l]) };
         }
-    };
+        return .{ .meta = k };
+    }
+    if (ascii.isControl(k)) {
+        return .{ .ctrl = k + 0x40 };
+    }
+    var buf: [4]u8 = undefined;
+    buf[0] = k;
+    const l = try unicode.utf8ByteSequenceLength(k);
+    for (1..l) |i| {
+        buf[i] = try self.reader.readByte();
+    }
+    return .{ .plain = try unicode.utf8Decode(buf[0..l]) };
 }
 
 pub const Key = union(enum) {
@@ -68,9 +68,9 @@ test "Keyboard: inputKey" {
         .{ .given = "\x1bz", .expected = Key{ .meta = 'z' } },
     };
     inline for (cases) |case| {
-        var given_buf = io.fixedBufferStream(case.given);
-        var given_reader = given_buf.reader();
-        var k = Keyboard(@TypeOf(given_reader)){
+        var given = dew.Reader.Fixed.init(case.given);
+        var given_reader = given.reader();
+        var k = Keyboard{
             .reader = given_reader,
         };
 

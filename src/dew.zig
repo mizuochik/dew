@@ -7,10 +7,9 @@ pub const View = @import("dew/View.zig");
 pub const BufferView = @import("dew/BufferView.zig");
 pub const Position = @import("dew/Position.zig");
 pub const Reader = @import("dew/Reader.zig");
-const keyboard = @import("dew/keyboard.zig");
-pub const Keyboard = keyboard.Keyboard;
-pub const Key = keyboard.Key;
-pub const Arrow = keyboard.Arrow;
+pub const Keyboard = @import("dew/Keyboard.zig");
+pub const Key = Keyboard.Key;
+pub const Arrow = Keyboard.Arrow;
 pub const c = @import("dew/c.zig");
 
 test {

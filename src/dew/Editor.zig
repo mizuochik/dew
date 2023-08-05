@@ -65,7 +65,7 @@ config: Config,
 last_view_x: usize = 0,
 buffer: *dew.Buffer,
 buffer_view: *dew.BufferView,
-keyboard: dew.Keyboard(fs.File.Reader),
+keyboard: dew.Keyboard,
 
 pub fn init(allocator: mem.Allocator) !Editor {
     const orig = try enableRawMode();
@@ -95,8 +95,8 @@ pub fn init(allocator: mem.Allocator) !Editor {
         },
         .buffer = buffer,
         .buffer_view = buffer_view,
-        .keyboard = dew.Keyboard(fs.File.Reader){
-            .reader = io.getStdIn().reader(),
+        .keyboard = dew.Keyboard{
+            .reader = dew.Reader.stdin,
         },
     };
 }
