@@ -226,7 +226,7 @@ fn moveCursor(self: *Editor, k: dew.Arrow) void {
         },
         .down => {
             const y = self.buffer_view.getCursor().y;
-            if (y < self.buffer_view.rows.items.len - 1) {
+            if (y < self.buffer_view.getNumberOfLines() - 1) {
                 const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.last_view_x, .y = y + 1 });
                 self.buffer.setCursor(new_cursor.x, new_cursor.y);
             }
@@ -239,9 +239,8 @@ fn moveCursor(self: *Editor, k: dew.Arrow) void {
             self.buffer.moveForward();
             self.updateLastViewX();
         },
-        // .prev_page => self.buffer_view.scrollUp(self.buffer_view.height / 2),
-        // .next_page => self.buffer_view.scrollDown(self.buffer_view.height / 2),
     }
+    self.buffer_view.normalizeScroll();
 }
 
 fn normalizeCursor(self: *Editor) void {
@@ -304,7 +303,7 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);
     const cursor = self.buffer_view.getCursor();
-    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor.y + self.buffer_view.y_scroll + 1, cursor.x + 1 }));
+    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor.y - self.buffer_view.y_scroll + 1, cursor.x + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
 

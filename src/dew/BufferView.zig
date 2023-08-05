@@ -64,6 +64,10 @@ pub fn getCursor(self: *const BufferView) dew.Position {
     };
 }
 
+pub fn getNumberOfLines(self: *const BufferView) usize {
+    return self.rows.items.len;
+}
+
 pub fn getBufferPopsition(self: *const BufferView, view_position: dew.Position) dew.Position {
     const row_slice = self.rows.items[view_position.y];
     const buffer_row = self.buffer.rows.items[row_slice.buf_y];
@@ -85,6 +89,18 @@ pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
         self.rows.items.len
     else
         y_scroll;
+}
+
+pub fn normalizeScroll(self: *BufferView) void {
+    const cursor = self.getCursor();
+    const upper_limit = self.y_scroll + self.height / 16;
+    const bottom_limit = self.y_scroll + self.height * 15 / 16;
+    if (cursor.y < upper_limit and cursor.y >= self.height / 16) {
+        self.y_scroll = cursor.y - self.height / 16;
+    }
+    if (cursor.y >= bottom_limit) {
+        self.y_scroll = cursor.y - self.height * 15 / 16;
+    }
 }
 
 fn update(ctx: *anyopaque) !void {
