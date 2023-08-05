@@ -24,6 +24,7 @@ pub fn Keyboard(comptime Reader: type) type {
                         else => {},
                     }
                 }
+                return .{ .meta = k };
             }
             if (ascii.isControl(k)) {
                 return .{ .ctrl = k + 0x40 };
@@ -63,6 +64,8 @@ test "Keyboard: inputKey" {
         .{ .given = "\x1b[B", .expected = Key{ .arrow = .down } },
         .{ .given = "\x1b[C", .expected = Key{ .arrow = .right } },
         .{ .given = "\x1b[D", .expected = Key{ .arrow = .left } },
+        .{ .given = "\x1bA", .expected = Key{ .meta = 'A' } },
+        .{ .given = "\x1bz", .expected = Key{ .meta = 'z' } },
     };
     inline for (cases) |case| {
         var given_buf = io.fixedBufferStream(case.given);
