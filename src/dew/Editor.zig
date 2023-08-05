@@ -182,48 +182,6 @@ fn updateLastViewX(self: *Editor) void {
     self.last_view_x = self.buffer_view.getCursor().x;
 }
 
-fn ctrlKey(comptime key: u8) u8 {
-    return key & 0x1f;
-}
-
-fn readKey() !Key {
-    var h = try io.getStdIn().reader().readByte();
-    if (h == 0x1b) {
-        h = try io.getStdIn().reader().readByte();
-        if (h == '[') {
-            h = try io.getStdIn().reader().readByte();
-            switch (h) {
-                'A' => return .{ .arrow = .up },
-                'B' => return .{ .arrow = .down },
-                'C' => return .{ .arrow = .right },
-                'D' => return .{ .arrow = .left },
-                else => {},
-            }
-        }
-        if (h == 'v')
-            return .{ .arrow = .prev_page };
-    }
-    if (ascii.isControl(h)) {
-        return switch (h) {
-            ctrlKey('p') => .{ .arrow = .up },
-            ctrlKey('n') => .{ .arrow = .down },
-            ctrlKey('f') => .{ .arrow = .right },
-            ctrlKey('b') => .{ .arrow = .left },
-            ctrlKey('a') => .{ .arrow = .begin_of_line },
-            ctrlKey('e') => .{ .arrow = .end_of_line },
-            ctrlKey('v') => .{ .arrow = .next_page },
-            else => .{ .control = h },
-        };
-    }
-    var buf: [4]u8 = undefined;
-    buf[0] = h;
-    const l = try unicode.utf8ByteSequenceLength(h);
-    for (1..l) |i| {
-        buf[i] = try io.getStdIn().reader().readByte();
-    }
-    return .{ .plain = try unicode.utf8Decode(buf[0..l]) };
-}
-
 fn processKeypress(self: *Editor, key: dew.Key) !void {
     switch (key) {
         .ctrl => |k| switch (k) {
@@ -231,12 +189,8 @@ fn processKeypress(self: *Editor, key: dew.Key) !void {
             'S' => try self.saveFile(),
             'K' => try self.killLine(),
             'D' => try self.deleteChar(),
-            'H' => {
-                try self.deleteBackwardChar();
-            },
-            'M' => {
-                try self.breakLine();
-            },
+            'H' => try self.deleteBackwardChar(),
+            'M' => try self.breakLine(),
             'P' => self.moveCursor(.up),
             'N' => self.moveCursor(.down),
             'F' => self.moveCursor(.right),
