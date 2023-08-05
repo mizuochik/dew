@@ -103,6 +103,19 @@ pub fn normalizeScroll(self: *BufferView) void {
     }
 }
 
+pub fn getNormalizedCursor(self: *BufferView) dew.Position {
+    const upper_limit = self.y_scroll + self.height / 16;
+    const bottom_limit = self.y_scroll + self.height * 15 / 16;
+    const cursor = self.getCursor();
+    if (cursor.y < upper_limit) {
+        return .{ .x = cursor.x, .y = upper_limit };
+    }
+    if (cursor.y >= bottom_limit) {
+        return .{ .x = cursor.x, .y = bottom_limit - 1 };
+    }
+    return cursor;
+}
+
 fn update(ctx: *anyopaque) !void {
     const self = @ptrCast(*BufferView, @alignCast(@alignOf(BufferView), ctx));
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);

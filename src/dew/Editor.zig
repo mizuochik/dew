@@ -203,11 +203,19 @@ fn processKeypress(self: *Editor, key: dew.Key) !void {
                 self.buffer.moveToEndOfLine();
                 self.updateLastViewX();
             },
-            'V' => self.buffer_view.scrollDown(self.buffer_view.height * 15 / 16),
+            'V' => {
+                self.buffer_view.scrollDown(self.buffer_view.height * 15 / 16);
+                const cur = self.buffer_view.getNormalizedCursor();
+                self.buffer.setCursor(cur.x, cur.y);
+            },
             else => {},
         },
         .meta => |k| switch (k) {
-            'v' => self.buffer_view.scrollUp(self.buffer_view.height * 15 / 16),
+            'v' => {
+                self.buffer_view.scrollUp(self.buffer_view.height * 15 / 16);
+                const cur = self.buffer_view.getNormalizedCursor();
+                self.buffer.setCursor(cur.x, cur.y);
+            },
             else => {},
         },
         .plain => |k| try self.insertChar(k),
