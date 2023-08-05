@@ -189,7 +189,7 @@ fn processKeypress(self: *Editor, key: dew.Key) !void {
             'S' => try self.saveFile(),
             'K' => try self.killLine(),
             'D' => try self.deleteChar(),
-            'H' => try self.deleteBackwardChar(),
+            'H', 0x8 => try self.deleteBackwardChar(),
             'M' => try self.breakLine(),
             'P' => self.moveCursor(.up),
             'N' => self.moveCursor(.down),
