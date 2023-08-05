@@ -206,9 +206,12 @@ fn processKeypress(self: *Editor, key: dew.Key) !void {
             'V' => self.buffer_view.scrollDown(self.buffer_view.height * 15 / 16),
             else => {},
         },
+        .meta => |k| switch (k) {
+            'v' => self.buffer_view.scrollUp(self.buffer_view.height * 15 / 16),
+            else => {},
+        },
         .plain => |k| try self.insertChar(k),
         .arrow => |k| self.moveCursor(k),
-        else => {},
     }
 }
 
