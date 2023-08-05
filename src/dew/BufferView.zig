@@ -50,11 +50,11 @@ pub fn getCursor(self: *const BufferView) dew.Position {
     const y = for (self.rows.items, 0..) |row, j| {
         if (row.buf_y == self.buffer.c_y and row.buf_x_start <= self.buffer.c_x and self.buffer.c_x <= row.buf_x_end)
             break j;
-    } else 0;
+    } else self.rows.items.len - 1;
     const row_slice = self.rows.items[y];
     var x = for (row_slice.buf_x_start..row_slice.buf_x_end + 1) |i| {
         if (i == self.buffer.c_x) {
-            const buf_row = self.buffer.getCurrentRow();
+            const buf_row = self.buffer.rows.items[row_slice.buf_y];
             break buf_row.width_index.items[i] - buf_row.width_index.items[row_slice.buf_x_start];
         }
     } else 0;

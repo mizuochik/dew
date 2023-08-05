@@ -311,7 +311,11 @@ fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);
     const cursor = self.buffer_view.getCursor();
-    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor.y - self.buffer_view.y_scroll + 1, cursor.x + 1 }));
+    const cursor_y = if (cursor.y <= self.buffer_view.y_scroll)
+        0
+    else
+        cursor.y - self.buffer_view.y_scroll;
+    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor_y + 1, cursor.x + 1 }));
     try buf.appendSlice("\x1b[?25h");
 }
 
