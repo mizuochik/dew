@@ -195,6 +195,7 @@ fn processKeypress(self: *Editor, key: dew.Key) !void {
             'N' => self.moveCursor(.down),
             'F' => self.moveCursor(.right),
             'B' => self.moveCursor(.left),
+            'J' => try self.buffer.joinLine(),
             'A' => {
                 self.buffer.moveToBeginningOfLine();
                 self.updateLastViewX();
