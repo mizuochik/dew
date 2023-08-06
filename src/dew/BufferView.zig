@@ -166,7 +166,7 @@ pub fn scrollUp(self: *BufferView, diff: usize) void {
 }
 
 pub fn scrollDown(self: *BufferView, diff: usize) void {
-    const max_scroll = self.rows.items.len - 1;
+    const max_scroll = self.rows.items.len - self.height / 16 - 1;
     if (self.y_scroll + diff > max_scroll)
         self.y_scroll = max_scroll
     else
