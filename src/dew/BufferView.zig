@@ -47,7 +47,9 @@ pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
 }
 
 pub fn getCursor(self: *const BufferView) dew.Position {
-    const y = for (self.rows.items, 0..) |row, j| {
+    var j: usize = self.rows.items.len - 1;
+    const y = while (j >= 0) : (j -= 1) {
+        const row = self.rows.items[j];
         if (row.buf_y == self.buffer.c_y and row.buf_x_start <= self.buffer.c_x and self.buffer.c_x <= row.buf_x_end)
             break j;
     } else self.rows.items.len - 1;
