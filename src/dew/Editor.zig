@@ -431,7 +431,7 @@ fn getWindowSize() !WindowSize {
         return error.UnknownWinsize;
     }
     return WindowSize{
-        .rows = ws.ws_row - 1, // status bar uses the last line
+        .rows = ws.ws_row,
         .cols = ws.ws_col,
     };
 }
