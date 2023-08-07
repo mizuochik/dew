@@ -149,7 +149,7 @@ fn update(ctx: *anyopaque) !void {
     self.rows = new_rows;
 }
 
-pub fn asView(self: *BufferView) dew.View {
+pub fn view(self: *BufferView) dew.View {
     return .{
         .ptr = self,
         .vtable = &.{
@@ -194,7 +194,7 @@ test "BufferView: scrollTo" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 99, 4);
     defer bv.deinit();
-    try bv.asView().update();
+    try bv.view().update();
 
     try testing.expectEqual(@as(usize, 0), bv.y_scroll);
 
@@ -222,7 +222,7 @@ test "BufferView: update" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
     defer bv.deinit();
-    try buf.bindView(bv.asView());
+    try buf.bindView(bv.view());
     try buf.updateViews();
 
     try testing.expectEqual(@as(usize, 8), bv.rows.items.len);
@@ -251,7 +251,7 @@ test "BufferView: getCursor" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
     defer bv.deinit();
-    try buf.bindView(bv.asView());
+    try buf.bindView(bv.view());
     try buf.updateViews();
 
     buf.c_x = 1;
@@ -274,7 +274,7 @@ test "BufferView: getBufferPosition" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
     defer bv.deinit();
-    try bv.asView().update();
+    try bv.view().update();
 
     {
         const actual = bv.getBufferPopsition(.{ .x = 0, .y = 0 });

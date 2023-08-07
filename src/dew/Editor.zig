@@ -83,7 +83,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
     buffer_view.* = try dew.BufferView.init(allocator, buffer, size.cols, size.rows - 1);
     errdefer buffer_view.deinit();
 
-    try buffer.bindView(buffer_view.asView());
+    try buffer.bindView(buffer_view.view());
 
     return Editor{
         .allocator = allocator,
@@ -190,7 +190,7 @@ fn processKeypress(self: *Editor, key: dew.Key) !void {
             'S' => try self.saveFile(),
             'K' => try self.killLine(),
             'D' => try self.deleteChar(),
-            'H', 0x8 => try self.deleteBackwardChar(),
+            'H' => try self.deleteBackwardChar(),
             'M' => try self.breakLine(),
             'P' => self.moveCursor(.up),
             'N' => self.moveCursor(.down),
