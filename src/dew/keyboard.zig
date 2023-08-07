@@ -28,6 +28,9 @@ pub fn inputKey(self: *Self) !Key {
         }
         return .{ .meta = k };
     }
+    if (k == 0x7f) {
+        return .del;
+    }
     if (ascii.isControl(k)) {
         return .{ .ctrl = k + 0x40 };
     }
@@ -45,6 +48,7 @@ pub const Key = union(enum) {
     ctrl: u8,
     meta: u8,
     arrow: Arrow,
+    del,
 };
 
 pub const Arrow = enum {
@@ -66,6 +70,7 @@ test "Keyboard: inputKey" {
         .{ .given = "\x1b[D", .expected = Key{ .arrow = .left } },
         .{ .given = "\x1bA", .expected = Key{ .meta = 'A' } },
         .{ .given = "\x1bz", .expected = Key{ .meta = 'z' } },
+        .{ .given = "\x7f", .expected = Key.del },
     };
     inline for (cases) |case| {
         var given = dew.Reader.Fixed.init(case.given);

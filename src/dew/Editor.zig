@@ -184,6 +184,7 @@ fn updateLastViewX(self: *Editor) void {
 
 fn processKeypress(self: *Editor, key: dew.Key) !void {
     switch (key) {
+        .del => try self.deleteBackwardChar(),
         .ctrl => |k| switch (k) {
             'Q' => return error.Quit,
             'S' => try self.saveFile(),
