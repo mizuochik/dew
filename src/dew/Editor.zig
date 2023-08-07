@@ -34,9 +34,6 @@ const Editor = @This();
 const Config = struct {
     orig_termios: os.termios,
     screen_size: WindowSize,
-    c_x: usize = 0,
-    c_y: usize = 0,
-    c_x_pre: usize = 0,
     row_offset: usize = 0,
     rows: std.ArrayList(dew.UnicodeString),
     file_path: ?[]const u8 = null,
@@ -253,32 +250,6 @@ fn moveCursor(self: *Editor, k: dew.Arrow) void {
     self.buffer_view.normalizeScroll();
 }
 
-fn normalizeCursor(self: *Editor) void {
-    if (self.config.c_y < self.getTopYOfScreen())
-        self.config.c_y = self.getTopYOfScreen();
-    if (self.config.c_y > self.getBottomYOfScreen())
-        self.config.c_y = self.getBottomYOfScreen();
-    const row = self.config.rows.items[self.config.c_y];
-    if (row.getLen() <= 0)
-        self.config.c_x = 0
-    else if (self.config.c_x_pre > row.getWidth())
-        self.config.c_x = row.getLen()
-    else {
-        for (row.width_index.items, 0..) |w, i| {
-            if (self.config.c_x_pre <= w) {
-                self.config.c_x = i;
-                break;
-            }
-        }
-    }
-}
-
-fn normalizeScrolling(self: *Editor) void {
-    const half_of_screen: i64 = self.config.screen_size.rows / 2;
-    if (self.config.c_y < self.getTopYOfScreen() or self.getBottomYOfScreen() <= self.config.c_y)
-        self.scrollTo(@intCast(i64, self.config.c_y) - half_of_screen);
-}
-
 fn scrollTo(self: *Editor, y_offset: i64) void {
     if (y_offset < 0) {
         self.config.row_offset = 0;
@@ -289,22 +260,6 @@ fn scrollTo(self: *Editor, y_offset: i64) void {
         return;
     }
     self.config.row_offset = @intCast(usize, y_offset);
-}
-
-fn getTopYOfScreen(self: *const Editor) usize {
-    return self.config.row_offset;
-}
-
-fn getBottomYOfScreen(self: *const Editor) usize {
-    const offset = self.config.row_offset + self.config.screen_size.rows - 1;
-    return if (offset < self.config.rows.items.len) offset else self.config.rows.items.len;
-}
-
-fn getOffSetLimit(self: *const Editor) usize {
-    return if (self.config.rows.items.len > self.config.screen_size.rows)
-        self.config.rows.items.len - self.config.screen_size.rows + 1
-    else
-        0;
 }
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
@@ -339,45 +294,6 @@ fn breakLine(self: *Editor) !void {
 fn killLine(self: *Editor) !void {
     try self.buffer.killLine();
     self.updateLastViewX();
-}
-
-fn moveBackwardChar(self: *Editor) bool {
-    var moved = false;
-    if (self.config.c_x > 0) {
-        self.config.c_x_pre = self.config.rows.items[self.config.c_y].width_index.items[self.config.c_x - 1];
-        moved = true;
-    } else if (self.config.c_y > 0) {
-        self.config.c_y -= 1;
-        self.config.c_x_pre = self.config.rows.items[self.config.c_y].getWidth();
-        moved = true;
-    }
-    self.normalizeScrolling();
-    return moved;
-}
-
-fn moveForwardChar(self: *Editor) void {
-    const row = self.config.rows.items[self.config.c_y];
-    if (self.config.c_x < row.getLen()) {
-        self.config.c_x_pre = row.width_index.items[self.config.c_x + 1];
-    } else if (self.config.c_y < self.config.rows.items.len - 1) {
-        self.config.c_y += 1;
-        self.config.c_x_pre = 0;
-    }
-    self.normalizeScrolling();
-}
-
-fn moveToPreviousLine(self: *Editor) void {
-    if (self.config.c_y > 0) {
-        self.config.c_y -= 1;
-        self.normalizeScrolling();
-    }
-}
-
-fn moveToNextLine(self: *Editor) void {
-    if (self.config.c_y < self.config.rows.items.len - 1) {
-        self.config.c_y += 1;
-        self.normalizeScrolling();
-    }
 }
 
 fn clearScreen(_: *const Editor, _: mem.Allocator, buf: *std.ArrayList(u8)) !void {
