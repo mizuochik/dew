@@ -1,7 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
 const testing = std.testing;
-const dew = @import("../dew.zig");
+const dew = @import("../../dew.zig");
 const Buffer = dew.models.Buffer;
 const Position = dew.models.Position;
 const UnicodeString = dew.models.UnicodeString;
@@ -152,7 +152,7 @@ fn update(ctx: *anyopaque) !void {
     self.rows = new_rows;
 }
 
-pub fn view(self: *BufferView) dew.View {
+pub fn view(self: *BufferView) dew.view.View {
     return .{
         .ptr = self,
         .vtable = &.{

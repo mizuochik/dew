@@ -4,6 +4,7 @@ const testing = std.testing;
 const dew = @import("../../dew.zig");
 const Editor = dew.Editor;
 const Arrow = Editor.Arrow;
+const View = dew.view.View;
 const UnicodeString = dew.models.UnicodeString;
 
 const Buffer = @This();
@@ -11,13 +12,13 @@ const Buffer = @This();
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-bound_views: std.ArrayList(dew.View),
+bound_views: std.ArrayList(View),
 allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator) Buffer {
     return .{
         .rows = std.ArrayList(UnicodeString).init(allocator),
-        .bound_views = std.ArrayList(dew.View).init(allocator),
+        .bound_views = std.ArrayList(View).init(allocator),
         .allocator = allocator,
     };
 }
@@ -70,7 +71,7 @@ pub fn updateViews(self: *const Buffer) !void {
     }
 }
 
-pub fn bindView(self: *Buffer, view: dew.View) !void {
+pub fn bindView(self: *Buffer, view: View) !void {
     try self.bound_views.append(view);
 }
 

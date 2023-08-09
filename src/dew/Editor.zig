@@ -48,7 +48,7 @@ allocator: mem.Allocator,
 config: Config,
 last_view_x: usize = 0,
 buffer: *Buffer,
-buffer_view: *dew.BufferView,
+buffer_view: *dew.view.BufferView,
 keyboard: dew.Keyboard,
 
 pub fn init(allocator: mem.Allocator) !Editor {
@@ -62,9 +62,9 @@ pub fn init(allocator: mem.Allocator) !Editor {
     buffer.* = Buffer.init(allocator);
     errdefer buffer.deinit();
 
-    const buffer_view = try allocator.create(dew.BufferView);
+    const buffer_view = try allocator.create(dew.view.BufferView);
     errdefer allocator.destroy(buffer_view);
-    buffer_view.* = try dew.BufferView.init(allocator, buffer, size.cols, size.rows - 1);
+    buffer_view.* = try dew.view.BufferView.init(allocator, buffer, size.cols, size.rows - 1);
     errdefer buffer_view.deinit();
 
     try buffer.bindView(buffer_view.view());
