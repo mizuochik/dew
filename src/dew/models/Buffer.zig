@@ -1,7 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
 const testing = std.testing;
-const dew = @import("../dew.zig");
+const dew = @import("../../dew.zig");
 const Editor = dew.Editor;
 const Arrow = Editor.Arrow;
 

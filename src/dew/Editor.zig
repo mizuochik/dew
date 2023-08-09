@@ -10,6 +10,7 @@ const fs = std.fs;
 const unicode = std.unicode;
 const testing = std.testing;
 const dew = @import("../dew.zig");
+const Buffer = dew.models.Buffer;
 const c = dew.c;
 
 const darwin_ECHO: os.tcflag_t = 0x8;
@@ -60,7 +61,7 @@ const Arrow = enum {
 allocator: mem.Allocator,
 config: Config,
 last_view_x: usize = 0,
-buffer: *dew.Buffer,
+buffer: *Buffer,
 buffer_view: *dew.BufferView,
 keyboard: dew.Keyboard,
 
@@ -70,9 +71,9 @@ pub fn init(allocator: mem.Allocator) !Editor {
     const status = try fmt.allocPrint(allocator, "Initialized", .{});
     errdefer allocator.free(status);
 
-    const buffer = try allocator.create(dew.Buffer);
+    const buffer = try allocator.create(Buffer);
     errdefer allocator.destroy(buffer);
-    buffer.* = dew.Buffer.init(allocator);
+    buffer.* = Buffer.init(allocator);
     errdefer buffer.deinit();
 
     const buffer_view = try allocator.create(dew.BufferView);

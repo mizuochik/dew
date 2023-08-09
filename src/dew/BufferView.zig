@@ -2,6 +2,7 @@ const std = @import("std");
 const mem = std.mem;
 const testing = std.testing;
 const dew = @import("../dew.zig");
+const Buffer = dew.models.Buffer;
 
 const BufferView = @This();
 
@@ -16,14 +17,14 @@ const empty: []const u8 = b: {
     break :b &s;
 };
 
-buffer: *const dew.Buffer,
+buffer: *const Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 y_scroll: usize = 0,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, buffer: *const dew.Buffer, width: usize, height: usize) !BufferView {
+pub fn init(allocator: mem.Allocator, buffer: *const Buffer, width: usize, height: usize) !BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -174,14 +175,14 @@ pub fn scrollDown(self: *BufferView, diff: usize) void {
 }
 
 test "BufferView: init" {
-    const buf = dew.Buffer.init(testing.allocator);
+    const buf = Buffer.init(testing.allocator);
     defer buf.deinit();
     const bv = try BufferView.init(testing.allocator, &buf, 10, 10);
     defer bv.deinit();
 }
 
 test "BufferView: scrollTo" {
-    var buf = dew.Buffer.init(testing.allocator);
+    var buf = Buffer.init(testing.allocator);
     defer buf.deinit();
     for ([_][]const u8{
         "abc",
@@ -206,7 +207,7 @@ test "BufferView: scrollTo" {
 }
 
 test "BufferView: update" {
-    var buf = dew.Buffer.init(testing.allocator);
+    var buf = Buffer.init(testing.allocator);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -237,7 +238,7 @@ test "BufferView: update" {
 }
 
 test "BufferView: getCursor" {
-    var buf = dew.Buffer.init(testing.allocator);
+    var buf = Buffer.init(testing.allocator);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -260,7 +261,7 @@ test "BufferView: getCursor" {
 }
 
 test "BufferView: getBufferPosition" {
-    var buf = dew.Buffer.init(testing.allocator);
+    var buf = Buffer.init(testing.allocator);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
