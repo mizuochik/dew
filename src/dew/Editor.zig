@@ -11,6 +11,7 @@ const unicode = std.unicode;
 const testing = std.testing;
 const dew = @import("../dew.zig");
 const Buffer = dew.models.Buffer;
+const UnicodeString = dew.models.UnicodeString;
 const c = dew.c;
 
 const darwin_ECHO: os.tcflag_t = 0x8;
@@ -36,7 +37,7 @@ const Config = struct {
     orig_termios: os.termios,
     screen_size: WindowSize,
     row_offset: usize = 0,
-    rows: std.ArrayList(dew.UnicodeString),
+    rows: std.ArrayList(UnicodeString),
     file_path: ?[]const u8 = null,
     status_message: []const u8,
 };
@@ -88,7 +89,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
         .config = Config{
             .orig_termios = orig,
             .screen_size = size,
-            .rows = std.ArrayList(dew.UnicodeString).init(allocator),
+            .rows = std.ArrayList(UnicodeString).init(allocator),
             .status_message = status,
         },
         .buffer = buffer,
@@ -113,7 +114,7 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
     var f = try fs.cwd().openFile(path, .{});
     var reader = f.reader();
 
-    var new_rows = std.ArrayList(dew.UnicodeString).init(self.allocator);
+    var new_rows = std.ArrayList(UnicodeString).init(self.allocator);
     errdefer {
         for (new_rows.items) |row| row.deinit();
         new_rows.deinit();
@@ -126,13 +127,13 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
             error.EndOfStream => break,
             else => return err,
         };
-        var new_row = try dew.UnicodeString.init(self.allocator);
+        var new_row = try UnicodeString.init(self.allocator);
         errdefer new_row.deinit();
         try new_row.appendSlice(buf.items);
         try new_rows.append(new_row);
     }
 
-    var last_row = try dew.UnicodeString.init(self.allocator);
+    var last_row = try UnicodeString.init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
 

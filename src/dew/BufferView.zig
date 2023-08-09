@@ -4,6 +4,7 @@ const testing = std.testing;
 const dew = @import("../dew.zig");
 const Buffer = dew.models.Buffer;
 const Position = dew.models.Position;
+const UnicodeString = dew.models.UnicodeString;
 
 const BufferView = @This();
 
@@ -189,7 +190,7 @@ test "BufferView: scrollTo" {
         "abc",
         "def",
     }) |line| {
-        var s = try dew.UnicodeString.init(testing.allocator);
+        var s = try UnicodeString.init(testing.allocator);
         errdefer s.deinit();
         try s.appendSlice(line);
         try buf.rows.append(s);
@@ -217,7 +218,7 @@ test "BufferView: update" {
         "",
         "あ",
     }) |line| {
-        var s = try dew.UnicodeString.init(testing.allocator);
+        var s = try UnicodeString.init(testing.allocator);
         errdefer s.deinit();
         try s.appendSlice(line);
         try buf.rows.append(s);
@@ -246,7 +247,7 @@ test "BufferView: getCursor" {
         "あいうえお",
         "松竹",
     }) |line| {
-        var s = try dew.UnicodeString.init(testing.allocator);
+        var s = try UnicodeString.init(testing.allocator);
         errdefer s.deinit();
         try s.appendSlice(line);
         try buf.rows.append(s);
@@ -269,7 +270,7 @@ test "BufferView: getBufferPosition" {
         "あいうえお",
         "松竹",
     }) |line| {
-        var s = try dew.UnicodeString.init(testing.allocator);
+        var s = try UnicodeString.init(testing.allocator);
         errdefer s.deinit();
         try s.appendSlice(line);
         try buf.rows.append(s);

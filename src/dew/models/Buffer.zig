@@ -4,10 +4,11 @@ const testing = std.testing;
 const dew = @import("../../dew.zig");
 const Editor = dew.Editor;
 const Arrow = Editor.Arrow;
+const UnicodeString = dew.models.UnicodeString;
 
 const Buffer = @This();
 
-rows: std.ArrayList(dew.UnicodeString),
+rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
 bound_views: std.ArrayList(dew.View),
@@ -15,7 +16,7 @@ allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator) Buffer {
     return .{
-        .rows = std.ArrayList(dew.UnicodeString).init(allocator),
+        .rows = std.ArrayList(UnicodeString).init(allocator),
         .bound_views = std.ArrayList(dew.View).init(allocator),
         .allocator = allocator,
     };
@@ -59,7 +60,7 @@ pub fn moveToEndOfLine(self: *Buffer) void {
     self.c_x = self.getCurrentRow().getLen();
 }
 
-pub fn getCurrentRow(self: *const Buffer) *dew.UnicodeString {
+pub fn getCurrentRow(self: *const Buffer) *UnicodeString {
     return &self.rows.items[self.c_y];
 }
 
@@ -113,7 +114,7 @@ pub fn killLine(self: *Buffer) !void {
 }
 
 pub fn breakLine(self: *Buffer) !void {
-    var new_row = try dew.UnicodeString.init(self.allocator);
+    var new_row = try UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
     if (self.c_x < self.getCurrentRow().getLen()) {
         for (0..self.getCurrentRow().getLen() - self.c_x) |_| {
@@ -135,7 +136,7 @@ test "Buffer: moveForward" {
         "",
     };
     for (lines) |line| {
-        var l = try dew.UnicodeString.init(testing.allocator);
+        var l = try UnicodeString.init(testing.allocator);
         errdefer l.deinit();
         try l.appendSlice(line);
         try buf.rows.append(l);
