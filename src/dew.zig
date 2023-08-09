@@ -5,7 +5,6 @@ pub const Editor = @import("dew/Editor.zig");
 pub const UnicodeString = @import("dew/UnicodeString.zig");
 pub const View = @import("dew/View.zig");
 pub const BufferView = @import("dew/BufferView.zig");
-pub const Position = @import("dew/Position.zig");
 pub const Reader = @import("dew/Reader.zig");
 pub const Keyboard = @import("dew/Keyboard.zig");
 pub const Key = Keyboard.Key;

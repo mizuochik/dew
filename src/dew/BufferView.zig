@@ -3,6 +3,7 @@ const mem = std.mem;
 const testing = std.testing;
 const dew = @import("../dew.zig");
 const Buffer = dew.models.Buffer;
+const Position = dew.models.Position;
 
 const BufferView = @This();
 
@@ -47,7 +48,7 @@ pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
     return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
 }
 
-pub fn getCursor(self: *const BufferView) dew.Position {
+pub fn getCursor(self: *const BufferView) Position {
     var j: usize = self.rows.items.len - 1;
     const y = while (true) {
         const row = self.rows.items[j];
@@ -74,7 +75,7 @@ pub fn getNumberOfLines(self: *const BufferView) usize {
     return self.rows.items.len;
 }
 
-pub fn getBufferPopsition(self: *const BufferView, view_position: dew.Position) dew.Position {
+pub fn getBufferPopsition(self: *const BufferView, view_position: Position) Position {
     const row_slice = self.rows.items[view_position.y];
     const buffer_row = self.buffer.rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
@@ -109,7 +110,7 @@ pub fn normalizeScroll(self: *BufferView) void {
     }
 }
 
-pub fn getNormalizedCursor(self: *BufferView) dew.Position {
+pub fn getNormalizedCursor(self: *BufferView) Position {
     const upper_limit = self.y_scroll + self.height / 16;
     const bottom_limit = self.y_scroll + self.height * 15 / 16;
     const cursor = self.getCursor();
