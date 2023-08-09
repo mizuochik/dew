@@ -37,9 +37,6 @@ const Editor = @This();
 
 const Config = struct {
     orig_termios: os.termios,
-    screen_size: WindowSize,
-    row_offset: usize = 0,
-    rows: std.ArrayList(UnicodeString),
     file_path: ?[]const u8 = null,
     status_message: []const u8,
 };
@@ -73,8 +70,6 @@ pub fn init(allocator: mem.Allocator) !Editor {
         .allocator = allocator,
         .config = Config{
             .orig_termios = orig,
-            .screen_size = size,
-            .rows = std.ArrayList(UnicodeString).init(allocator),
             .status_message = status,
         },
         .buffer = buffer,
@@ -125,8 +120,6 @@ pub fn openFile(self: *Editor, path: []const u8) !void {
     self.buffer.rows = new_rows;
     try self.buffer.updateViews();
 
-    self.config.rows.deinit();
-    self.config.rows = new_rows;
     self.config.file_path = path;
 }
 
@@ -233,18 +226,6 @@ fn moveCursor(self: *Editor, k: Arrow) void {
         },
     }
     self.buffer_view.normalizeScroll();
-}
-
-fn scrollTo(self: *Editor, y_offset: i64) void {
-    if (y_offset < 0) {
-        self.config.row_offset = 0;
-        return;
-    }
-    if (y_offset + self.config.screen_size.rows > self.config.rows.items.len) {
-        self.config.row_offset = self.config.rows.items.len - self.config.screen_size.rows;
-        return;
-    }
-    self.config.row_offset = @intCast(usize, y_offset);
 }
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
