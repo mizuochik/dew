@@ -79,9 +79,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
         },
         .buffer = buffer,
         .buffer_view = buffer_view,
-        .keyboard = dew.Keyboard{
-            .reader = dew.Reader.stdin,
-        },
+        .keyboard = dew.Keyboard{},
     };
 }
 

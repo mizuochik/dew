@@ -12,14 +12,14 @@ const Keyboard = @This();
 
 const Self = @This();
 
-reader: dew.Reader,
+fixed_buffer_stream: ?io.FixedBufferStream([]const u8) = null, // for testing only
 
 pub fn inputKey(self: *Self) !Key {
-    var k = try self.reader.readByte();
+    var k = try self.readByte();
     if (k == 0x1b) {
-        k = try self.reader.readByte();
+        k = try self.readByte();
         if (k == '[') {
-            k = try self.reader.readByte();
+            k = try self.readByte();
             switch (k) {
                 'A' => return .{ .arrow = .up },
                 'B' => return .{ .arrow = .down },
@@ -40,9 +40,16 @@ pub fn inputKey(self: *Self) !Key {
     buf[0] = k;
     const l = try unicode.utf8ByteSequenceLength(k);
     for (1..l) |i| {
-        buf[i] = try self.reader.readByte();
+        buf[i] = try self.readByte();
     }
     return .{ .plain = try unicode.utf8Decode(buf[0..l]) };
+}
+
+fn readByte(self: *Self) anyerror!u8 {
+    if (self.fixed_buffer_stream) |*fixed| {
+        return try fixed.reader().readByte();
+    }
+    return try io.getStdIn().reader().readByte();
 }
 
 test "Keyboard: inputKey" {
@@ -60,14 +67,10 @@ test "Keyboard: inputKey" {
         .{ .given = "\x7f", .expected = Key.del },
     };
     inline for (cases) |case| {
-        var given = dew.Reader.Fixed.init(case.given);
-        var given_reader = given.reader();
         var k = Keyboard{
-            .reader = given_reader,
+            .fixed_buffer_stream = io.fixedBufferStream(case.given),
         };
-
         const actual = try k.inputKey();
-
         try testing.expectEqualDeep(case.expected, actual);
     }
 }
