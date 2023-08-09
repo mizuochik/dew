@@ -11,6 +11,8 @@ const unicode = std.unicode;
 const testing = std.testing;
 const dew = @import("../dew.zig");
 const Buffer = dew.models.Buffer;
+const Key = dew.models.Key;
+const Arrow = dew.models.Arrow;
 const UnicodeString = dew.models.UnicodeString;
 const c = dew.c;
 
@@ -40,23 +42,6 @@ const Config = struct {
     rows: std.ArrayList(UnicodeString),
     file_path: ?[]const u8 = null,
     status_message: []const u8,
-};
-
-const Key = union(enum) {
-    plain: u21,
-    control: u8,
-    arrow: Arrow,
-};
-
-const Arrow = enum {
-    up,
-    down,
-    right,
-    left,
-    begin_of_line,
-    end_of_line,
-    next_page,
-    prev_page,
 };
 
 allocator: mem.Allocator,
@@ -181,7 +166,7 @@ fn updateLastViewX(self: *Editor) void {
     self.last_view_x = self.buffer_view.getCursor().x;
 }
 
-fn processKeypress(self: *Editor, key: dew.Key) !void {
+fn processKeypress(self: *Editor, key: Key) !void {
     switch (key) {
         .del => try self.deleteBackwardChar(),
         .ctrl => |k| switch (k) {
@@ -224,7 +209,7 @@ fn processKeypress(self: *Editor, key: dew.Key) !void {
     }
 }
 
-fn moveCursor(self: *Editor, k: dew.Arrow) void {
+fn moveCursor(self: *Editor, k: Arrow) void {
     switch (k) {
         .up => {
             const y = self.buffer_view.getCursor().y;

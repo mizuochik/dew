@@ -5,6 +5,8 @@ const unicode = std.unicode;
 const testing = std.testing;
 
 const dew = @import("../dew.zig");
+const Key = dew.models.Key;
+const Arrow = dew.models.Arrow;
 
 const Keyboard = @This();
 
@@ -42,21 +44,6 @@ pub fn inputKey(self: *Self) !Key {
     }
     return .{ .plain = try unicode.utf8Decode(buf[0..l]) };
 }
-
-pub const Key = union(enum) {
-    plain: u21,
-    ctrl: u8,
-    meta: u8,
-    arrow: Arrow,
-    del,
-};
-
-pub const Arrow = enum {
-    up,
-    down,
-    right,
-    left,
-};
 
 test "Keyboard: inputKey" {
     const cases = .{
