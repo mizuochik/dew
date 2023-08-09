@@ -31,7 +31,9 @@ pub fn main() !void {
     const stat = try log_file.?.stat();
     try log_file.?.seekTo(stat.size);
 
-    var gpa = heap.GeneralPurposeAllocator(.{}){};
+    var gpa = heap.GeneralPurposeAllocator(.{
+        .verbose_log = true,
+    }){};
     defer debug.assert(gpa.deinit() == .ok);
     const allocator = gpa.allocator();
 
@@ -44,6 +46,6 @@ pub fn main() !void {
     var editor = try dew.Editor.init(allocator);
     defer editor.deinit() catch unreachable;
 
-    try editor.openFile(path);
+    try editor.buffer_controller.openFile(path);
     try editor.run();
 }
