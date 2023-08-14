@@ -5,20 +5,23 @@ const dew = @import("../../dew.zig");
 const Editor = dew.Editor;
 const Arrow = Editor.Arrow;
 const View = dew.view.View;
+const Event = dew.models.event.Event;
+const Observer = dew.models.event.Observer;
 const UnicodeString = dew.models.UnicodeString;
+const Position = dew.models.Position;
 
 const Buffer = @This();
 
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-bound_views: std.ArrayList(View),
+observers: std.ArrayList(Observer),
 allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator) Buffer {
     return .{
         .rows = std.ArrayList(UnicodeString).init(allocator),
-        .bound_views = std.ArrayList(View).init(allocator),
+        .observers = std.ArrayList(Observer).init(allocator),
         .allocator = allocator,
     };
 }
@@ -26,7 +29,7 @@ pub fn init(allocator: mem.Allocator) Buffer {
 pub fn deinit(self: *const Buffer) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
-    self.bound_views.deinit();
+    self.observers.deinit();
 }
 
 pub fn setCursor(self: *Buffer, x: usize, y: usize) void {
@@ -65,14 +68,19 @@ pub fn getCurrentRow(self: *const Buffer) *UnicodeString {
     return &self.rows.items[self.c_y];
 }
 
-pub fn updateViews(self: *const Buffer) !void {
-    for (self.bound_views.items) |view| {
-        try view.update();
+pub fn notifyUpdated(self: *const Buffer) !void {
+    for (self.observers.items) |*observer| {
+        try observer.update(&.{
+            .buffer_updated = .{
+                .from = Position{ .x = 0, .y = 0 },
+                .to = Position{ .x = 0, .y = 0 },
+            },
+        });
     }
 }
 
-pub fn bindView(self: *Buffer, view: View) !void {
-    try self.bound_views.append(view);
+pub fn addObserver(self: *Buffer, observer: Observer) !void {
+    try self.observers.append(observer);
 }
 
 pub fn insertChar(self: *Buffer, c: u21) !void {

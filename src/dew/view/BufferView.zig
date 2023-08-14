@@ -5,6 +5,8 @@ const dew = @import("../../dew.zig");
 const Buffer = dew.models.Buffer;
 const Position = dew.models.Position;
 const UnicodeString = dew.models.UnicodeString;
+const Event = dew.models.event.Event;
+const Observer = dew.models.event.Observer;
 
 const BufferView = @This();
 
@@ -124,7 +126,7 @@ pub fn getNormalizedCursor(self: *BufferView) Position {
     return cursor;
 }
 
-fn update(ctx: *anyopaque) !void {
+fn update(ctx: *anyopaque, _: *const Event) !void {
     const self = @ptrCast(*BufferView, @alignCast(@alignOf(BufferView), ctx));
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
@@ -152,10 +154,10 @@ fn update(ctx: *anyopaque) !void {
     self.rows = new_rows;
 }
 
-pub fn view(self: *BufferView) dew.view.View {
+pub fn observer(self: *BufferView) Observer {
     return .{
         .ptr = self,
-        .vtable = &.{
+        .vtable = .{
             .update = update,
         },
     };

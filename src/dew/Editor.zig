@@ -84,7 +84,7 @@ pub fn run(self: *Editor) !void {
 }
 
 fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    try self.buffer_controller.buffer.updateViews();
+    try self.buffer_controller.buffer.notifyUpdated();
     try buf.appendSlice("\x1b[?25l");
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);

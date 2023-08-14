@@ -32,7 +32,7 @@ pub fn init(allocator: Allocator, cols: usize, rows: usize) !BufferController {
     buffer_view.* = try dew.view.BufferView.init(allocator, buffer, cols, rows - 1);
     errdefer buffer_view.deinit();
 
-    try buffer.bindView(buffer_view.view());
+    try buffer.addObserver(buffer_view.observer());
 
     return BufferController{
         .allocator = allocator,
@@ -180,7 +180,7 @@ pub fn openFile(self: *BufferController, path: []const u8) !void {
     for (self.buffer.rows.items) |row| row.deinit();
     self.buffer.rows.deinit();
     self.buffer.rows = new_rows;
-    try self.buffer.updateViews();
+    try self.buffer.notifyUpdated();
 
     self.file_path = path;
 }
