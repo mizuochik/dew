@@ -5,6 +5,9 @@ const Allocator = std.mem.Allocator;
 
 const dew = @import("../../dew.zig");
 const Key = dew.models.Key;
+const models = dew.models;
+const EventPublisher = dew.event.EventPublisher;
+const EventSubscriber = dew.event.EventSubscriber;
 const Arrow = dew.models.Arrow;
 const Buffer = dew.models.Buffer;
 const UnicodeString = dew.models.UnicodeString;
@@ -14,31 +17,38 @@ buffer_view: *dew.view.BufferView,
 last_view_x: usize = 0,
 status_message: []const u8,
 file_path: ?[]const u8 = null,
+model_event_publisher: *EventPublisher(dew.models.Event),
 allocator: Allocator,
 
 const BufferController = @This();
 
 pub fn init(allocator: Allocator, cols: usize, rows: usize) !BufferController {
+    const model_event_publisher = try allocator.create(EventPublisher(models.Event));
+    errdefer allocator.destroy(model_event_publisher);
+    model_event_publisher.* = EventPublisher(models.Event).init(allocator);
+    errdefer model_event_publisher.deinit();
+
     const status = try fmt.allocPrint(allocator, "Initialized", .{});
     errdefer allocator.free(status);
 
     const buffer = try allocator.create(Buffer);
     errdefer allocator.destroy(buffer);
-    buffer.* = Buffer.init(allocator);
+    buffer.* = Buffer.init(allocator, model_event_publisher);
     errdefer buffer.deinit();
 
     const buffer_view = try allocator.create(dew.view.BufferView);
     errdefer allocator.destroy(buffer_view);
-    buffer_view.* = try dew.view.BufferView.init(allocator, buffer, cols, rows - 1);
+    buffer_view.* = try dew.view.BufferView.init(allocator, buffer);
     errdefer buffer_view.deinit();
-
-    try buffer.addObserver(buffer_view.observer());
+    try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
+    try model_event_publisher.publish(models.Event{ .screen_size_changed = .{ .width = cols, .height = rows } });
 
     return BufferController{
         .allocator = allocator,
         .buffer = buffer,
         .buffer_view = buffer_view,
         .status_message = status,
+        .model_event_publisher = model_event_publisher,
     };
 }
 
@@ -46,6 +56,8 @@ pub fn deinit(self: *const BufferController) void {
     self.buffer_view.deinit();
     self.allocator.destroy(self.buffer_view);
     self.buffer.deinit();
+    self.model_event_publisher.deinit();
+    self.allocator.destroy(self.model_event_publisher);
     self.allocator.destroy(self.buffer);
     self.allocator.free(self.status_message);
 }
@@ -180,7 +192,7 @@ pub fn openFile(self: *BufferController, path: []const u8) !void {
     for (self.buffer.rows.items) |row| row.deinit();
     self.buffer.rows.deinit();
     self.buffer.rows = new_rows;
-    try self.buffer.notifyUpdated();
+    try self.buffer.notifyUpdate();
 
     self.file_path = path;
 }
