@@ -27,6 +27,12 @@ pub const Event = union(enum) {
         to: Position,
     },
     status_bar_updated,
+    screen_size_changed: ScreenSize,
+};
+
+pub const ScreenSize = struct {
+    width: usize,
+    height: usize,
 };
 
 test {
