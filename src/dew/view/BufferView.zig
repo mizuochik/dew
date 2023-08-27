@@ -29,14 +29,14 @@ height: usize,
 y_scroll: usize = 0,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, buffer: *const Buffer, width: usize, height: usize) !BufferView {
+pub fn init(allocator: mem.Allocator, buffer: *const Buffer) !BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
         .buffer = buffer,
         .rows = rows,
-        .width = width,
-        .height = height,
+        .width = 0,
+        .height = 0,
         .allocator = allocator,
     };
 }
@@ -136,9 +136,16 @@ pub fn eventSubscriber(self: *BufferView) EventSubscriber {
     };
 }
 
-fn handleEvent(ctx: *anyopaque, _: Event) anyerror!void {
-    const self = @as(*BufferView, @ptrCast(@alignCast(ctx)));
-    try self.update();
+fn handleEvent(ctx: *anyopaque, event: Event) anyerror!void {
+    const self: *BufferView = @ptrCast(@alignCast(ctx));
+    switch (event) {
+        .buffer_updated => |_| try self.update(),
+        .screen_size_changed => |new_size| {
+            self.width = new_size.width;
+            self.height = new_size.height - 1;
+        },
+        else => {},
+    }
 }
 
 fn update(self: *BufferView) !void {
@@ -188,7 +195,7 @@ test "BufferView: init" {
     defer event_publisher.deinit();
     const buf = Buffer.init(testing.allocator, &event_publisher);
     defer buf.deinit();
-    const bv = try BufferView.init(testing.allocator, &buf, 10, 10);
+    const bv = try BufferView.init(testing.allocator, &buf);
     defer bv.deinit();
 }
 
@@ -206,9 +213,10 @@ test "BufferView: scrollTo" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf, 99, 4);
+    var bv = try BufferView.init(testing.allocator, &buf);
     defer bv.deinit();
     try event_publisher.addSubscriber(bv.eventSubscriber());
+    try event_publisher.publish(Event{ .screen_size_changed = .{ .width = 99, .height = 5 } });
     try buf.notifyUpdate();
 
     try testing.expectEqual(@as(usize, 0), bv.y_scroll);
@@ -237,9 +245,10 @@ test "BufferView: update" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
+    var bv = try BufferView.init(testing.allocator, &buf);
     defer bv.deinit();
     try event_publisher.addSubscriber(bv.eventSubscriber());
+    try event_publisher.publish(Event{ .screen_size_changed = .{ .width = 5, .height = 100 } });
     try buf.notifyUpdate();
 
     try testing.expectEqual(@as(usize, 8), bv.rows.items.len);
@@ -268,9 +277,10 @@ test "BufferView: getCursor" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
+    var bv = try BufferView.init(testing.allocator, &buf);
     defer bv.deinit();
     try event_publisher.addSubscriber(bv.eventSubscriber());
+    try event_publisher.publish(Event{ .screen_size_changed = .{ .width = 5, .height = 99 } });
     try buf.notifyUpdate();
 
     buf.c_x = 1;
@@ -293,9 +303,10 @@ test "BufferView: getBufferPosition" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
+    var bv = try BufferView.init(testing.allocator, &buf);
     defer bv.deinit();
     try event_publisher.addSubscriber(bv.eventSubscriber());
+    try event_publisher.publish(Event{ .screen_size_changed = .{ .width = 5, .height = 99 } });
     try buf.notifyUpdate();
 
     {
