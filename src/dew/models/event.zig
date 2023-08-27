@@ -13,82 +13,82 @@ pub const Event = union(enum) {
     status_bar_updated,
 };
 
-pub const Sender = struct {
-    receivers: ArrayList(Receiver),
+pub const EventPublisher = struct {
+    subscribers: ArrayList(EventSubscriber),
 
-    pub fn init(allocator: Allocator) Sender {
+    pub fn init(allocator: Allocator) EventPublisher {
         return .{
-            .receivers = ArrayList(Receiver).init(allocator),
+            .subscribers = ArrayList(EventSubscriber).init(allocator),
         };
     }
 
-    pub fn deinit(self: *const Sender) void {
-        self.receivers.deinit();
+    pub fn deinit(self: *const EventPublisher) void {
+        self.subscribers.deinit();
     }
 
-    pub fn addReceiver(self: *Sender, receiver: Receiver) !void {
-        try self.receivers.append(receiver);
+    pub fn addSubscriber(self: *EventPublisher, subscriber: EventSubscriber) !void {
+        try self.subscribers.append(subscriber);
     }
 
-    pub fn send(self: *const Sender, event: Event) !void {
-        for (self.receivers.items) |*receiver| {
-            try receiver.receive(event);
+    pub fn publish(self: *const EventPublisher, event: Event) !void {
+        for (self.subscribers.items) |*subscriber| {
+            try subscriber.handle(event);
         }
     }
 };
 
-pub const Receiver = struct {
+pub const EventSubscriber = struct {
     ptr: *anyopaque,
     vtable: *const VTable,
 
     const VTable = struct {
-        receive: *const fn (self: *anyopaque, event: Event) anyerror!void,
+        handle: *const fn (self: *anyopaque, event: Event) anyerror!void,
     };
 
-    pub fn receive(self: *Receiver, event: Event) anyerror!void {
-        try self.vtable.receive(self.ptr, event);
+    pub fn handle(self: *EventSubscriber, event: Event) anyerror!void {
+        try self.vtable.handle(self.ptr, event);
     }
 };
 
-const StubReceiver = struct {
-    received: ArrayList(Event),
+const StubEventSubscriber = struct {
+    subscribed: ArrayList(Event),
 
-    pub fn init(allocator: Allocator) StubReceiver {
+    pub fn init(allocator: Allocator) StubEventSubscriber {
         return .{
-            .received = ArrayList(Event).init(allocator),
+            .subscribed = ArrayList(Event).init(allocator),
         };
     }
 
-    pub fn deinit(self: *StubReceiver) void {
-        self.received.deinit();
+    pub fn deinit(self: *StubEventSubscriber) void {
+        self.subscribed.deinit();
     }
 
-    pub fn receiver(self: *StubReceiver) Receiver {
+    pub fn subscriber(self: *StubEventSubscriber) EventSubscriber {
         return .{
             .ptr = self,
             .vtable = &.{
-                .receive = receive,
+                .handle = handle,
             },
         };
     }
 
-    fn receive(ctx: *anyopaque, event: Event) anyerror!void {
-        var self = @ptrCast(*StubReceiver, @alignCast(@alignOf(StubReceiver), ctx));
-        try self.received.append(event);
+    fn handle(ctx: *anyopaque, event: Event) anyerror!void {
+        var self: *StubEventSubscriber = @ptrCast(@alignCast(ctx));
+        try self.subscribed.append(event);
     }
 };
 
-test "event: send and receive" {
-    var sender = Sender.init(testing.allocator);
-    defer sender.deinit();
-    var receiver = StubReceiver.init(testing.allocator);
-    defer receiver.deinit();
-    try sender.addReceiver(receiver.receiver());
+test "event: publish and subscribe" {
+    var publisher = EventPublisher.init(testing.allocator);
+    defer publisher.deinit();
+    var subscriber = StubEventSubscriber.init(testing.allocator);
+    defer subscriber.deinit();
+    try publisher.addSubscriber(subscriber.subscriber());
 
-    try sender.send(.status_bar_updated);
-    try sender.send(.status_bar_updated);
+    try publisher.publish(.status_bar_updated);
+    try publisher.publish(.status_bar_updated);
 
-    try testing.expectEqual(@as(usize, 2), receiver.received.items.len);
-    try testing.expectEqual(Event.status_bar_updated, receiver.received.items[0]);
-    try testing.expectEqual(Event.status_bar_updated, receiver.received.items[1]);
+    try testing.expectEqual(@as(usize, 2), subscriber.subscribed.items.len);
+    try testing.expectEqual(Event.status_bar_updated, subscriber.subscribed.items[0]);
+    try testing.expectEqual(Event.status_bar_updated, subscriber.subscribed.items[1]);
 }

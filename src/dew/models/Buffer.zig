@@ -6,7 +6,7 @@ const Editor = dew.Editor;
 const Arrow = Editor.Arrow;
 const View = dew.view.View;
 const Event = dew.models.event.Event;
-const Observer = dew.models.event.Observer;
+const EventPublisher = dew.models.event.EventPublisher;
 const UnicodeString = dew.models.UnicodeString;
 const Position = dew.models.Position;
 
@@ -15,13 +15,13 @@ const Buffer = @This();
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-observers: std.ArrayList(Observer),
+event_publisher: *EventPublisher,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator) Buffer {
+pub fn init(allocator: mem.Allocator, event_publisher: *EventPublisher) Buffer {
     return .{
         .rows = std.ArrayList(UnicodeString).init(allocator),
-        .observers = std.ArrayList(Observer).init(allocator),
+        .event_publisher = event_publisher,
         .allocator = allocator,
     };
 }
@@ -29,7 +29,6 @@ pub fn init(allocator: mem.Allocator) Buffer {
 pub fn deinit(self: *const Buffer) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
-    self.observers.deinit();
 }
 
 pub fn setCursor(self: *Buffer, x: usize, y: usize) void {
@@ -66,21 +65,6 @@ pub fn moveToEndOfLine(self: *Buffer) void {
 
 pub fn getCurrentRow(self: *const Buffer) *UnicodeString {
     return &self.rows.items[self.c_y];
-}
-
-pub fn notifyUpdated(self: *const Buffer) !void {
-    for (self.observers.items) |*observer| {
-        try observer.update(&.{
-            .buffer_updated = .{
-                .from = Position{ .x = 0, .y = 0 },
-                .to = Position{ .x = 0, .y = 0 },
-            },
-        });
-    }
-}
-
-pub fn addObserver(self: *Buffer, observer: Observer) !void {
-    try self.observers.append(observer);
 }
 
 pub fn insertChar(self: *Buffer, c: u21) !void {
@@ -136,8 +120,14 @@ pub fn breakLine(self: *Buffer) !void {
     self.moveForward();
 }
 
+pub fn notifyUpdate(self: *Buffer) !void {
+    try self.event_publisher.publish(.{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
+}
+
 test "Buffer: moveForward" {
-    var buf = Buffer.init(testing.allocator);
+    var event_publisher = EventPublisher.init(testing.allocator);
+    defer event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &event_publisher);
     defer buf.deinit();
     const lines = [_][]const u8{
         "ab",

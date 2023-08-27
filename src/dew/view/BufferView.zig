@@ -4,9 +4,10 @@ const testing = std.testing;
 const dew = @import("../../dew.zig");
 const Buffer = dew.models.Buffer;
 const Position = dew.models.Position;
-const UnicodeString = dew.models.UnicodeString;
 const Event = dew.models.event.Event;
-const Observer = dew.models.event.Observer;
+const EventPublisher = dew.models.event.EventPublisher;
+const EventSubscriber = dew.models.event.EventSubscriber;
+const UnicodeString = dew.models.UnicodeString;
 
 const BufferView = @This();
 
@@ -126,8 +127,21 @@ pub fn getNormalizedCursor(self: *BufferView) Position {
     return cursor;
 }
 
-fn update(ctx: *anyopaque, _: *const Event) !void {
-    const self = @ptrCast(*BufferView, @alignCast(@alignOf(BufferView), ctx));
+pub fn eventSubscriber(self: *BufferView) EventSubscriber {
+    return EventSubscriber{
+        .ptr = self,
+        .vtable = &.{
+            .handle = handleEvent,
+        },
+    };
+}
+
+fn handleEvent(ctx: *anyopaque, _: Event) anyerror!void {
+    const self = @as(*BufferView, @ptrCast(@alignCast(ctx)));
+    try self.update();
+}
+
+fn update(self: *BufferView) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     for (self.buffer.rows.items, 0..) |row, y| {
@@ -154,15 +168,6 @@ fn update(ctx: *anyopaque, _: *const Event) !void {
     self.rows = new_rows;
 }
 
-pub fn observer(self: *BufferView) Observer {
-    return .{
-        .ptr = self,
-        .vtable = .{
-            .update = update,
-        },
-    };
-}
-
 pub fn scrollUp(self: *BufferView, diff: usize) void {
     if (self.y_scroll < diff)
         self.y_scroll = 0
@@ -179,14 +184,18 @@ pub fn scrollDown(self: *BufferView, diff: usize) void {
 }
 
 test "BufferView: init" {
-    const buf = Buffer.init(testing.allocator);
+    var event_publisher = EventPublisher.init(testing.allocator);
+    defer event_publisher.deinit();
+    const buf = Buffer.init(testing.allocator, &event_publisher);
     defer buf.deinit();
     const bv = try BufferView.init(testing.allocator, &buf, 10, 10);
     defer bv.deinit();
 }
 
 test "BufferView: scrollTo" {
-    var buf = Buffer.init(testing.allocator);
+    var event_publisher = EventPublisher.init(testing.allocator);
+    defer event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &event_publisher);
     defer buf.deinit();
     for ([_][]const u8{
         "abc",
@@ -199,7 +208,8 @@ test "BufferView: scrollTo" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 99, 4);
     defer bv.deinit();
-    try bv.view().update();
+    try event_publisher.addSubscriber(bv.eventSubscriber());
+    try buf.notifyUpdate();
 
     try testing.expectEqual(@as(usize, 0), bv.y_scroll);
 
@@ -211,7 +221,9 @@ test "BufferView: scrollTo" {
 }
 
 test "BufferView: update" {
-    var buf = Buffer.init(testing.allocator);
+    var event_publisher = EventPublisher.init(testing.allocator);
+    defer event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &event_publisher);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -227,8 +239,8 @@ test "BufferView: update" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
     defer bv.deinit();
-    try buf.bindView(bv.view());
-    try buf.updateViews();
+    try event_publisher.addSubscriber(bv.eventSubscriber());
+    try buf.notifyUpdate();
 
     try testing.expectEqual(@as(usize, 8), bv.rows.items.len);
     try testing.expectEqualStrings("abcde", bv.getRowView(0));
@@ -242,7 +254,9 @@ test "BufferView: update" {
 }
 
 test "BufferView: getCursor" {
-    var buf = Buffer.init(testing.allocator);
+    var event_publisher = EventPublisher.init(testing.allocator);
+    defer event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &event_publisher);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -256,8 +270,8 @@ test "BufferView: getCursor" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
     defer bv.deinit();
-    try buf.bindView(bv.view());
-    try buf.updateViews();
+    try event_publisher.addSubscriber(bv.eventSubscriber());
+    try buf.notifyUpdate();
 
     buf.c_x = 1;
     buf.c_y = 2;
@@ -265,7 +279,9 @@ test "BufferView: getCursor" {
 }
 
 test "BufferView: getBufferPosition" {
-    var buf = Buffer.init(testing.allocator);
+    var event_publisher = EventPublisher.init(testing.allocator);
+    defer event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &event_publisher);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -279,7 +295,8 @@ test "BufferView: getBufferPosition" {
     }
     var bv = try BufferView.init(testing.allocator, &buf, 5, 99);
     defer bv.deinit();
-    try bv.view().update();
+    try event_publisher.addSubscriber(bv.eventSubscriber());
+    try buf.notifyUpdate();
 
     {
         const actual = bv.getBufferPopsition(.{ .x = 0, .y = 0 });
