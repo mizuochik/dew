@@ -1,7 +1,7 @@
 const std = @import("std");
 const dew = @import("../../dew.zig");
-const Observer = dew.models.event.Observer;
-const Event = dew.models.event.Event;
+const Observer = dew.event.Observer;
+const Event = dew.event.Event;
 
 const Allocator = std.mem.Allocator;
 

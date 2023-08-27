@@ -4,9 +4,9 @@ const testing = std.testing;
 const dew = @import("../../dew.zig");
 const Buffer = dew.models.Buffer;
 const Position = dew.models.Position;
-const Event = dew.models.event.Event;
-const EventPublisher = dew.models.event.EventPublisher;
-const EventSubscriber = dew.models.event.EventSubscriber;
+const Event = dew.models.Event;
+const EventPublisher = dew.event.EventPublisher(Event);
+const EventSubscriber = dew.event.EventSubscriber(Event);
 const UnicodeString = dew.models.UnicodeString;
 
 const BufferView = @This();

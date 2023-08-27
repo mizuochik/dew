@@ -5,8 +5,8 @@ const dew = @import("../../dew.zig");
 const Editor = dew.Editor;
 const Arrow = Editor.Arrow;
 const View = dew.view.View;
-const Event = dew.models.event.Event;
-const EventPublisher = dew.models.event.EventPublisher;
+const Event = dew.models.Event;
+const EventPublisher = dew.event.EventPublisher(Event);
 const UnicodeString = dew.models.UnicodeString;
 const Position = dew.models.Position;
 
