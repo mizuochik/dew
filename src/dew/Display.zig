@@ -9,6 +9,7 @@ const view = dew.view;
 const event = dew.event;
 
 buffer_view: *const view.BufferView,
+allocator: mem.Allocator,
 
 const Self = @This();
 
@@ -25,9 +26,8 @@ fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
     const self: *Self = @ptrCast(@alignCast(ctx));
     switch (ev) {
         .buffer_view_updated => {
-            try self.doRender(self.refreshScreen);
+            try self.doRender(refreshScreen);
         },
-        else => {},
     }
 }
 
