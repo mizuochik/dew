@@ -47,15 +47,35 @@ pub fn main() !void {
     }
     const path: []const u8 = mem.span(os.argv[1]);
 
-    var buffer_controller = try dew.controllers.BufferController.init(gpa.allocator());
-    defer buffer_controller.deinit();
     var model_event_publisher = dew.event.EventPublisher(dew.models.Event).init(gpa.allocator());
     defer model_event_publisher.deinit();
+    var view_event_publisher = dew.event.EventPublisher(dew.view.Event).init(gpa.allocator());
+    defer view_event_publisher.deinit();
+
+    var buffer = models.Buffer.init(gpa.allocator(), &model_event_publisher);
+    defer buffer.deinit();
+    var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher);
+    defer buffer_view.deinit();
+    var display = dew.Display{
+        .buffer_view = &buffer_view,
+        .allocator = gpa.allocator(),
+    };
+    var buffer_controller = try dew.controllers.BufferController.init(
+        gpa.allocator(),
+        &buffer,
+        &buffer_view,
+        &model_event_publisher,
+    );
+    defer buffer_controller.deinit();
     var editor = try dew.Editor.init(gpa.allocator(), &buffer_controller);
     defer editor.deinit() catch unreachable;
 
+    try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
+    try view_event_publisher.addSubscriber(display.eventSubscriber());
+
     try editor.enableRawMode();
     defer editor.disableRawMode() catch unreachable;
+    try editor.buffer_controller.openFile(path);
 
     const win_size = try editor.getWindowSize();
     try model_event_publisher.publish(.{
@@ -65,6 +85,5 @@ pub fn main() !void {
         },
     });
 
-    try editor.buffer_controller.openFile(path);
     try editor.run();
 }

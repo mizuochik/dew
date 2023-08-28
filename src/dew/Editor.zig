@@ -61,9 +61,7 @@ pub fn deinit(self: *const Editor) !void {
 }
 
 pub fn run(self: *Editor) !void {
-    try self.doRender(clearScreen);
     while (true) {
-        try self.doRender(refreshScreen);
         const key = try self.keyboard.inputKey();
         self.buffer_controller.processKeypress(key) catch |err| switch (err) {
             error.Quit => return,

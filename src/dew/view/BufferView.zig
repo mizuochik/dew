@@ -2,6 +2,7 @@ const std = @import("std");
 const mem = std.mem;
 const testing = std.testing;
 const dew = @import("../../dew.zig");
+const view = dew.view;
 const Buffer = dew.models.Buffer;
 const Position = dew.models.Position;
 const models = dew.models;
@@ -27,9 +28,10 @@ rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 y_scroll: usize = 0,
+view_event_publisher: *const EventPublisher(view.Event),
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, buffer: *const Buffer) !BufferView {
+pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const EventPublisher(view.Event)) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -37,6 +39,7 @@ pub fn init(allocator: mem.Allocator, buffer: *const Buffer) !BufferView {
         .rows = rows,
         .width = 0,
         .height = 0,
+        .view_event_publisher = vevents,
         .allocator = allocator,
     };
 }
@@ -139,10 +142,15 @@ pub fn eventSubscriber(self: *BufferView) EventSubscriber(models.Event) {
 fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
     switch (event) {
-        .buffer_updated => |_| try self.update(),
+        .buffer_updated => |_| {
+            try self.update();
+            try self.view_event_publisher.publish(.buffer_view_updated);
+        },
         .screen_size_changed => |new_size| {
             self.width = new_size.width;
             self.height = new_size.height - 1;
+            try self.update();
+            try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},
     }
@@ -191,18 +199,22 @@ pub fn scrollDown(self: *BufferView, diff: usize) void {
 }
 
 test "BufferView: init" {
-    var event_publisher = EventPublisher(models.Event).init(testing.allocator);
-    defer event_publisher.deinit();
-    const buf = Buffer.init(testing.allocator, &event_publisher);
+    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    defer view_event_publisher.deinit();
+    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    defer model_event_publisher.deinit();
+    const buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
-    const bv = try BufferView.init(testing.allocator, &buf);
+    const bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
     defer bv.deinit();
 }
 
 test "BufferView: scrollTo" {
-    var event_publisher = EventPublisher(models.Event).init(testing.allocator);
-    defer event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &event_publisher);
+    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    defer view_event_publisher.deinit();
+    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    defer model_event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
     for ([_][]const u8{
         "abc",
@@ -213,10 +225,10 @@ test "BufferView: scrollTo" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf);
+    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
     defer bv.deinit();
-    try event_publisher.addSubscriber(bv.eventSubscriber());
-    try event_publisher.publish(.{ .screen_size_changed = .{ .width = 99, .height = 5 } });
+    try model_event_publisher.addSubscriber(bv.eventSubscriber());
+    try model_event_publisher.publish(.{ .screen_size_changed = .{ .width = 99, .height = 5 } });
     try buf.notifyUpdate();
 
     try testing.expectEqual(@as(usize, 0), bv.y_scroll);
@@ -229,9 +241,11 @@ test "BufferView: scrollTo" {
 }
 
 test "BufferView: update" {
-    var event_publisher = EventPublisher(models.Event).init(testing.allocator);
-    defer event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &event_publisher);
+    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    defer view_event_publisher.deinit();
+    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    defer model_event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -245,10 +259,10 @@ test "BufferView: update" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf);
+    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
     defer bv.deinit();
-    try event_publisher.addSubscriber(bv.eventSubscriber());
-    try event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 100 } });
+    try model_event_publisher.addSubscriber(bv.eventSubscriber());
+    try model_event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 100 } });
     try buf.notifyUpdate();
 
     try testing.expectEqual(@as(usize, 8), bv.rows.items.len);
@@ -263,9 +277,11 @@ test "BufferView: update" {
 }
 
 test "BufferView: getCursor" {
-    var event_publisher = EventPublisher(models.Event).init(testing.allocator);
-    defer event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &event_publisher);
+    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    defer view_event_publisher.deinit();
+    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    defer model_event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -277,10 +293,10 @@ test "BufferView: getCursor" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf);
+    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
     defer bv.deinit();
-    try event_publisher.addSubscriber(bv.eventSubscriber());
-    try event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 99 } });
+    try model_event_publisher.addSubscriber(bv.eventSubscriber());
+    try model_event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 99 } });
     try buf.notifyUpdate();
 
     buf.c_x = 1;
@@ -289,9 +305,11 @@ test "BufferView: getCursor" {
 }
 
 test "BufferView: getBufferPosition" {
-    var event_publisher = EventPublisher(models.Event).init(testing.allocator);
-    defer event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &event_publisher);
+    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    defer view_event_publisher.deinit();
+    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    defer model_event_publisher.deinit();
+    var buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -303,10 +321,10 @@ test "BufferView: getBufferPosition" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = try BufferView.init(testing.allocator, &buf);
+    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
     defer bv.deinit();
-    try event_publisher.addSubscriber(bv.eventSubscriber());
-    try event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 99 } });
+    try model_event_publisher.addSubscriber(bv.eventSubscriber());
+    try model_event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 99 } });
     try buf.notifyUpdate();
 
     {
