@@ -37,7 +37,7 @@ const ControlKeys = enum(u8) {
 const Editor = @This();
 
 const Config = struct {
-    orig_termios: os.termios,
+    orig_termios: ?os.termios,
 };
 
 allocator: mem.Allocator,
@@ -45,19 +45,11 @@ config: Config,
 buffer_controller: *BufferController,
 keyboard: dew.Keyboard,
 
-pub fn init(allocator: mem.Allocator) !Editor {
-    const orig = try enableRawMode();
-    const size = try getWindowSize();
-
-    var buffer_controller = try allocator.create(BufferController);
-    errdefer allocator.destroy(buffer_controller);
-    buffer_controller.* = try BufferController.init(allocator, size.cols, size.rows);
-    errdefer buffer_controller.deinit();
-
+pub fn init(allocator: mem.Allocator, buffer_controller: *BufferController) !Editor {
     return Editor{
         .allocator = allocator,
         .config = Config{
-            .orig_termios = orig,
+            .orig_termios = null,
         },
         .buffer_controller = buffer_controller,
         .keyboard = dew.Keyboard{},
@@ -65,10 +57,7 @@ pub fn init(allocator: mem.Allocator) !Editor {
 }
 
 pub fn deinit(self: *const Editor) !void {
-    try self.disableRawMode();
     try self.doRender(clearScreen);
-    self.buffer_controller.deinit();
-    self.allocator.destroy(self.buffer_controller);
 }
 
 pub fn run(self: *Editor) !void {
@@ -111,7 +100,7 @@ fn doRender(self: *const Editor, render: *const fn (self: *const Editor, arena: 
     try io.getStdOut().writeAll(buf.items);
 }
 
-fn enableRawMode() !os.termios {
+pub fn enableRawMode(self: *Editor) !void {
     const orig = try os.tcgetattr(os.STDIN_FILENO);
     var term = orig;
     term.iflag &= ~(darwin_BRKINT | darwin_IXON | darwin_ICRNL | darwin_INPCK | darwin_ISTRIP);
@@ -119,11 +108,13 @@ fn enableRawMode() !os.termios {
     term.cflag |= darwin_CS8;
     term.lflag &= ~(darwin_ECHO | darwin_ICANON | darwin_IEXTEN | darwin_ISIG);
     try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, term);
-    return orig;
+    self.config.orig_termios = orig;
 }
 
-fn disableRawMode(self: *const Editor) !void {
-    try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, self.config.orig_termios);
+pub fn disableRawMode(self: *const Editor) !void {
+    if (self.config.orig_termios) |orig| {
+        try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, orig);
+    }
 }
 
 fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
@@ -142,7 +133,7 @@ const WindowSize = struct {
     cols: u32,
 };
 
-fn getWindowSize() !WindowSize {
+pub fn getWindowSize(_: *const Editor) !WindowSize {
     var ws: c.winsize = undefined;
     const status = c.ioctl(io.getStdOut().handle, c.TIOCGWINSZ, &ws);
     if (status != 0) {
@@ -152,10 +143,4 @@ fn getWindowSize() !WindowSize {
         .rows = ws.ws_row,
         .cols = ws.ws_col,
     };
-}
-
-test "getWindowSize" {
-    const size = try getWindowSize();
-    try testing.expect(size.rows > 0);
-    try testing.expect(size.cols > 0);
 }

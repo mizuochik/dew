@@ -22,7 +22,7 @@ allocator: Allocator,
 
 const BufferController = @This();
 
-pub fn init(allocator: Allocator, cols: usize, rows: usize) !BufferController {
+pub fn init(allocator: Allocator) !BufferController {
     const model_event_publisher = try allocator.create(EventPublisher(models.Event));
     errdefer allocator.destroy(model_event_publisher);
     model_event_publisher.* = EventPublisher(models.Event).init(allocator);
@@ -41,7 +41,6 @@ pub fn init(allocator: Allocator, cols: usize, rows: usize) !BufferController {
     buffer_view.* = try dew.view.BufferView.init(allocator, buffer);
     errdefer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
-    try model_event_publisher.publish(models.Event{ .screen_size_changed = .{ .width = cols, .height = rows } });
 
     return BufferController{
         .allocator = allocator,

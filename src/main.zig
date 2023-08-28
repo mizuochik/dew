@@ -9,6 +9,11 @@ const mem = std.mem;
 const log = std.log;
 const fs = std.fs;
 const dew = @import("dew.zig");
+const BufferController = dew.controllers.BufferController;
+const models = dew.models;
+const view = dew.view;
+const EventPublisher = dew.event.EventPublisher;
+const EventSubscriber = dew.event.EventSubscriber;
 
 var log_file: ?fs.File = null;
 const log_file_name = "dew.log";
@@ -35,7 +40,6 @@ pub fn main() !void {
         .verbose_log = true,
     }){};
     defer debug.assert(gpa.deinit() == .ok);
-    const allocator = gpa.allocator();
 
     if (os.argv.len < 2) {
         try io.getStdErr().writer().print("Specify file\n", .{});
@@ -43,8 +47,23 @@ pub fn main() !void {
     }
     const path: []const u8 = mem.span(os.argv[1]);
 
-    var editor = try dew.Editor.init(allocator);
+    var buffer_controller = try dew.controllers.BufferController.init(gpa.allocator());
+    defer buffer_controller.deinit();
+    var model_event_publisher = dew.event.EventPublisher(dew.models.Event).init(gpa.allocator());
+    defer model_event_publisher.deinit();
+    var editor = try dew.Editor.init(gpa.allocator(), &buffer_controller);
     defer editor.deinit() catch unreachable;
+
+    try editor.enableRawMode();
+    defer editor.disableRawMode() catch unreachable;
+
+    const win_size = try editor.getWindowSize();
+    try model_event_publisher.publish(.{
+        .screen_size_changed = .{
+            .width = win_size.cols,
+            .height = win_size.rows,
+        },
+    });
 
     try editor.buffer_controller.openFile(path);
     try editor.run();
