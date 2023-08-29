@@ -49,23 +49,23 @@ pub fn processKeypress(self: *BufferController, key: Key) !void {
             'D' => try self.deleteChar(),
             'H' => try self.deleteBackwardChar(),
             'M' => try self.breakLine(),
-            'P' => self.moveCursor(.up),
-            'N' => self.moveCursor(.down),
-            'F' => self.moveCursor(.right),
-            'B' => self.moveCursor(.left),
+            'P' => try self.moveCursor(.up),
+            'N' => try self.moveCursor(.down),
+            'F' => try self.moveCursor(.right),
+            'B' => try self.moveCursor(.left),
             'J' => try self.buffer.joinLine(),
             'A' => {
-                self.buffer.moveToBeginningOfLine();
+                try self.buffer.moveToBeginningOfLine();
                 self.updateLastViewX();
             },
             'E' => {
-                self.buffer.moveToEndOfLine();
+                try self.buffer.moveToEndOfLine();
                 self.updateLastViewX();
             },
             'V' => {
                 self.buffer_view.scrollDown(self.buffer_view.height * 15 / 16);
                 const cur = self.buffer_view.getNormalizedCursor();
-                self.buffer.setCursor(cur.x, cur.y);
+                try self.buffer.setCursor(cur.x, cur.y);
             },
             else => {},
         },
@@ -73,37 +73,37 @@ pub fn processKeypress(self: *BufferController, key: Key) !void {
             'v' => {
                 self.buffer_view.scrollUp(self.buffer_view.height * 15 / 16);
                 const cur = self.buffer_view.getNormalizedCursor();
-                self.buffer.setCursor(cur.x, cur.y);
+                try self.buffer.setCursor(cur.x, cur.y);
             },
             else => {},
         },
         .plain => |k| try self.insertChar(k),
-        .arrow => |k| self.moveCursor(k),
+        .arrow => |k| try self.moveCursor(k),
     }
 }
 
-fn moveCursor(self: *BufferController, k: Arrow) void {
+fn moveCursor(self: *BufferController, k: Arrow) !void {
     switch (k) {
         .up => {
             const y = self.buffer_view.getCursor().y;
             if (y > 0) {
                 const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.last_view_x, .y = y - 1 });
-                self.buffer.setCursor(new_cursor.x, new_cursor.y);
+                try self.buffer.setCursor(new_cursor.x, new_cursor.y);
             }
         },
         .down => {
             const y = self.buffer_view.getCursor().y;
             if (y < self.buffer_view.getNumberOfLines() - 1) {
                 const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.last_view_x, .y = y + 1 });
-                self.buffer.setCursor(new_cursor.x, new_cursor.y);
+                try self.buffer.setCursor(new_cursor.x, new_cursor.y);
             }
         },
         .left => {
-            self.buffer.moveBackward();
+            try self.buffer.moveBackward();
             self.updateLastViewX();
         },
         .right => {
-            self.buffer.moveForward();
+            try self.buffer.moveForward();
             self.updateLastViewX();
         },
     }

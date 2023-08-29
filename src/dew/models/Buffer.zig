@@ -31,12 +31,13 @@ pub fn deinit(self: *const Buffer) void {
     self.rows.deinit();
 }
 
-pub fn setCursor(self: *Buffer, x: usize, y: usize) void {
+pub fn setCursor(self: *Buffer, x: usize, y: usize) !void {
     self.c_x = x;
     self.c_y = y;
+    try self.notifyUpdate();
 }
 
-pub fn moveForward(self: *Buffer) void {
+pub fn moveForward(self: *Buffer) !void {
     const row = self.getCurrentRow();
     if (self.c_x < row.getLen()) {
         self.c_x += 1;
@@ -44,23 +45,27 @@ pub fn moveForward(self: *Buffer) void {
         self.c_y += 1;
         self.c_x = 0;
     }
+    try self.notifyUpdate();
 }
 
-pub fn moveBackward(self: *Buffer) void {
+pub fn moveBackward(self: *Buffer) !void {
     if (self.c_x > 0) {
         self.c_x -= 1;
     } else if (self.c_y > 0) {
         self.c_y -= 1;
         self.c_x = self.getCurrentRow().getLen();
     }
+    try self.notifyUpdate();
 }
 
-pub fn moveToBeginningOfLine(self: *Buffer) void {
+pub fn moveToBeginningOfLine(self: *Buffer) !void {
     self.c_x = 0;
+    try self.notifyUpdate();
 }
 
-pub fn moveToEndOfLine(self: *Buffer) void {
+pub fn moveToEndOfLine(self: *Buffer) !void {
     self.c_x = self.getCurrentRow().getLen();
+    try self.notifyUpdate();
 }
 
 pub fn getCurrentRow(self: *const Buffer) *UnicodeString {
@@ -69,7 +74,8 @@ pub fn getCurrentRow(self: *const Buffer) *UnicodeString {
 
 pub fn insertChar(self: *Buffer, c: u21) !void {
     try self.getCurrentRow().insert(self.c_x, c);
-    self.moveForward();
+    try self.moveForward();
+    try self.notifyUpdate();
 }
 
 pub fn deleteChar(self: *Buffer) !void {
@@ -78,11 +84,13 @@ pub fn deleteChar(self: *Buffer) !void {
         return;
     }
     try self.getCurrentRow().remove(self.c_x);
+    try self.notifyUpdate();
 }
 
 pub fn deleteBackwardChar(self: *Buffer) !void {
-    self.moveBackward();
+    try self.moveBackward();
     try self.deleteChar();
+    try self.notifyUpdate();
 }
 
 pub fn joinLine(self: *Buffer) !void {
@@ -93,6 +101,7 @@ pub fn joinLine(self: *Buffer) !void {
     try self.getCurrentRow().appendSlice(next_row.buffer.items);
     next_row.deinit();
     _ = self.rows.orderedRemove(self.c_y + 1);
+    try self.notifyUpdate();
 }
 
 pub fn killLine(self: *Buffer) !void {
@@ -104,6 +113,7 @@ pub fn killLine(self: *Buffer) !void {
     for (0..row.getLen() - self.c_x) |_| {
         try self.deleteChar();
     }
+    try self.notifyUpdate();
 }
 
 pub fn breakLine(self: *Buffer) !void {
@@ -117,7 +127,8 @@ pub fn breakLine(self: *Buffer) !void {
         }
     }
     try self.rows.insert(self.c_y + 1, new_row);
-    self.moveForward();
+    try self.moveForward();
+    try self.notifyUpdate();
 }
 
 pub fn notifyUpdate(self: *Buffer) !void {
