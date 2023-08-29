@@ -7,8 +7,8 @@ const dew = @import("../../dew.zig");
 const view = dew.view;
 const Key = dew.models.Key;
 const models = dew.models;
-const EventPublisher = dew.event.EventPublisher;
-const EventSubscriber = dew.event.EventSubscriber;
+const Publisher = dew.event.Publisher;
+const Subscriber = dew.event.Subscriber;
 const Arrow = dew.models.Arrow;
 const Buffer = dew.models.Buffer;
 const UnicodeString = dew.models.UnicodeString;
@@ -18,12 +18,12 @@ buffer_view: *dew.view.BufferView,
 last_view_x: usize = 0,
 status_message: []const u8,
 file_path: ?[]const u8 = null,
-model_event_publisher: *const EventPublisher(dew.models.Event),
+model_event_publisher: *const Publisher(dew.models.Event),
 allocator: Allocator,
 
 const BufferController = @This();
 
-pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, model_event_publisher: *const EventPublisher(models.Event)) !BufferController {
+pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, model_event_publisher: *const Publisher(models.Event)) !BufferController {
     const status = try fmt.allocPrint(allocator, "Initialized", .{});
     errdefer allocator.free(status);
     return BufferController{

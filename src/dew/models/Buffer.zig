@@ -6,7 +6,7 @@ const Editor = dew.Editor;
 const Arrow = Editor.Arrow;
 const View = dew.view.View;
 const Event = dew.models.Event;
-const EventPublisher = dew.event.EventPublisher(Event);
+const Publisher = dew.event.Publisher(Event);
 const UnicodeString = dew.models.UnicodeString;
 const Position = dew.models.Position;
 
@@ -15,10 +15,10 @@ const Buffer = @This();
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-event_publisher: *EventPublisher,
+event_publisher: *Publisher,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, event_publisher: *EventPublisher) Buffer {
+pub fn init(allocator: mem.Allocator, event_publisher: *Publisher) Buffer {
     return .{
         .rows = std.ArrayList(UnicodeString).init(allocator),
         .event_publisher = event_publisher,
@@ -136,7 +136,7 @@ pub fn notifyUpdate(self: *Buffer) !void {
 }
 
 test "Buffer: moveForward" {
-    var event_publisher = EventPublisher.init(testing.allocator);
+    var event_publisher = Publisher.init(testing.allocator);
     defer event_publisher.deinit();
     var buf = Buffer.init(testing.allocator, &event_publisher);
     defer buf.deinit();

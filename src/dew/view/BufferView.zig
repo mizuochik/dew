@@ -6,8 +6,8 @@ const view = dew.view;
 const Buffer = dew.models.Buffer;
 const Position = dew.models.Position;
 const models = dew.models;
-const EventPublisher = dew.event.EventPublisher;
-const EventSubscriber = dew.event.EventSubscriber;
+const Publisher = dew.event.Publisher;
+const Subscriber = dew.event.Subscriber;
 const UnicodeString = dew.models.UnicodeString;
 
 const BufferView = @This();
@@ -28,10 +28,10 @@ rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 y_scroll: usize = 0,
-view_event_publisher: *const EventPublisher(view.Event),
+view_event_publisher: *const Publisher(view.Event),
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const EventPublisher(view.Event)) BufferView {
+pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event)) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -130,8 +130,8 @@ pub fn getNormalizedCursor(self: *BufferView) Position {
     return cursor;
 }
 
-pub fn eventSubscriber(self: *BufferView) EventSubscriber(models.Event) {
-    return EventSubscriber(models.Event){
+pub fn eventSubscriber(self: *BufferView) Subscriber(models.Event) {
+    return Subscriber(models.Event){
         .ptr = self,
         .vtable = &.{
             .handle = handleEvent,
@@ -199,9 +199,9 @@ pub fn scrollDown(self: *BufferView, diff: usize) void {
 }
 
 test "BufferView: init" {
-    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    var view_event_publisher = Publisher(view.Event).init(testing.allocator);
     defer view_event_publisher.deinit();
-    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
     const buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
@@ -210,9 +210,9 @@ test "BufferView: init" {
 }
 
 test "BufferView: scrollTo" {
-    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    var view_event_publisher = Publisher(view.Event).init(testing.allocator);
     defer view_event_publisher.deinit();
-    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
     var buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
@@ -241,9 +241,9 @@ test "BufferView: scrollTo" {
 }
 
 test "BufferView: update" {
-    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    var view_event_publisher = Publisher(view.Event).init(testing.allocator);
     defer view_event_publisher.deinit();
-    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
     var buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
@@ -277,9 +277,9 @@ test "BufferView: update" {
 }
 
 test "BufferView: getCursor" {
-    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    var view_event_publisher = Publisher(view.Event).init(testing.allocator);
     defer view_event_publisher.deinit();
-    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
     var buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();
@@ -305,9 +305,9 @@ test "BufferView: getCursor" {
 }
 
 test "BufferView: getBufferPosition" {
-    var view_event_publisher = EventPublisher(view.Event).init(testing.allocator);
+    var view_event_publisher = Publisher(view.Event).init(testing.allocator);
     defer view_event_publisher.deinit();
-    var model_event_publisher = EventPublisher(models.Event).init(testing.allocator);
+    var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
     var buf = Buffer.init(testing.allocator, &model_event_publisher);
     defer buf.deinit();

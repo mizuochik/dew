@@ -1,17 +1,17 @@
 const std = @import("std");
 const dew = @import("../../dew.zig");
 const Event = dew.models.Event;
-const EventPublisher = dew.event.EventPublisher(Event);
+const Publisher = dew.event.Publisher(Event);
 
 const Allocator = std.mem.Allocator;
 
 const StatusBar = @This();
 
 message: []const u8,
-event_publisher: *EventPublisher,
+event_publisher: *Publisher,
 allocator: Allocator,
 
-pub fn init(allocator: Allocator, event_publisher: *EventPublisher) !StatusBar {
+pub fn init(allocator: Allocator, event_publisher: *Publisher) !StatusBar {
     var empty_message = try allocator.alloc(u8, 0);
     errdefer allocator.free(empty_message);
     return .{

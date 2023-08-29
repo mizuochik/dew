@@ -12,8 +12,8 @@ const dew = @import("dew.zig");
 const BufferController = dew.controllers.BufferController;
 const models = dew.models;
 const view = dew.view;
-const EventPublisher = dew.event.EventPublisher;
-const EventSubscriber = dew.event.EventSubscriber;
+const Publisher = dew.event.Publisher;
+const Subscriber = dew.event.Subscriber;
 
 var log_file: ?fs.File = null;
 const log_file_name = "dew.log";
@@ -47,9 +47,9 @@ pub fn main() !void {
     }
     const path: []const u8 = mem.span(os.argv[1]);
 
-    var model_event_publisher = dew.event.EventPublisher(dew.models.Event).init(gpa.allocator());
+    var model_event_publisher = dew.event.Publisher(dew.models.Event).init(gpa.allocator());
     defer model_event_publisher.deinit();
-    var view_event_publisher = dew.event.EventPublisher(dew.view.Event).init(gpa.allocator());
+    var view_event_publisher = dew.event.Publisher(dew.view.Event).init(gpa.allocator());
     defer view_event_publisher.deinit();
 
     var buffer = models.Buffer.init(gpa.allocator(), &model_event_publisher);

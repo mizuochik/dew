@@ -13,7 +13,7 @@ allocator: mem.Allocator,
 
 const Self = @This();
 
-pub fn eventSubscriber(self: *Self) event.EventSubscriber(view.Event) {
+pub fn eventSubscriber(self: *Self) event.Subscriber(view.Event) {
     return .{
         .ptr = self,
         .vtable = &.{

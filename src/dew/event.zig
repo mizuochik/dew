@@ -5,15 +5,15 @@ const ArrayList = std.ArrayList;
 const Allocator = std.mem.Allocator;
 const testing = std.testing;
 
-pub fn EventPublisher(comptime E: anytype) type {
+pub fn Publisher(comptime E: anytype) type {
     return struct {
         const Self = @This();
 
-        subscribers: ArrayList(EventSubscriber(E)),
+        subscribers: ArrayList(Subscriber(E)),
 
         pub fn init(allocator: Allocator) Self {
             return .{
-                .subscribers = ArrayList(EventSubscriber(E)).init(allocator),
+                .subscribers = ArrayList(Subscriber(E)).init(allocator),
             };
         }
 
@@ -21,7 +21,7 @@ pub fn EventPublisher(comptime E: anytype) type {
             self.subscribers.deinit();
         }
 
-        pub fn addSubscriber(self: *Self, subscriber: EventSubscriber(E)) !void {
+        pub fn addSubscriber(self: *Self, subscriber: Subscriber(E)) !void {
             try self.subscribers.append(subscriber);
         }
 
@@ -33,7 +33,7 @@ pub fn EventPublisher(comptime E: anytype) type {
     };
 }
 
-pub fn EventSubscriber(comptime E: anytype) type {
+pub fn Subscriber(comptime E: anytype) type {
     return struct {
         ptr: *anyopaque,
         vtable: *const VTable,
@@ -42,7 +42,7 @@ pub fn EventSubscriber(comptime E: anytype) type {
             handle: *const fn (self: *anyopaque, event: E) anyerror!void,
         };
 
-        pub fn handle(self: *EventSubscriber(E), event: E) anyerror!void {
+        pub fn handle(self: *Subscriber(E), event: E) anyerror!void {
             try self.vtable.handle(self.ptr, event);
         }
     };
@@ -56,20 +56,20 @@ const StubEvent = union(enum) {
     status_bar_updated,
 };
 
-const StubEventSubscriber = struct {
+const StubSubscriber = struct {
     subscribed: ArrayList(StubEvent),
 
-    pub fn init(allocator: Allocator) StubEventSubscriber {
+    pub fn init(allocator: Allocator) StubSubscriber {
         return .{
             .subscribed = ArrayList(StubEvent).init(allocator),
         };
     }
 
-    pub fn deinit(self: *StubEventSubscriber) void {
+    pub fn deinit(self: *StubSubscriber) void {
         self.subscribed.deinit();
     }
 
-    pub fn subscriber(self: *StubEventSubscriber) EventSubscriber(StubEvent) {
+    pub fn subscriber(self: *StubSubscriber) Subscriber(StubEvent) {
         return .{
             .ptr = self,
             .vtable = &.{
@@ -79,15 +79,15 @@ const StubEventSubscriber = struct {
     }
 
     fn handle(ctx: *anyopaque, event: StubEvent) anyerror!void {
-        var self: *StubEventSubscriber = @ptrCast(@alignCast(ctx));
+        var self: *StubSubscriber = @ptrCast(@alignCast(ctx));
         try self.subscribed.append(event);
     }
 };
 
 test "event: publish and subscribe" {
-    var publisher = EventPublisher(StubEvent).init(testing.allocator);
+    var publisher = Publisher(StubEvent).init(testing.allocator);
     defer publisher.deinit();
-    var subscriber = StubEventSubscriber.init(testing.allocator);
+    var subscriber = StubSubscriber.init(testing.allocator);
     defer subscriber.deinit();
     try publisher.addSubscriber(subscriber.subscriber());
 

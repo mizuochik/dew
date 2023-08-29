@@ -4,8 +4,8 @@ const testing = std.testing;
 const StatusBar = dew.models.StatusBar;
 const Buffer = dew.models.Buffer;
 const Event = dew.models.Event;
-const EventPublisher = dew.event.EventPublisher(Event);
-const EventSubscriber = dew.event.EventSubscriber(Event);
+const Publisher = dew.event.Publisher(Event);
+const Subscriber = dew.event.Subscriber(Event);
 
 const StatusBarView = @This();
 
@@ -28,7 +28,7 @@ pub fn view(self: *const StatusBarView) ![]const u8 {
         self.status_bar.message[0..self.width];
 }
 
-pub fn eventSubscriber(self: *StatusBarView) EventSubscriber {
+pub fn eventSubscriber(self: *StatusBarView) Subscriber {
     return .{
         .ptr = self,
         .vtable = &.{
@@ -49,7 +49,7 @@ fn handleEvent(ctx: *anyopaque, event: Event) anyerror!void {
 }
 
 test "StatusBarView: view" {
-    var event_publisher = EventPublisher.init(testing.allocator);
+    var event_publisher = Publisher.init(testing.allocator);
     defer event_publisher.deinit();
     var status_bar = try StatusBar.init(testing.allocator, &event_publisher);
     defer status_bar.deinit();
