@@ -45,7 +45,7 @@ config: Config,
 buffer_controller: *BufferController,
 keyboard: dew.Keyboard,
 
-pub fn init(allocator: mem.Allocator, buffer_controller: *BufferController) !Editor {
+pub fn init(allocator: mem.Allocator, buffer_controller: *BufferController) Editor {
     return Editor{
         .allocator = allocator,
         .config = Config{
@@ -56,10 +56,6 @@ pub fn init(allocator: mem.Allocator, buffer_controller: *BufferController) !Edi
     };
 }
 
-pub fn deinit(self: *const Editor) !void {
-    try self.doRender(clearScreen);
-}
-
 pub fn run(self: *Editor) !void {
     while (true) {
         const key = try self.keyboard.inputKey();
@@ -68,34 +64,6 @@ pub fn run(self: *Editor) !void {
             else => return err,
         };
     }
-}
-
-fn refreshScreen(self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    try self.buffer_controller.buffer.notifyUpdate();
-    try buf.appendSlice("\x1b[?25l");
-    try buf.appendSlice("\x1b[H");
-    try self.drawRows(buf);
-    const cursor = self.buffer_controller.buffer_view.getCursor();
-    const cursor_y = if (cursor.y <= self.buffer_controller.buffer_view.y_scroll)
-        0
-    else
-        cursor.y - self.buffer_controller.buffer_view.y_scroll;
-    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor_y + 1, cursor.x + 1 }));
-    try buf.appendSlice("\x1b[?25h");
-}
-
-fn clearScreen(_: *const Editor, _: mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    try buf.appendSlice("\x1b[2J");
-    try buf.appendSlice("\x1b[H");
-}
-
-fn doRender(self: *const Editor, render: *const fn (self: *const Editor, arena: mem.Allocator, buf: *std.ArrayList(u8)) anyerror!void) !void {
-    var arena = heap.ArenaAllocator.init(self.allocator);
-    defer arena.deinit();
-    var buf = std.ArrayList(u8).init(self.allocator);
-    defer buf.deinit();
-    try render(self, arena.allocator(), &buf);
-    try io.getStdOut().writeAll(buf.items);
 }
 
 pub fn enableRawMode(self: *Editor) !void {
@@ -113,17 +81,6 @@ pub fn disableRawMode(self: *const Editor) !void {
     if (self.config.orig_termios) |orig| {
         try os.tcsetattr(os.STDIN_FILENO, os.TCSA.FLUSH, orig);
     }
-}
-
-fn drawRows(self: *const Editor, buf: *std.ArrayList(u8)) !void {
-    for (0..self.buffer_controller.buffer_view.height) |y| {
-        if (y > 0) try buf.appendSlice("\r\n");
-        try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(self.buffer_controller.buffer_view.getRowView(y + self.buffer_controller.buffer_view.y_scroll));
-    }
-    try buf.appendSlice("\r\n");
-    try buf.appendSlice("\x1b[K");
-    try buf.appendSlice(self.buffer_controller.status_message);
 }
 
 const WindowSize = struct {

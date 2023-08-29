@@ -67,8 +67,7 @@ pub fn main() !void {
         &model_event_publisher,
     );
     defer buffer_controller.deinit();
-    var editor = try dew.Editor.init(gpa.allocator(), &buffer_controller);
-    defer editor.deinit() catch unreachable;
+    var editor = dew.Editor.init(gpa.allocator(), &buffer_controller);
 
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
     try view_event_publisher.addSubscriber(display.eventSubscriber());
