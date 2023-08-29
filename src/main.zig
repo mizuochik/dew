@@ -9,7 +9,7 @@ const mem = std.mem;
 const log = std.log;
 const fs = std.fs;
 const dew = @import("dew.zig");
-const BufferController = dew.controllers.BufferController;
+const EditorController = dew.controllers.EditorController;
 const models = dew.models;
 const view = dew.view;
 const Publisher = dew.event.Publisher;
@@ -60,7 +60,7 @@ pub fn main() !void {
         .buffer_view = &buffer_view,
         .allocator = gpa.allocator(),
     };
-    var buffer_controller = try dew.controllers.BufferController.init(
+    var buffer_controller = try dew.controllers.EditorController.init(
         gpa.allocator(),
         &buffer,
         &buffer_view,

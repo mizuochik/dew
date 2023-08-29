@@ -21,12 +21,12 @@ file_path: ?[]const u8 = null,
 model_event_publisher: *const Publisher(dew.models.Event),
 allocator: Allocator,
 
-const BufferController = @This();
+const EditorController = @This();
 
-pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, model_event_publisher: *const Publisher(models.Event)) !BufferController {
+pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, model_event_publisher: *const Publisher(models.Event)) !EditorController {
     const status = try fmt.allocPrint(allocator, "Initialized", .{});
     errdefer allocator.free(status);
-    return BufferController{
+    return EditorController{
         .allocator = allocator,
         .buffer = buffer,
         .buffer_view = buffer_view,
@@ -35,11 +35,11 @@ pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.Buf
     };
 }
 
-pub fn deinit(self: *const BufferController) void {
+pub fn deinit(self: *const EditorController) void {
     self.allocator.free(self.status_message);
 }
 
-pub fn processKeypress(self: *BufferController, key: Key) !void {
+pub fn processKeypress(self: *EditorController, key: Key) !void {
     switch (key) {
         .del => try self.deleteBackwardChar(),
         .ctrl => |k| switch (k) {
@@ -82,7 +82,7 @@ pub fn processKeypress(self: *BufferController, key: Key) !void {
     }
 }
 
-fn moveCursor(self: *BufferController, k: Arrow) !void {
+fn moveCursor(self: *EditorController, k: Arrow) !void {
     switch (k) {
         .up => {
             const y = self.buffer_view.getCursor().y;
@@ -110,36 +110,36 @@ fn moveCursor(self: *BufferController, k: Arrow) !void {
     self.buffer_view.normalizeScroll();
 }
 
-fn deleteChar(self: *BufferController) !void {
+fn deleteChar(self: *EditorController) !void {
     try self.buffer.deleteChar();
     self.updateLastViewX();
 }
 
-fn deleteBackwardChar(self: *BufferController) !void {
+fn deleteBackwardChar(self: *EditorController) !void {
     try self.buffer.deleteBackwardChar();
     self.updateLastViewX();
 }
 
-fn breakLine(self: *BufferController) !void {
+fn breakLine(self: *EditorController) !void {
     try self.buffer.breakLine();
     self.updateLastViewX();
 }
 
-fn killLine(self: *BufferController) !void {
+fn killLine(self: *EditorController) !void {
     try self.buffer.killLine();
     self.updateLastViewX();
 }
 
-fn updateLastViewX(self: *BufferController) void {
+fn updateLastViewX(self: *EditorController) void {
     self.last_view_x = self.buffer_view.getCursor().x;
 }
 
-fn insertChar(self: *BufferController, char: u21) !void {
+fn insertChar(self: *EditorController, char: u21) !void {
     try self.buffer.insertChar(char);
     self.updateLastViewX();
 }
 
-pub fn openFile(self: *BufferController, path: []const u8) !void {
+pub fn openFile(self: *EditorController, path: []const u8) !void {
     var f = try fs.cwd().openFile(path, .{});
     var reader = f.reader();
 
@@ -174,7 +174,7 @@ pub fn openFile(self: *BufferController, path: []const u8) !void {
     self.file_path = path;
 }
 
-fn saveFile(self: *BufferController) !void {
+fn saveFile(self: *EditorController) !void {
     var f = try fs.cwd().createFile(self.file_path.?, .{});
     defer f.close();
     for (self.buffer.rows.items, 0..) |row, i| {
@@ -187,7 +187,7 @@ fn saveFile(self: *BufferController) !void {
     self.setStatusMessage(new_status);
 }
 
-fn setStatusMessage(self: *BufferController, status_message: []const u8) void {
+fn setStatusMessage(self: *EditorController, status_message: []const u8) void {
     self.allocator.free(self.status_message);
     self.status_message = status_message;
 }

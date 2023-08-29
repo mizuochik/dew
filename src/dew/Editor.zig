@@ -15,7 +15,7 @@ const Key = dew.models.Key;
 const Arrow = dew.models.Arrow;
 const UnicodeString = dew.models.UnicodeString;
 const c = dew.c;
-const BufferController = dew.controllers.BufferController;
+const EditorController = dew.controllers.EditorController;
 
 const darwin_ECHO: os.tcflag_t = 0x8;
 const darwin_ICANON: os.tcflag_t = 0x100;
@@ -42,10 +42,10 @@ const Config = struct {
 
 allocator: mem.Allocator,
 config: Config,
-buffer_controller: *BufferController,
+buffer_controller: *EditorController,
 keyboard: dew.Keyboard,
 
-pub fn init(allocator: mem.Allocator, buffer_controller: *BufferController) Editor {
+pub fn init(allocator: mem.Allocator, buffer_controller: *EditorController) Editor {
     return Editor{
         .allocator = allocator,
         .config = Config{
