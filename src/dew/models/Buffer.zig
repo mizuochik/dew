@@ -154,24 +154,24 @@ test "Buffer: moveForward" {
 
     try testing.expectFmt("0 0", "{} {}", .{ buf.c_x, buf.c_y });
 
-    buf.moveForward();
+    try buf.moveForward();
     try testing.expectFmt("1 0", "{} {}", .{ buf.c_x, buf.c_y });
 
-    buf.moveForward();
+    try buf.moveForward();
     try testing.expectFmt("2 0", "{} {}", .{ buf.c_x, buf.c_y });
 
-    buf.moveForward();
+    try buf.moveForward();
     try testing.expectFmt("0 1", "{} {}", .{ buf.c_x, buf.c_y });
 
-    buf.moveForward();
+    try buf.moveForward();
     try testing.expectFmt("1 1", "{} {}", .{ buf.c_x, buf.c_y });
 
-    buf.moveForward();
+    try buf.moveForward();
     try testing.expectFmt("2 1", "{} {}", .{ buf.c_x, buf.c_y });
 
-    buf.moveForward();
+    try buf.moveForward();
     try testing.expectFmt("0 2", "{} {}", .{ buf.c_x, buf.c_y });
 
-    buf.moveForward();
+    try buf.moveForward();
     try testing.expectFmt("0 2", "{} {}", .{ buf.c_x, buf.c_y });
 }
