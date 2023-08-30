@@ -41,16 +41,28 @@ fn doRender(self: *const Self, render: *const fn (self: *const Self, arena: mem.
 }
 
 fn refreshScreen(self: *const Self, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    try buf.appendSlice("\x1b[?25l");
+    try self.hideCursor(buf);
     try buf.appendSlice("\x1b[H");
     try self.drawRows(buf);
+    try self.putCursor(arena, buf);
+    try self.showCursor(buf);
+}
+
+fn hideCursor(_: *const Self, buf: *std.ArrayList(u8)) !void {
+    try buf.appendSlice("\x1b[?25l");
+}
+
+fn showCursor(_: *const Self, buf: *std.ArrayList(u8)) !void {
+    try buf.appendSlice("\x1b[?25h");
+}
+
+fn putCursor(self: *const Self, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
     const cursor = self.buffer_view.getCursor();
     const cursor_y = if (cursor.y <= self.buffer_view.y_scroll)
         0
     else
         cursor.y - self.buffer_view.y_scroll;
     try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ cursor_y + 1, cursor.x + 1 }));
-    try buf.appendSlice("\x1b[?25h");
 }
 
 fn clearScreen(_: *const Self, _: mem.Allocator, buf: *std.ArrayList(u8)) !void {
