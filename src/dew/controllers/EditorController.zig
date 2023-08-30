@@ -16,28 +16,24 @@ const UnicodeString = dew.models.UnicodeString;
 buffer: *dew.models.Buffer,
 buffer_view: *dew.view.BufferView,
 last_view_x: usize = 0,
-status_message: []const u8,
+status_message: *models.StatusMessage,
 file_path: ?[]const u8 = null,
 model_event_publisher: *const Publisher(dew.models.Event),
 allocator: Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, model_event_publisher: *const Publisher(models.Event)) !EditorController {
-    const status = try fmt.allocPrint(allocator, "Initialized", .{});
-    errdefer allocator.free(status);
+pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, status_message: *models.StatusMessage, model_event_publisher: *const Publisher(models.Event)) !EditorController {
     return EditorController{
         .allocator = allocator,
         .buffer = buffer,
         .buffer_view = buffer_view,
-        .status_message = status,
+        .status_message = status_message,
         .model_event_publisher = model_event_publisher,
     };
 }
 
-pub fn deinit(self: *const EditorController) void {
-    self.allocator.free(self.status_message);
-}
+pub fn deinit(_: *const EditorController) void {}
 
 pub fn processKeypress(self: *EditorController, key: Key) !void {
     switch (key) {
@@ -172,6 +168,10 @@ pub fn openFile(self: *EditorController, path: []const u8) !void {
     try self.buffer.notifyUpdate();
 
     self.file_path = path;
+
+    const new_message = try fmt.allocPrint(self.allocator, "{s}", .{path});
+    errdefer self.allocator.free(new_message);
+    try self.status_message.setMessage(new_message);
 }
 
 fn saveFile(self: *EditorController) !void {
@@ -184,10 +184,5 @@ fn saveFile(self: *EditorController) !void {
     }
     const new_status = try fmt.allocPrint(self.allocator, "Saved: {s}", .{self.file_path.?});
     errdefer self.allocator.free(new_status);
-    self.setStatusMessage(new_status);
-}
-
-fn setStatusMessage(self: *EditorController, status_message: []const u8) void {
-    self.allocator.free(self.status_message);
-    self.status_message = status_message;
+    try self.status_message.setMessage(new_status);
 }

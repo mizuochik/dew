@@ -56,6 +56,8 @@ pub fn main() !void {
     defer buffer.deinit();
     var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher);
     defer buffer_view.deinit();
+    var status_message = try models.StatusMessage.init(gpa.allocator(), &model_event_publisher);
+    defer status_message.deinit();
     var display = dew.Display{
         .buffer_view = &buffer_view,
         .allocator = gpa.allocator(),
@@ -64,6 +66,7 @@ pub fn main() !void {
         gpa.allocator(),
         &buffer,
         &buffer_view,
+        &status_message,
         &model_event_publisher,
     );
     defer buffer_controller.deinit();
