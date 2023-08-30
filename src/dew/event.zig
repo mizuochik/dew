@@ -53,7 +53,7 @@ const StubEvent = union(enum) {
         from: Position,
         to: Position,
     },
-    status_bar_updated,
+    status_message_updated,
 };
 
 const StubSubscriber = struct {
@@ -91,10 +91,10 @@ test "event: publish and subscribe" {
     defer subscriber.deinit();
     try publisher.addSubscriber(subscriber.subscriber());
 
-    try publisher.publish(.status_bar_updated);
-    try publisher.publish(.status_bar_updated);
+    try publisher.publish(.status_message_updated);
+    try publisher.publish(.status_message_updated);
 
     try testing.expectEqual(@as(usize, 2), subscriber.subscribed.items.len);
-    try testing.expectEqual(StubEvent.status_bar_updated, subscriber.subscribed.items[0]);
-    try testing.expectEqual(StubEvent.status_bar_updated, subscriber.subscribed.items[1]);
+    try testing.expectEqual(StubEvent.status_message_updated, subscriber.subscribed.items[0]);
+    try testing.expectEqual(StubEvent.status_message_updated, subscriber.subscribed.items[1]);
 }

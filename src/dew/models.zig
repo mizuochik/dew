@@ -4,7 +4,7 @@ const testing = std.testing;
 pub const Buffer = @import("models/Buffer.zig");
 pub const Position = @import("models/Position.zig");
 pub const UnicodeString = @import("models/UnicodeString.zig");
-pub const StatusBar = @import("models/StatusBar.zig");
+pub const StatusMessage = @import("models/StatusMessage.zig");
 
 pub const Key = union(enum) {
     plain: u21,
@@ -26,7 +26,7 @@ pub const Event = union(enum) {
         from: Position,
         to: Position,
     },
-    status_bar_updated,
+    status_message_updated,
     screen_size_changed: ScreenSize,
 };
 
