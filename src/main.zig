@@ -58,8 +58,11 @@ pub fn main() !void {
     defer buffer_view.deinit();
     var status_message = try models.StatusMessage.init(gpa.allocator(), &model_event_publisher);
     defer status_message.deinit();
+    var status_var_view = view.StatusBarView.init(&status_message, &view_event_publisher);
+    defer status_var_view.deinit();
     var display = dew.Display{
         .buffer_view = &buffer_view,
+        .status_bar_view = &status_var_view,
         .allocator = gpa.allocator(),
     };
     var buffer_controller = try dew.controllers.EditorController.init(

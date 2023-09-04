@@ -9,6 +9,7 @@ const view = dew.view;
 const event = dew.event;
 
 buffer_view: *const view.BufferView,
+status_bar_view: *const view.StatusBarView,
 allocator: mem.Allocator,
 
 const Self = @This();
@@ -28,6 +29,7 @@ fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
         .buffer_view_updated => {
             try self.doRender(refreshScreen);
         },
+        .status_bar_view_updated => {},
     }
 }
 

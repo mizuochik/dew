@@ -6,6 +6,7 @@ pub const StatusBarView = @import("view/StatusBarView.zig");
 
 pub const Event = union(enum) {
     buffer_view_updated,
+    status_bar_view_updated,
 };
 
 test {

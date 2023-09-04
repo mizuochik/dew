@@ -4,6 +4,7 @@ const testing = std.testing;
 const StatusMessage = dew.models.StatusMessage;
 const Buffer = dew.models.Buffer;
 const Event = dew.models.Event;
+const ViewEventPublisher = dew.event.Publisher(dew.view.Event);
 const Publisher = dew.event.Publisher(Event);
 const Subscriber = dew.event.Subscriber(Event);
 
@@ -11,11 +12,13 @@ const StatusBarView = @This();
 
 status_message: *const StatusMessage,
 width: usize,
+view_event_publisher: *const ViewEventPublisher,
 
-pub fn init(status_message: *StatusMessage) StatusBarView {
+pub fn init(status_message: *StatusMessage, view_event_publisher: *const ViewEventPublisher) StatusBarView {
     return .{
         .status_message = status_message,
         .width = 0,
+        .view_event_publisher = view_event_publisher,
     };
 }
 
@@ -40,9 +43,12 @@ pub fn eventSubscriber(self: *StatusBarView) Subscriber {
 fn handleEvent(ctx: *anyopaque, event: Event) anyerror!void {
     var self: *StatusBarView = @ptrCast(@alignCast(ctx));
     switch (event) {
-        .status_message_updated => {},
+        .status_message_updated => {
+            try self.view_event_publisher.publish(.status_bar_view_updated);
+        },
         .screen_size_changed => |new_size| {
             self.width = new_size.width;
+            try self.view_event_publisher.publish(.status_bar_view_updated);
         },
         else => {},
     }
