@@ -155,7 +155,10 @@ fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
         },
         .screen_size_changed => |new_size| {
             self.width = new_size.width;
-            self.height = new_size.height - 1;
+            self.height = switch (self.mode) {
+                .file => new_size.height - 1,
+                .command => 1,
+            };
             try self.update();
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
