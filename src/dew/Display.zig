@@ -31,7 +31,9 @@ fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
         .buffer_view_updated => {
             try self.doRender(refreshScreen);
         },
-        .status_bar_view_updated => {},
+        .status_bar_view_updated => {
+            try self.doRender(updateStatusBar);
+        },
     }
 }
 
@@ -85,6 +87,13 @@ fn drawRows(self: *const Self, buf: *std.ArrayList(u8)) !void {
         try buf.appendSlice(self.buffer_view.getRowView(y + self.buffer_view.y_scroll));
     }
     try buf.appendSlice("\r\n");
+}
+
+fn updateStatusBar(self: *const Self, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
+    try self.hideCursor(buf);
+    try self.putCursor(arena, buf, 0, self.size.rows - 1);
     try buf.appendSlice("\x1b[K");
-    try buf.appendSlice("status");
+    try buf.appendSlice(try self.status_bar_view.view());
+    try self.putCurrentCursor(arena, buf);
+    try self.showCursor(buf);
 }

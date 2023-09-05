@@ -37,7 +37,7 @@ pub fn main() !void {
     try log_file.?.seekTo(stat.size);
 
     var gpa = heap.GeneralPurposeAllocator(.{
-        .verbose_log = true,
+        .verbose_log = false,
     }){};
     defer debug.assert(gpa.deinit() == .ok);
 
@@ -56,10 +56,14 @@ pub fn main() !void {
     defer buffer.deinit();
     var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher);
     defer buffer_view.deinit();
+    try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
+
     var status_message = try models.StatusMessage.init(gpa.allocator(), &model_event_publisher);
     defer status_message.deinit();
     var status_var_view = view.StatusBarView.init(&status_message, &view_event_publisher);
     defer status_var_view.deinit();
+    try model_event_publisher.addSubscriber(status_var_view.eventSubscriber());
+
     var buffer_controller = try dew.controllers.EditorController.init(
         gpa.allocator(),
         &buffer,
@@ -68,9 +72,8 @@ pub fn main() !void {
         &model_event_publisher,
     );
     defer buffer_controller.deinit();
-    var editor = dew.Editor.init(gpa.allocator(), &buffer_controller);
 
-    try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
+    var editor = dew.Editor.init(gpa.allocator(), &buffer_controller);
 
     const win_size = try editor.getWindowSize();
     var display = dew.Display{
@@ -91,6 +94,10 @@ pub fn main() !void {
             .height = win_size.rows,
         },
     });
+
+    const msg = try fmt.allocPrint(gpa.allocator(), "Initialized", .{});
+    errdefer gpa.allocator().free(msg);
+    try status_message.setMessage(msg);
 
     try editor.run();
 }
