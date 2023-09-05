@@ -54,12 +54,15 @@ pub fn main() !void {
 
     var buffer = models.Buffer.init(gpa.allocator(), &model_event_publisher, .file);
     defer buffer.deinit();
-    var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher);
+    var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher, .file);
     defer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
     var command_buffer = models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
     defer command_buffer.deinit();
+    var command_buffer_view = view.BufferView.init(gpa.allocator(), &command_buffer, &view_event_publisher, .command);
+    defer command_buffer_view.deinit();
+    try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
 
     var status_message = try models.StatusMessage.init(gpa.allocator(), &model_event_publisher);
     defer status_message.deinit();
@@ -71,6 +74,7 @@ pub fn main() !void {
         gpa.allocator(),
         &buffer,
         &buffer_view,
+        &command_buffer,
         &status_message,
         &model_event_publisher,
     );

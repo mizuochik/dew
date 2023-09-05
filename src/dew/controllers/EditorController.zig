@@ -15,6 +15,7 @@ const UnicodeString = dew.models.UnicodeString;
 
 buffer: *dew.models.Buffer,
 buffer_view: *dew.view.BufferView,
+command_buffer: *dew.models.Buffer,
 last_view_x: usize = 0,
 status_message: *models.StatusMessage,
 file_path: ?[]const u8 = null,
@@ -23,11 +24,12 @@ allocator: Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, status_message: *models.StatusMessage, model_event_publisher: *const Publisher(models.Event)) !EditorController {
+pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, command_buffer: *models.Buffer, status_message: *models.StatusMessage, model_event_publisher: *const Publisher(models.Event)) !EditorController {
     return EditorController{
         .allocator = allocator,
         .buffer = buffer,
         .buffer_view = buffer_view,
+        .command_buffer = command_buffer,
         .status_message = status_message,
         .model_event_publisher = model_event_publisher,
     };

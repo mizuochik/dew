@@ -23,15 +23,21 @@ const empty: []const u8 = b: {
     break :b &s;
 };
 
+const Mode = enum {
+    file,
+    command,
+};
+
 buffer: *const Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 y_scroll: usize = 0,
 view_event_publisher: *const Publisher(view.Event),
+mode: Mode,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event)) BufferView {
+pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event), mode: Mode) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -40,6 +46,7 @@ pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Pub
         .width = 0,
         .height = 0,
         .view_event_publisher = vevents,
+        .mode = mode,
         .allocator = allocator,
     };
 }

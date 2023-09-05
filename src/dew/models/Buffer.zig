@@ -124,6 +124,9 @@ pub fn killLine(self: *Buffer) !void {
 }
 
 pub fn breakLine(self: *Buffer) !void {
+    if (self.mode == Mode.command) {
+        return;
+    }
     var new_row = try UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
     if (self.c_x < self.getCurrentRow().getLen()) {
