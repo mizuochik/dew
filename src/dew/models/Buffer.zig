@@ -12,16 +12,23 @@ const Position = dew.models.Position;
 
 const Buffer = @This();
 
+const Mode = enum {
+    file,
+    command,
+};
+
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
 event_publisher: *Publisher,
+mode: Mode,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, event_publisher: *Publisher) Buffer {
+pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) Buffer {
     return .{
         .rows = std.ArrayList(UnicodeString).init(allocator),
         .event_publisher = event_publisher,
+        .mode = mode,
         .allocator = allocator,
     };
 }
