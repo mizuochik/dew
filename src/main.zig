@@ -58,6 +58,9 @@ pub fn main() !void {
     defer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
+    var command_buffer = try models.CommandBuffer.init(gpa.allocator(), &model_event_publisher);
+    defer command_buffer.deinit();
+
     var status_message = try models.StatusMessage.init(gpa.allocator(), &model_event_publisher);
     defer status_message.deinit();
     var status_var_view = view.StatusBarView.init(&status_message, &view_event_publisher);
