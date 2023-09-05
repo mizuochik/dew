@@ -7,10 +7,12 @@ const fmt = std.fmt;
 const dew = @import("../dew.zig");
 const view = dew.view;
 const event = dew.event;
+const Editor = dew.Editor;
 
 buffer_view: *const view.BufferView,
 status_bar_view: *const view.StatusBarView,
 allocator: mem.Allocator,
+size: Editor.WindowSize,
 
 const Self = @This();
 

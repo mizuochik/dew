@@ -60,11 +60,6 @@ pub fn main() !void {
     defer status_message.deinit();
     var status_var_view = view.StatusBarView.init(&status_message, &view_event_publisher);
     defer status_var_view.deinit();
-    var display = dew.Display{
-        .buffer_view = &buffer_view,
-        .status_bar_view = &status_var_view,
-        .allocator = gpa.allocator(),
-    };
     var buffer_controller = try dew.controllers.EditorController.init(
         gpa.allocator(),
         &buffer,
@@ -76,13 +71,20 @@ pub fn main() !void {
     var editor = dew.Editor.init(gpa.allocator(), &buffer_controller);
 
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
+
+    const win_size = try editor.getWindowSize();
+    var display = dew.Display{
+        .buffer_view = &buffer_view,
+        .status_bar_view = &status_var_view,
+        .allocator = gpa.allocator(),
+        .size = win_size,
+    };
     try view_event_publisher.addSubscriber(display.eventSubscriber());
 
     try editor.enableRawMode();
     defer editor.disableRawMode() catch unreachable;
     try editor.buffer_controller.openFile(path);
 
-    const win_size = try editor.getWindowSize();
     try model_event_publisher.publish(.{
         .screen_size_changed = .{
             .width = win_size.cols,

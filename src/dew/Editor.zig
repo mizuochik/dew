@@ -83,7 +83,7 @@ pub fn disableRawMode(self: *const Editor) !void {
     }
 }
 
-const WindowSize = struct {
+pub const WindowSize = struct {
     rows: u32,
     cols: u32,
 };
