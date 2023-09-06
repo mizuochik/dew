@@ -5,6 +5,7 @@ pub const Buffer = @import("models/Buffer.zig");
 pub const Position = @import("models/Position.zig");
 pub const UnicodeString = @import("models/UnicodeString.zig");
 pub const StatusMessage = @import("models/StatusMessage.zig");
+pub const BufferSelector = @import("models/BufferSelector.zig");
 
 pub const Key = union(enum) {
     plain: u21,

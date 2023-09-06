@@ -20,17 +20,19 @@ last_view_x: usize = 0,
 status_message: *models.StatusMessage,
 file_path: ?[]const u8 = null,
 model_event_publisher: *const Publisher(dew.models.Event),
+buffer_selector: *models.BufferSelector,
 allocator: Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, command_buffer: *models.Buffer, status_message: *models.StatusMessage, model_event_publisher: *const Publisher(models.Event)) !EditorController {
+pub fn init(allocator: Allocator, buffer: *models.Buffer, buffer_view: *view.BufferView, command_buffer: *models.Buffer, status_message: *models.StatusMessage, buffer_selector: *models.BufferSelector, model_event_publisher: *const Publisher(models.Event)) !EditorController {
     return EditorController{
         .allocator = allocator,
         .buffer = buffer,
         .buffer_view = buffer_view,
         .command_buffer = command_buffer,
         .status_message = status_message,
+        .buffer_selector = buffer_selector,
         .model_event_publisher = model_event_publisher,
     };
 }
