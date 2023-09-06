@@ -29,6 +29,8 @@ pub const Event = union(enum) {
     },
     status_message_updated,
     screen_size_changed: ScreenSize,
+    command_buffer_opened,
+    command_buffer_closed,
 };
 
 pub const ScreenSize = struct {
