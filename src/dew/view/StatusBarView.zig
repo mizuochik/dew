@@ -57,9 +57,15 @@ fn handleEvent(ctx: *anyopaque, event: Event) anyerror!void {
 test "StatusBarView: view" {
     var event_publisher = Publisher.init(testing.allocator);
     defer event_publisher.deinit();
+    var view_event_publisher = dew.event.Publisher(dew.view.Event).init(testing.allocator);
+    defer view_event_publisher.deinit();
+
     var status_message = try StatusMessage.init(testing.allocator, &event_publisher);
     defer status_message.deinit();
-    var status_bar_view = StatusBarView.init(&status_message);
+    var status_bar_view = StatusBarView.init(
+        &status_message,
+        &view_event_publisher,
+    );
     defer status_bar_view.deinit();
     try event_publisher.addSubscriber(status_bar_view.eventSubscriber());
 

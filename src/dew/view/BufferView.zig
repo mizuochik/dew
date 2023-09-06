@@ -213,9 +213,9 @@ test "BufferView: init" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    const buf = Buffer.init(testing.allocator, &model_event_publisher);
+    const buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
-    const bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
+    const bv = BufferView.init(testing.allocator, &buf, &view_event_publisher, .file);
     defer bv.deinit();
 }
 
@@ -224,7 +224,7 @@ test "BufferView: scrollTo" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &model_event_publisher);
+    var buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     for ([_][]const u8{
         "abc",
@@ -235,7 +235,7 @@ test "BufferView: scrollTo" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
+    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher, .file);
     defer bv.deinit();
     try model_event_publisher.addSubscriber(bv.eventSubscriber());
     try model_event_publisher.publish(.{ .screen_size_changed = .{ .width = 99, .height = 5 } });
@@ -255,7 +255,7 @@ test "BufferView: update" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &model_event_publisher);
+    var buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -269,7 +269,7 @@ test "BufferView: update" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
+    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher, .file);
     defer bv.deinit();
     try model_event_publisher.addSubscriber(bv.eventSubscriber());
     try model_event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 100 } });
@@ -291,7 +291,7 @@ test "BufferView: getCursor" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &model_event_publisher);
+    var buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -303,7 +303,7 @@ test "BufferView: getCursor" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
+    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher, .file);
     defer bv.deinit();
     try model_event_publisher.addSubscriber(bv.eventSubscriber());
     try model_event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 99 } });
@@ -319,7 +319,7 @@ test "BufferView: getBufferPosition" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &model_event_publisher);
+    var buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -331,7 +331,7 @@ test "BufferView: getBufferPosition" {
         try s.appendSlice(line);
         try buf.rows.append(s);
     }
-    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher);
+    var bv = BufferView.init(testing.allocator, &buf, &view_event_publisher, .file);
     defer bv.deinit();
     try model_event_publisher.addSubscriber(bv.eventSubscriber());
     try model_event_publisher.publish(.{ .screen_size_changed = .{ .width = 5, .height = 99 } });
