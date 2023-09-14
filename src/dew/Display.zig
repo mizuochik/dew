@@ -11,6 +11,7 @@ const Editor = dew.Editor;
 
 buffer_view: *const view.BufferView,
 status_bar_view: *const view.StatusBarView,
+command_buffer_view: *const view.BufferView,
 allocator: mem.Allocator,
 size: Editor.WindowSize,
 

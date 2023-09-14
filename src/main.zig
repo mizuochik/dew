@@ -90,6 +90,7 @@ pub fn main() !void {
     var display = dew.Display{
         .buffer_view = &buffer_view,
         .status_bar_view = &status_var_view,
+        .command_buffer_view = &command_buffer_view,
         .allocator = gpa.allocator(),
         .size = win_size,
     };

@@ -35,6 +35,7 @@ height: usize,
 y_scroll: usize = 0,
 view_event_publisher: *const Publisher(view.Event),
 mode: Mode,
+is_active: bool,
 allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event), mode: Mode) BufferView {
@@ -47,6 +48,7 @@ pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Pub
         .height = 0,
         .view_event_publisher = vevents,
         .mode = mode,
+        .is_active = mode != Mode.command,
         .allocator = allocator,
     };
 }
@@ -160,6 +162,14 @@ fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
                 .command => 1,
             };
             try self.update();
+            try self.view_event_publisher.publish(.buffer_view_updated);
+        },
+        .command_buffer_opened => {
+            self.is_active = self.mode == Mode.command;
+            try self.view_event_publisher.publish(.buffer_view_updated);
+        },
+        .command_buffer_closed => {
+            self.is_active = self.mode != Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},
