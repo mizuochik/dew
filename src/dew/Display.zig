@@ -33,7 +33,7 @@ fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
             try self.doRender(refreshScreen);
         },
         .status_bar_view_updated => {
-            try self.doRender(updateStatusBar);
+            try self.doRender(refreshBottomLine);
         },
     }
 }
@@ -51,6 +51,29 @@ fn refreshScreen(self: *const Self, arena: mem.Allocator, buf: *std.ArrayList(u8
     try self.hideCursor(buf);
     try self.putCursor(arena, buf, 0, 0);
     try self.drawRows(buf);
+    try self.putCurrentCursor(arena, buf);
+    try self.showCursor(buf);
+}
+
+fn refreshBottomLine(self: *const Self, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
+    try self.hideCursor(buf);
+    try self.putCursor(arena, buf, 0, self.size.rows - 1);
+
+    const status_bar = try self.status_bar_view.view();
+    const command_buffer = self.command_buffer_view.getRowView(0);
+
+    try buf.appendSlice("\x1b[K");
+    try buf.appendSlice(command_buffer);
+    const status_offset = if (self.size.cols >= command_buffer.len + status_bar.len) 0 else self.size.cols - (command_buffer.len + status_bar.len);
+    if (status_offset == 0) {
+        const blank = try arena.alloc(u8, self.size.cols - (command_buffer.len + status_bar.len));
+        for (0..blank.len) |i| {
+            blank[i] = ' ';
+        }
+        try buf.appendSlice(blank);
+    }
+    try buf.appendSlice(status_bar);
+
     try self.putCurrentCursor(arena, buf);
     try self.showCursor(buf);
 }
@@ -88,13 +111,4 @@ fn drawRows(self: *const Self, buf: *std.ArrayList(u8)) !void {
         try buf.appendSlice(self.buffer_view.getRowView(y + self.buffer_view.y_scroll));
     }
     try buf.appendSlice("\r\n");
-}
-
-fn updateStatusBar(self: *const Self, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    try self.hideCursor(buf);
-    try self.putCursor(arena, buf, 0, self.size.rows - 1);
-    try buf.appendSlice("\x1b[K");
-    try buf.appendSlice(try self.status_bar_view.view());
-    try self.putCurrentCursor(arena, buf);
-    try self.showCursor(buf);
 }
