@@ -26,6 +26,11 @@ pub fn openCommandBuffer(self: *Self) !void {
     try self.event_publisher.publish(.command_buffer_opened);
 }
 
+pub fn closeCommandBuffer(self: *Self) !void {
+    self.current_buffer = self.file_buffer;
+    try self.event_publisher.publish(.command_buffer_closed);
+}
+
 test {
     testing.refAllDecls(@This());
 }
