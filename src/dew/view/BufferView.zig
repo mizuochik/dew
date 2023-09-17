@@ -36,6 +36,7 @@ y_scroll: usize = 0,
 view_event_publisher: *const Publisher(view.Event),
 mode: Mode,
 is_active: bool,
+last_cursor_x: usize = 0,
 allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event), mode: Mode) BufferView {
@@ -137,6 +138,10 @@ pub fn getNormalizedCursor(self: *BufferView) Position {
         return .{ .x = cursor.x, .y = bottom_limit - 1 };
     }
     return cursor;
+}
+
+pub fn updateLastCursorX(self: *BufferView) void {
+    self.last_cursor_x = self.getCursor().x;
 }
 
 pub fn eventSubscriber(self: *BufferView) Subscriber(models.Event) {
