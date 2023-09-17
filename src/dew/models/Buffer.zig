@@ -40,7 +40,10 @@ pub fn deinit(self: *const Buffer) void {
 
 pub fn setCursor(self: *Buffer, x: usize, y: usize) !void {
     self.c_x = x;
-    self.c_y = y;
+    self.c_y = switch (self.mode) {
+        .command => 0,
+        else => y,
+    };
     try self.notifyUpdate();
 }
 

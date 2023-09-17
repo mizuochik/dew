@@ -57,6 +57,9 @@ pub fn processKeypress(self: *EditorController, key: Key) !void {
                 try self.buffer_selector.current_buffer.moveToEndOfLine();
                 self.buffer_view.updateLastCursorX();
             },
+            'X' => {
+                try self.buffer_selector.toggleCommandBuffer();
+            },
             'V' => {
                 self.buffer_view.scrollDown(self.buffer_view.height * 15 / 16);
                 const cur = self.buffer_view.getNormalizedCursor();
