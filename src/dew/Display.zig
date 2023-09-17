@@ -72,7 +72,7 @@ fn refreshBottomLine(self: *const Self, arena: mem.Allocator, buf: *std.ArrayLis
         }
         try buf.appendSlice(blank);
     }
-    try buf.appendSlice(status_bar);
+    try buf.appendSlice(status_bar[status_offset..]);
 
     try self.putCurrentCursor(arena, buf);
     try self.showCursor(buf);
