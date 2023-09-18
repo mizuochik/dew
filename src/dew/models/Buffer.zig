@@ -24,13 +24,19 @@ event_publisher: *Publisher,
 mode: Mode,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) Buffer {
-    return .{
+pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) !Buffer {
+    var buf = .{
         .rows = std.ArrayList(UnicodeString).init(allocator),
         .event_publisher = event_publisher,
         .mode = mode,
         .allocator = allocator,
     };
+    if (mode == Mode.command) {
+        var l = try UnicodeString.init(allocator);
+        errdefer l.deinit();
+        try buf.rows.append(l);
+    }
+    return buf;
 }
 
 pub fn deinit(self: *const Buffer) void {

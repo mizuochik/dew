@@ -52,13 +52,13 @@ pub fn main() !void {
     var view_event_publisher = dew.event.Publisher(dew.view.Event).init(gpa.allocator());
     defer view_event_publisher.deinit();
 
-    var buffer = models.Buffer.init(gpa.allocator(), &model_event_publisher, .file);
+    var buffer = try models.Buffer.init(gpa.allocator(), &model_event_publisher, .file);
     defer buffer.deinit();
     var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher, .file);
     defer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
-    var command_buffer = models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
+    var command_buffer = try models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
     defer command_buffer.deinit();
     var command_buffer_view = view.BufferView.init(gpa.allocator(), &command_buffer, &view_event_publisher, .command);
     defer command_buffer_view.deinit();
