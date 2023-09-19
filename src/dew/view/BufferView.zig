@@ -35,12 +35,10 @@ width: usize,
 height: usize,
 y_scroll: usize = 0,
 view_event_publisher: *const Publisher(view.Event),
-mode: Mode,
-is_active: bool,
 last_cursor_x: usize = 0,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event), mode: Mode) BufferView {
+pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event)) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -49,8 +47,6 @@ pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Pub
         .width = 0,
         .height = 0,
         .view_event_publisher = vevents,
-        .mode = mode,
-        .is_active = mode != Mode.command,
         .allocator = allocator,
     };
 }
@@ -158,7 +154,7 @@ fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
         },
         .screen_size_changed => |new_size| {
             self.width = new_size.width;
-            self.height = switch (self.mode) {
+            self.height = switch (self.buffer.mode) {
                 .file => new_size.height - 1,
                 .command => 1,
             };
@@ -166,11 +162,9 @@ fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         .command_buffer_opened => {
-            self.is_active = self.mode == Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         .command_buffer_closed => {
-            self.is_active = self.mode != Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},
@@ -197,7 +191,7 @@ pub fn bufferObserver(self: *BufferView) observer.Observer(Buffer.Event) {
 
 fn handleBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
-    switch (self.mode) {
+    switch (self.buffer.mode) {
         .file => switch (event) {
             .updated => |_| {
                 try self.update();
