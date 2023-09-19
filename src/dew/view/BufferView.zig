@@ -3,6 +3,7 @@ const mem = std.mem;
 const testing = std.testing;
 const dew = @import("../../dew.zig");
 const view = dew.view;
+const observer = dew.observer;
 const Buffer = dew.models.Buffer;
 const Position = dew.models.Position;
 const models = dew.models;
@@ -144,15 +145,6 @@ pub fn updateLastCursorX(self: *BufferView) void {
     self.last_cursor_x = self.getCursor().x;
 }
 
-pub fn eventSubscriber(self: *BufferView) Subscriber(models.Event) {
-    return Subscriber(models.Event){
-        .ptr = self,
-        .vtable = &.{
-            .handle = handleEvent,
-        },
-    };
-}
-
 fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
     switch (event) {
@@ -178,6 +170,34 @@ fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},
+    }
+}
+
+pub fn eventSubscriber(self: *BufferView) Subscriber(models.Event) {
+    return Subscriber(models.Event){
+        .ptr = self,
+        .vtable = &.{
+            .handle = handleEvent,
+        },
+    };
+}
+
+pub fn fileBufferObserver(self: *BufferView) observer.Observer(Buffer.Event) {
+    return .{
+        .ptr = self,
+        .vtable = &.{
+            .handleEvent = handleFileBufferEvent,
+        },
+    };
+}
+
+fn handleFileBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
+    const self: *BufferView = @ptrCast(@alignCast(ctx));
+    switch (event) {
+        .updated => |_| {
+            try self.update();
+            try self.view_event_publisher.publish(.buffer_view_updated);
+        },
     }
 }
 

@@ -50,9 +50,10 @@ pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) !
 pub fn deinit(self: *const Buffer) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
+    self.observer_list.deinit();
 }
 
-pub fn add(self: *Buffer, obs: observer.Observer(Event)) !void {
+pub fn addObserver(self: *Buffer, obs: observer.Observer(Event)) !void {
     try self.observer_list.add(obs);
 }
 

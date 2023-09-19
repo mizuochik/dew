@@ -56,6 +56,7 @@ pub fn main() !void {
     defer buffer.deinit();
     var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher, .file);
     defer buffer_view.deinit();
+    try buffer.addObserver(buffer_view.fileBufferObserver());
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
     var command_buffer = try models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
