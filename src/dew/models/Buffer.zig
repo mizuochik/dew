@@ -15,6 +15,8 @@ const Buffer = @This();
 
 pub const Event = union(enum) {
     updated,
+    activated,
+    deactivated,
 };
 
 const Mode = enum {
@@ -28,6 +30,7 @@ c_y: usize = 0,
 event_publisher: *Publisher,
 mode: Mode,
 observer_list: observer.ObserverList(Event),
+is_active: bool,
 allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) !Buffer {
@@ -36,6 +39,7 @@ pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) !
         .event_publisher = event_publisher,
         .mode = mode,
         .observer_list = observer.ObserverList(Event).init(allocator),
+        .is_active = mode == Mode.file,
         .allocator = allocator,
     };
     errdefer buf.observer_list.deinit();
@@ -166,6 +170,16 @@ pub fn breakLine(self: *Buffer) !void {
 pub fn notifyUpdate(self: *Buffer) !void {
     try self.event_publisher.publish(.{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
     try self.observer_list.notifyEvent(Event.updated);
+}
+
+pub fn activate(self: *Buffer) !void {
+    self.is_active = true;
+    try self.observer_list.notifyEvent(.activated);
+}
+
+pub fn deactivate(self: *Buffer) !void {
+    self.is_active = false;
+    try self.observer_list.notifyEvent(.deactivated);
 }
 
 test "Buffer: moveForward" {

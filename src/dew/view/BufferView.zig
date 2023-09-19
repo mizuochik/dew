@@ -145,6 +145,10 @@ pub fn updateLastCursorX(self: *BufferView) void {
     self.last_cursor_x = self.getCursor().x;
 }
 
+pub fn isActive(self: *BufferView) bool {
+    return self.buffer.is_active;
+}
+
 fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
     switch (event) {
@@ -182,21 +186,30 @@ pub fn eventSubscriber(self: *BufferView) Subscriber(models.Event) {
     };
 }
 
-pub fn fileBufferObserver(self: *BufferView) observer.Observer(Buffer.Event) {
+pub fn bufferObserver(self: *BufferView) observer.Observer(Buffer.Event) {
     return .{
         .ptr = self,
         .vtable = &.{
-            .handleEvent = handleFileBufferEvent,
+            .handleEvent = handleBufferEvent,
         },
     };
 }
 
-fn handleFileBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
+fn handleBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
-    switch (event) {
-        .updated => |_| {
-            try self.update();
-            try self.view_event_publisher.publish(.buffer_view_updated);
+    switch (self.mode) {
+        .file => switch (event) {
+            .updated => |_| {
+                try self.update();
+                try self.view_event_publisher.publish(.buffer_view_updated);
+            },
+            else => {},
+        },
+        .command => switch (event) {
+            .activated, .deactivated => {
+                try self.view_event_publisher.publish(.buffer_view_updated);
+            },
+            else => {},
         },
     }
 }

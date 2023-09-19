@@ -22,12 +22,15 @@ pub fn init(file_buffer: *models.Buffer, command_buffer: *models.Buffer, event_p
 pub fn deinit(_: *const Self) void {}
 
 pub fn toggleCommandBuffer(self: *Self) !void {
-    const is_active = self.current_buffer == self.command_buffer;
-    if (is_active) {
+    if (self.command_buffer.is_active) {
         self.current_buffer = self.file_buffer;
+        try self.file_buffer.activate();
+        try self.command_buffer.deactivate();
         try self.event_publisher.publish(.command_buffer_closed);
     } else {
         self.current_buffer = self.command_buffer;
+        try self.file_buffer.deactivate();
+        try self.command_buffer.activate();
         try self.event_publisher.publish(.command_buffer_opened);
     }
 }
