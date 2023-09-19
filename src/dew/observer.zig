@@ -35,7 +35,7 @@ pub fn ObserverList(comptime E: type) type {
             self.observers.deinit();
         }
 
-        pub fn addObserver(self: *Self, observer: Observer(E)) !void {
+        pub fn add(self: *Self, observer: Observer(E)) !void {
             try self.observers.append(observer);
         }
 
@@ -78,7 +78,7 @@ test "observer: notifyEvent/handleEvent" {
         .handled_events = &handled_events,
     };
 
-    try dummy_observer_list.addObserver(dummy_observer.observer());
+    try dummy_observer_list.add(dummy_observer.observer());
     try dummy_observer_list.notifyEvent(.{ .some_event = "executed" });
 
     try testing.expectEqual(@as(usize, 1), handled_events.items.len);
