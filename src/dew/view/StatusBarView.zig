@@ -1,30 +1,38 @@
 const std = @import("std");
+const mem = std.mem;
 const dew = @import("../../dew.zig");
 const models = dew.models;
 const observer = dew.observer;
 const testing = std.testing;
 const StatusMessage = dew.models.StatusMessage;
 const Buffer = dew.models.Buffer;
-const Event = dew.models.Event;
 const ViewEventPublisher = dew.event.Publisher(dew.view.Event);
-const Publisher = dew.event.Publisher(Event);
-const Subscriber = dew.event.Subscriber(Event);
+const Publisher = dew.event.Publisher(models.Event);
+const Subscriber = dew.event.Subscriber(models.Event);
 
 const StatusBarView = @This();
 
+const Event = union(enum) {
+    updated,
+};
+
 status_message: *const StatusMessage,
 width: usize,
+observer_list: observer.ObserverList(Event),
 view_event_publisher: *const ViewEventPublisher,
 
-pub fn init(status_message: *StatusMessage, view_event_publisher: *const ViewEventPublisher) StatusBarView {
+pub fn init(allocator: mem.Allocator, status_message: *StatusMessage, view_event_publisher: *const ViewEventPublisher) StatusBarView {
     return .{
         .status_message = status_message,
         .width = 0,
+        .observer_list = observer.ObserverList(Event).init(allocator),
         .view_event_publisher = view_event_publisher,
     };
 }
 
-pub fn deinit(_: *StatusBarView) void {}
+pub fn deinit(self: *const StatusBarView) void {
+    self.observer_list.deinit();
+}
 
 pub fn view(self: *const StatusBarView) ![]const u8 {
     return if (self.status_message.message.len < self.width)
@@ -42,7 +50,7 @@ pub fn eventSubscriber(self: *StatusBarView) Subscriber {
     };
 }
 
-fn handleEvent(ctx: *anyopaque, event: Event) anyerror!void {
+fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
     var self: *StatusBarView = @ptrCast(@alignCast(ctx));
     switch (event) {
         .status_message_updated => {
@@ -70,7 +78,8 @@ fn handleDisplaySizeEvent(ctx: *anyopaque, event: models.DisplaySize.Event) anye
     switch (event) {
         .changed => |new_size| {
             self.width = new_size.cols;
-            // try self.view_event_publisher.publish(.status_bar_view_updated);
+            try self.view_event_publisher.publish(.status_bar_view_updated);
+            try self.observer_list.notifyEvent(.updated);
         },
     }
 }
@@ -92,7 +101,7 @@ test "StatusBarView: view" {
 
     var new_message = try std.fmt.allocPrint(testing.allocator, "hello world", .{});
     try status_message.setMessage(new_message);
-    try event_publisher.publish(Event{
+    try event_publisher.publish(models.Event{
         .screen_size_changed = .{
             .width = 5,
             .height = 100,
