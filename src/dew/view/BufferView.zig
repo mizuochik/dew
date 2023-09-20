@@ -208,6 +208,30 @@ fn handleBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
     }
 }
 
+pub fn displaySizeObserver(self: *BufferView) observer.Observer(models.DisplaySize.Event) {
+    return .{
+        .ptr = self,
+        .vtable = &.{
+            .handleEvent = handleDisplaySizeEvent,
+        },
+    };
+}
+
+fn handleDisplaySizeEvent(ctx: *anyopaque, event: models.DisplaySize.Event) !void {
+    const self: *BufferView = @ptrCast(@alignCast(ctx));
+    switch (event) {
+        .changed => |new_size| {
+            self.width = new_size.cols;
+            self.height = switch (self.buffer.mode) {
+                .file => new_size.rows - 1,
+                .command => 1,
+            };
+            try self.update();
+            try self.view_event_publisher.publish(.buffer_view_updated);
+        },
+    }
+}
+
 fn update(self: *BufferView) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();

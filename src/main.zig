@@ -52,11 +52,15 @@ pub fn main() !void {
     var view_event_publisher = dew.event.Publisher(dew.view.Event).init(gpa.allocator());
     defer view_event_publisher.deinit();
 
+    var display_size = models.DisplaySize.init(gpa.allocator());
+    defer display_size.deinit();
+
     var buffer = try models.Buffer.init(gpa.allocator(), &model_event_publisher, .file);
     defer buffer.deinit();
     var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher);
     defer buffer_view.deinit();
     try buffer.addObserver(buffer_view.bufferObserver());
+    try display_size.addObserver(buffer_view.displaySizeObserver());
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
     var command_buffer = try models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
@@ -64,6 +68,7 @@ pub fn main() !void {
     var command_buffer_view = view.BufferView.init(gpa.allocator(), &command_buffer, &view_event_publisher);
     defer command_buffer_view.deinit();
     try command_buffer.addObserver(command_buffer_view.bufferObserver());
+    try display_size.addObserver(command_buffer_view.displaySizeObserver());
     try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
 
     var buffer_selector = models.BufferSelector.init(&buffer, &command_buffer, &model_event_publisher);
@@ -73,6 +78,7 @@ pub fn main() !void {
     defer status_message.deinit();
     var status_var_view = view.StatusBarView.init(&status_message, &view_event_publisher);
     defer status_var_view.deinit();
+    try display_size.addObserver(status_var_view.displaySizeObserver());
     try model_event_publisher.addSubscriber(status_var_view.eventSubscriber());
 
     var buffer_controller = try dew.controllers.EditorController.init(
@@ -100,12 +106,7 @@ pub fn main() !void {
     defer editor.disableRawMode() catch unreachable;
     try editor.buffer_controller.openFile(path);
 
-    try model_event_publisher.publish(.{
-        .screen_size_changed = .{
-            .width = win_size.cols,
-            .height = win_size.rows,
-        },
-    });
+    try display_size.set(win_size.cols, win_size.rows);
 
     const msg = try fmt.allocPrint(gpa.allocator(), "Initialized", .{});
     errdefer gpa.allocator().free(msg);

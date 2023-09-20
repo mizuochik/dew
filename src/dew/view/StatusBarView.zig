@@ -1,5 +1,7 @@
 const std = @import("std");
 const dew = @import("../../dew.zig");
+const models = dew.models;
+const observer = dew.observer;
 const testing = std.testing;
 const StatusMessage = dew.models.StatusMessage;
 const Buffer = dew.models.Buffer;
@@ -51,6 +53,25 @@ fn handleEvent(ctx: *anyopaque, event: Event) anyerror!void {
             try self.view_event_publisher.publish(.status_bar_view_updated);
         },
         else => {},
+    }
+}
+
+pub fn displaySizeObserver(self: *StatusBarView) observer.Observer(models.DisplaySize.Event) {
+    return .{
+        .ptr = self,
+        .vtable = &.{
+            .handleEvent = handleDisplaySizeEvent,
+        },
+    };
+}
+
+fn handleDisplaySizeEvent(ctx: *anyopaque, event: models.DisplaySize.Event) anyerror!void {
+    var self: *StatusBarView = @ptrCast(@alignCast(ctx));
+    switch (event) {
+        .changed => |new_size| {
+            self.width = new_size.cols;
+            // try self.view_event_publisher.publish(.status_bar_view_updated);
+        },
     }
 }
 
