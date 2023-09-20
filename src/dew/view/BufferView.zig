@@ -29,6 +29,10 @@ const Mode = enum {
     command,
 };
 
+const Event = union(enum) {
+    updated,
+};
+
 buffer: *const Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
@@ -36,6 +40,7 @@ height: usize,
 y_scroll: usize = 0,
 view_event_publisher: *const Publisher(view.Event),
 last_cursor_x: usize = 0,
+observer_list: observer.ObserverList(Event),
 allocator: mem.Allocator,
 
 pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event)) BufferView {
@@ -47,12 +52,14 @@ pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Pub
         .width = 0,
         .height = 0,
         .view_event_publisher = vevents,
+        .observer_list = observer.ObserverList(Event).init(allocator),
         .allocator = allocator,
     };
 }
 
 pub fn deinit(self: *const BufferView) void {
     self.rows.deinit();
+    self.observer_list.deinit();
 }
 
 pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
@@ -145,6 +152,10 @@ pub fn isActive(self: *BufferView) bool {
     return self.buffer.is_active;
 }
 
+pub fn addObserver(self: *BufferView, obs: observer.Observer(Event)) !void {
+    try self.observer_list.add(obs);
+}
+
 fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
     switch (event) {
@@ -195,12 +206,14 @@ fn handleBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
         .file => switch (event) {
             .updated => |_| {
                 try self.update();
+                try self.observer_list.notifyEvent(.updated);
                 try self.view_event_publisher.publish(.buffer_view_updated);
             },
             else => {},
         },
         .command => switch (event) {
             .activated, .deactivated => {
+                try self.observer_list.notifyEvent(.updated);
                 try self.view_event_publisher.publish(.buffer_view_updated);
             },
             else => {},
