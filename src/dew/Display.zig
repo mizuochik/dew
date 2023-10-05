@@ -8,6 +8,7 @@ const dew = @import("../dew.zig");
 const view = dew.view;
 const event = dew.event;
 const Editor = dew.Editor;
+const observer = dew.observer;
 
 buffer_view: *const view.BufferView,
 status_bar_view: *const view.StatusBarView,
@@ -26,16 +27,32 @@ pub fn eventSubscriber(self: *Self) event.Subscriber(view.Event) {
     };
 }
 
-fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
+pub fn fileBufferViewObserver(self: *Self) observer.Observer(view.BufferView.Event) {
+    return .{
+        .ptr = self,
+        .vtable = &.{
+            .handleEvent = handleFileBufferViewEvent,
+        },
+    };
+}
+
+fn handleFileBufferViewEvent(ctx: *anyopaque, ev: view.BufferView.Event) anyerror!void {
     const self: *Self = @ptrCast(@alignCast(ctx));
     switch (ev) {
-        .buffer_view_updated => {
+        .updated => {
             try self.doRender(refreshScreen);
             try self.doRender(refreshBottomLine);
         },
+    }
+}
+
+fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
+    const self: *Self = @ptrCast(@alignCast(ctx));
+    switch (ev) {
         .status_bar_view_updated => {
             try self.doRender(refreshBottomLine);
         },
+        else => {},
     }
 }
 

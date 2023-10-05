@@ -29,7 +29,7 @@ const Mode = enum {
     command,
 };
 
-const Event = union(enum) {
+pub const Event = union(enum) {
     updated,
 };
 

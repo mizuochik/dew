@@ -101,6 +101,7 @@ pub fn main() !void {
         .size = win_size,
     };
     try view_event_publisher.addSubscriber(display.eventSubscriber());
+    try buffer_view.addObserver(display.fileBufferViewObserver());
 
     try editor.enableRawMode();
     defer editor.disableRawMode() catch unreachable;
