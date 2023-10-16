@@ -61,7 +61,6 @@ pub fn main() !void {
     defer buffer_view.deinit();
     try buffer.addObserver(buffer_view.bufferObserver());
     try display_size.addObserver(buffer_view.displaySizeObserver());
-    try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
     var command_buffer = try models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
     defer command_buffer.deinit();
@@ -79,7 +78,6 @@ pub fn main() !void {
     var status_var_view = view.StatusBarView.init(gpa.allocator(), &status_message, &view_event_publisher);
     defer status_var_view.deinit();
     try display_size.addObserver(status_var_view.displaySizeObserver());
-    try model_event_publisher.addSubscriber(status_var_view.eventSubscriber());
 
     var buffer_controller = try dew.controllers.EditorController.init(
         gpa.allocator(),
@@ -100,7 +98,6 @@ pub fn main() !void {
         .allocator = gpa.allocator(),
         .size = win_size,
     };
-    try view_event_publisher.addSubscriber(display.eventSubscriber());
     try buffer_view.addObserver(display.fileBufferViewObserver());
     try command_buffer_view.addObserver(display.commandBufferViewObserver());
 

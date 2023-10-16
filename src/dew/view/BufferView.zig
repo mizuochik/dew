@@ -213,6 +213,7 @@ fn handleBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
         },
         .command => switch (event) {
             .updated => |_| {
+                try self.update();
                 try self.observer_list.notifyEvent(.updated);
                 try self.view_event_publisher.publish(.buffer_view_updated);
             },
