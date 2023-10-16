@@ -46,6 +46,25 @@ fn handleFileBufferViewEvent(ctx: *anyopaque, ev: view.BufferView.Event) anyerro
     }
 }
 
+pub fn commandBufferViewObserver(self: *Self) observer.Observer(view.BufferView.Event) {
+    return .{
+        .ptr = self,
+        .vtable = &.{
+            .handleEvent = handleCommandBufferViewEvent,
+        },
+    };
+}
+
+fn handleCommandBufferViewEvent(ctx: *anyopaque, ev: view.BufferView.Event) anyerror!void {
+    const self: *Self = @ptrCast(@alignCast(ctx));
+    std.log.info("handleCommandBufferViewEvent\n", .{});
+    switch (ev) {
+        .updated => {
+            try self.doRender(refreshBottomLine);
+        },
+    }
+}
+
 fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
     const self: *Self = @ptrCast(@alignCast(ctx));
     switch (ev) {

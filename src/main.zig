@@ -102,6 +102,7 @@ pub fn main() !void {
     };
     try view_event_publisher.addSubscriber(display.eventSubscriber());
     try buffer_view.addObserver(display.fileBufferViewObserver());
+    try command_buffer_view.addObserver(display.commandBufferViewObserver());
 
     try editor.enableRawMode();
     defer editor.disableRawMode() catch unreachable;
