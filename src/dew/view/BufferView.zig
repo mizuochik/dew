@@ -158,7 +158,10 @@ fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
     switch (event) {
         .buffer_updated => |_| {
             try self.update();
-            try self.view_event_publisher.publish(.buffer_view_updated);
+            try self.view_event_publisher.publish(switch (self.mode) {
+                .file => .buffer_view_updated,
+                .command => .command_buffer_view_updated,
+            });
         },
         .screen_size_changed => |new_size| {
             self.width = new_size.width;

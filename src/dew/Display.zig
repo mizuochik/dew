@@ -31,6 +31,8 @@ fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
     switch (ev) {
         .buffer_view_updated => {
             try self.doRender(refreshScreen);
+        },
+        .command_buffer_view_updated => {
             try self.doRender(refreshBottomLine);
         },
         .status_bar_view_updated => {
