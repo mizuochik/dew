@@ -228,7 +228,7 @@ test "BufferView: init" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    const buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
+    const buf = try Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     const bv = BufferView.init(testing.allocator, &buf, &view_event_publisher, .file);
     defer bv.deinit();
@@ -239,7 +239,7 @@ test "BufferView: scrollTo" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
+    var buf = try Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     for ([_][]const u8{
         "abc",
@@ -270,7 +270,7 @@ test "BufferView: update" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
+    var buf = try Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -306,7 +306,7 @@ test "BufferView: getCursor" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
+    var buf = try Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",
@@ -334,7 +334,7 @@ test "BufferView: getBufferPosition" {
     defer view_event_publisher.deinit();
     var model_event_publisher = Publisher(models.Event).init(testing.allocator);
     defer model_event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &model_event_publisher, .file);
+    var buf = try Buffer.init(testing.allocator, &model_event_publisher, .file);
     defer buf.deinit();
     for ([_][]const u8{
         "abcdefghij",

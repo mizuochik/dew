@@ -157,7 +157,7 @@ pub fn notifyUpdate(self: *Buffer) !void {
 test "Buffer: moveForward" {
     var event_publisher = Publisher.init(testing.allocator);
     defer event_publisher.deinit();
-    var buf = Buffer.init(testing.allocator, &event_publisher, .file);
+    var buf = try Buffer.init(testing.allocator, &event_publisher, .file);
     defer buf.deinit();
     const lines = [_][]const u8{
         "ab",
