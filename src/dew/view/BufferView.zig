@@ -38,12 +38,11 @@ rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 y_scroll: usize = 0,
-view_event_publisher: *const Publisher(view.Event),
 last_cursor_x: usize = 0,
 observer_list: observer.ObserverList(Event),
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Publisher(view.Event)) BufferView {
+pub fn init(allocator: mem.Allocator, buffer: *const Buffer) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -51,7 +50,6 @@ pub fn init(allocator: mem.Allocator, buffer: *const Buffer, vevents: *const Pub
         .rows = rows,
         .width = 0,
         .height = 0,
-        .view_event_publisher = vevents,
         .observer_list = observer.ObserverList(Event).init(allocator),
         .allocator = allocator,
     };
@@ -156,41 +154,6 @@ pub fn addObserver(self: *BufferView, obs: observer.Observer(Event)) !void {
     try self.observer_list.add(obs);
 }
 
-fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
-    const self: *BufferView = @ptrCast(@alignCast(ctx));
-    switch (event) {
-        .buffer_updated => |_| {
-            try self.update();
-            try self.view_event_publisher.publish(.buffer_view_updated);
-        },
-        .screen_size_changed => |new_size| {
-            self.width = new_size.width;
-            self.height = switch (self.buffer.mode) {
-                .file => new_size.height - 1,
-                .command => 1,
-            };
-            try self.update();
-            try self.view_event_publisher.publish(.buffer_view_updated);
-        },
-        .command_buffer_opened => {
-            try self.view_event_publisher.publish(.buffer_view_updated);
-        },
-        .command_buffer_closed => {
-            try self.view_event_publisher.publish(.buffer_view_updated);
-        },
-        else => {},
-    }
-}
-
-pub fn eventSubscriber(self: *BufferView) Subscriber(models.Event) {
-    return Subscriber(models.Event){
-        .ptr = self,
-        .vtable = &.{
-            .handle = handleEvent,
-        },
-    };
-}
-
 pub fn bufferObserver(self: *BufferView) observer.Observer(Buffer.Event) {
     return .{
         .ptr = self,
@@ -207,7 +170,6 @@ fn handleBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
             .updated => |_| {
                 try self.update();
                 try self.observer_list.notifyEvent(.updated);
-                try self.view_event_publisher.publish(.buffer_view_updated);
             },
             else => {},
         },
@@ -215,11 +177,9 @@ fn handleBufferEvent(ctx: *anyopaque, event: Buffer.Event) anyerror!void {
             .updated => |_| {
                 try self.update();
                 try self.observer_list.notifyEvent(.updated);
-                try self.view_event_publisher.publish(.buffer_view_updated);
             },
             .activated, .deactivated => {
                 try self.observer_list.notifyEvent(.updated);
-                try self.view_event_publisher.publish(.buffer_view_updated);
             },
         },
     }
@@ -244,7 +204,6 @@ fn handleDisplaySizeEvent(ctx: *anyopaque, event: models.DisplaySize.Event) !voi
                 .command => 1,
             };
             try self.update();
-            try self.view_event_publisher.publish(.buffer_view_updated);
         },
     }
 }

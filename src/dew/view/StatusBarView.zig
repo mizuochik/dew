@@ -19,14 +19,12 @@ const Event = union(enum) {
 status_message: *const StatusMessage,
 width: usize,
 observer_list: observer.ObserverList(Event),
-view_event_publisher: *const ViewEventPublisher,
 
-pub fn init(allocator: mem.Allocator, status_message: *StatusMessage, view_event_publisher: *const ViewEventPublisher) StatusBarView {
+pub fn init(allocator: mem.Allocator, status_message: *StatusMessage) StatusBarView {
     return .{
         .status_message = status_message,
         .width = 0,
         .observer_list = observer.ObserverList(Event).init(allocator),
-        .view_event_publisher = view_event_publisher,
     };
 }
 
@@ -39,29 +37,6 @@ pub fn view(self: *const StatusBarView) ![]const u8 {
         self.status_message.message[0..]
     else
         self.status_message.message[0..self.width];
-}
-
-pub fn eventSubscriber(self: *StatusBarView) Subscriber {
-    return .{
-        .ptr = self,
-        .vtable = &.{
-            .handle = handleEvent,
-        },
-    };
-}
-
-fn handleEvent(ctx: *anyopaque, event: models.Event) anyerror!void {
-    var self: *StatusBarView = @ptrCast(@alignCast(ctx));
-    switch (event) {
-        .status_message_updated => {
-            try self.view_event_publisher.publish(.status_bar_view_updated);
-        },
-        .screen_size_changed => |new_size| {
-            self.width = new_size.width;
-            try self.view_event_publisher.publish(.status_bar_view_updated);
-        },
-        else => {},
-    }
 }
 
 pub fn displaySizeObserver(self: *StatusBarView) observer.Observer(models.DisplaySize.Event) {
@@ -78,7 +53,6 @@ fn handleDisplaySizeEvent(ctx: *anyopaque, event: models.DisplaySize.Event) anye
     switch (event) {
         .changed => |new_size| {
             self.width = new_size.cols;
-            try self.view_event_publisher.publish(.status_bar_view_updated);
             try self.observer_list.notifyEvent(.updated);
         },
     }

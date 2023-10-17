@@ -7,8 +7,6 @@ const dew = @import("../../dew.zig");
 const view = dew.view;
 const Key = dew.models.Key;
 const models = dew.models;
-const Publisher = dew.event.Publisher;
-const Subscriber = dew.event.Subscriber;
 const Arrow = dew.models.Arrow;
 const Buffer = dew.models.Buffer;
 const UnicodeString = dew.models.UnicodeString;
@@ -16,19 +14,17 @@ const UnicodeString = dew.models.UnicodeString;
 buffer_view: *dew.view.BufferView,
 status_message: *models.StatusMessage,
 file_path: ?[]const u8 = null,
-model_event_publisher: *const Publisher(dew.models.Event),
 buffer_selector: *models.BufferSelector,
 allocator: Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: Allocator, buffer_view: *view.BufferView, status_message: *models.StatusMessage, buffer_selector: *models.BufferSelector, model_event_publisher: *const Publisher(models.Event)) !EditorController {
+pub fn init(allocator: Allocator, buffer_view: *view.BufferView, status_message: *models.StatusMessage, buffer_selector: *models.BufferSelector) !EditorController {
     return EditorController{
         .allocator = allocator,
         .buffer_view = buffer_view,
         .status_message = status_message,
         .buffer_selector = buffer_selector,
-        .model_event_publisher = model_event_publisher,
     };
 }
 

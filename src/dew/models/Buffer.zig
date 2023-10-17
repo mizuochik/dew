@@ -27,16 +27,14 @@ const Mode = enum {
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-event_publisher: *Publisher,
 mode: Mode,
 observer_list: observer.ObserverList(Event),
 is_active: bool,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) !Buffer {
+pub fn init(allocator: mem.Allocator, mode: Mode) !Buffer {
     var buf = .{
         .rows = std.ArrayList(UnicodeString).init(allocator),
-        .event_publisher = event_publisher,
         .mode = mode,
         .observer_list = observer.ObserverList(Event).init(allocator),
         .is_active = mode == Mode.file,
@@ -168,7 +166,6 @@ pub fn breakLine(self: *Buffer) !void {
 }
 
 pub fn notifyUpdate(self: *Buffer) !void {
-    try self.event_publisher.publish(.{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
     try self.observer_list.notifyEvent(Event.updated);
 }
 

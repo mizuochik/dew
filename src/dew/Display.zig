@@ -18,15 +18,6 @@ size: Editor.WindowSize,
 
 const Self = @This();
 
-pub fn eventSubscriber(self: *Self) event.Subscriber(view.Event) {
-    return .{
-        .ptr = self,
-        .vtable = &.{
-            .handle = handleEvent,
-        },
-    };
-}
-
 pub fn fileBufferViewObserver(self: *Self) observer.Observer(view.BufferView.Event) {
     return .{
         .ptr = self,
@@ -57,21 +48,10 @@ pub fn commandBufferViewObserver(self: *Self) observer.Observer(view.BufferView.
 
 fn handleCommandBufferViewEvent(ctx: *anyopaque, ev: view.BufferView.Event) anyerror!void {
     const self: *Self = @ptrCast(@alignCast(ctx));
-    std.log.info("handleCommandBufferViewEvent\n", .{});
     switch (ev) {
         .updated => {
             try self.doRender(refreshBottomLine);
         },
-    }
-}
-
-fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
-    const self: *Self = @ptrCast(@alignCast(ctx));
-    switch (ev) {
-        .status_bar_view_updated => {
-            try self.doRender(refreshBottomLine);
-        },
-        else => {},
     }
 }
 
