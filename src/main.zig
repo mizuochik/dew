@@ -12,6 +12,8 @@ const dew = @import("dew.zig");
 const EditorController = dew.controllers.EditorController;
 const models = dew.models;
 const view = dew.view;
+const Publisher = dew.event.Publisher;
+const Subscriber = dew.event.Subscriber;
 
 var log_file: ?fs.File = null;
 const log_file_name = "dew.log";
@@ -45,37 +47,38 @@ pub fn main() !void {
     }
     const path: []const u8 = mem.span(os.argv[1]);
 
-    var display_size = models.DisplaySize.init(gpa.allocator());
-    defer display_size.deinit();
+    var model_event_publisher = dew.event.Publisher(dew.models.Event).init(gpa.allocator());
+    defer model_event_publisher.deinit();
+    var view_event_publisher = dew.event.Publisher(dew.view.Event).init(gpa.allocator());
+    defer view_event_publisher.deinit();
 
-    var buffer = try models.Buffer.init(gpa.allocator(), .file);
+    var buffer = try models.Buffer.init(gpa.allocator(), &model_event_publisher, .file);
     defer buffer.deinit();
-    var buffer_view = view.BufferView.init(gpa.allocator(), &buffer);
+    var buffer_view = view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher, .file);
     defer buffer_view.deinit();
-    try buffer.addObserver(buffer_view.bufferObserver());
-    try display_size.addObserver(buffer_view.displaySizeObserver());
+    try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
-    var command_buffer = try models.Buffer.init(gpa.allocator(), .command);
+    var command_buffer = try models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
     defer command_buffer.deinit();
-    var command_buffer_view = view.BufferView.init(gpa.allocator(), &command_buffer);
+    var command_buffer_view = view.BufferView.init(gpa.allocator(), &command_buffer, &view_event_publisher, .command);
     defer command_buffer_view.deinit();
-    try command_buffer.addObserver(command_buffer_view.bufferObserver());
-    try display_size.addObserver(command_buffer_view.displaySizeObserver());
+    try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
 
-    var buffer_selector = models.BufferSelector.init(&buffer, &command_buffer);
+    var buffer_selector = models.BufferSelector.init(&buffer, &command_buffer, &model_event_publisher);
     defer buffer_selector.deinit();
 
-    var status_message = try models.StatusMessage.init(gpa.allocator());
+    var status_message = try models.StatusMessage.init(gpa.allocator(), &model_event_publisher);
     defer status_message.deinit();
-    var status_var_view = view.StatusBarView.init(gpa.allocator(), &status_message);
+    var status_var_view = view.StatusBarView.init(&status_message, &view_event_publisher);
     defer status_var_view.deinit();
-    try display_size.addObserver(status_var_view.displaySizeObserver());
+    try model_event_publisher.addSubscriber(status_var_view.eventSubscriber());
 
     var buffer_controller = try dew.controllers.EditorController.init(
         gpa.allocator(),
         &buffer_view,
         &status_message,
         &buffer_selector,
+        &model_event_publisher,
     );
     defer buffer_controller.deinit();
 
@@ -89,14 +92,18 @@ pub fn main() !void {
         .allocator = gpa.allocator(),
         .size = win_size,
     };
-    try buffer_view.addObserver(display.fileBufferViewObserver());
-    try command_buffer_view.addObserver(display.commandBufferViewObserver());
+    try view_event_publisher.addSubscriber(display.eventSubscriber());
 
     try editor.enableRawMode();
     defer editor.disableRawMode() catch unreachable;
     try editor.buffer_controller.openFile(path);
 
-    try display_size.set(win_size.cols, win_size.rows);
+    try model_event_publisher.publish(.{
+        .screen_size_changed = .{
+            .width = win_size.cols,
+            .height = win_size.rows,
+        },
+    });
 
     const msg = try fmt.allocPrint(gpa.allocator(), "Initialized", .{});
     errdefer gpa.allocator().free(msg);

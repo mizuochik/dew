@@ -2,22 +2,15 @@ const std = @import("std");
 const mem = std.mem;
 const testing = std.testing;
 const dew = @import("../../dew.zig");
-const observer = dew.observer;
 const Editor = dew.Editor;
 const Arrow = Editor.Arrow;
 const View = dew.view.View;
-const models = dew.models;
-const Publisher = dew.event.Publisher(models.Event);
+const Event = dew.models.Event;
+const Publisher = dew.event.Publisher(Event);
 const UnicodeString = dew.models.UnicodeString;
 const Position = dew.models.Position;
 
 const Buffer = @This();
-
-pub const Event = union(enum) {
-    updated,
-    activated,
-    deactivated,
-};
 
 const Mode = enum {
     file,
@@ -27,20 +20,17 @@ const Mode = enum {
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
+event_publisher: *Publisher,
 mode: Mode,
-observer_list: observer.ObserverList(Event),
-is_active: bool,
 allocator: mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, mode: Mode) !Buffer {
+pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) !Buffer {
     var buf = .{
         .rows = std.ArrayList(UnicodeString).init(allocator),
+        .event_publisher = event_publisher,
         .mode = mode,
-        .observer_list = observer.ObserverList(Event).init(allocator),
-        .is_active = mode == Mode.file,
         .allocator = allocator,
     };
-    errdefer buf.observer_list.deinit();
     if (mode == Mode.command) {
         var l = try UnicodeString.init(allocator);
         errdefer l.deinit();
@@ -52,11 +42,6 @@ pub fn init(allocator: mem.Allocator, mode: Mode) !Buffer {
 pub fn deinit(self: *const Buffer) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
-    self.observer_list.deinit();
-}
-
-pub fn addObserver(self: *Buffer, obs: observer.Observer(Event)) !void {
-    try self.observer_list.add(obs);
 }
 
 pub fn setCursor(self: *Buffer, x: usize, y: usize) !void {
@@ -166,17 +151,7 @@ pub fn breakLine(self: *Buffer) !void {
 }
 
 pub fn notifyUpdate(self: *Buffer) !void {
-    try self.observer_list.notifyEvent(Event.updated);
-}
-
-pub fn activate(self: *Buffer) !void {
-    self.is_active = true;
-    try self.observer_list.notifyEvent(.activated);
-}
-
-pub fn deactivate(self: *Buffer) !void {
-    self.is_active = false;
-    try self.observer_list.notifyEvent(.deactivated);
+    try self.event_publisher.publish(.{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
 }
 
 test "Buffer: moveForward" {

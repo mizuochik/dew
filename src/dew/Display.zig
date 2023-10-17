@@ -8,7 +8,6 @@ const dew = @import("../dew.zig");
 const view = dew.view;
 const event = dew.event;
 const Editor = dew.Editor;
-const observer = dew.observer;
 
 buffer_view: *const view.BufferView,
 status_bar_view: *const view.StatusBarView,
@@ -18,38 +17,23 @@ size: Editor.WindowSize,
 
 const Self = @This();
 
-pub fn fileBufferViewObserver(self: *Self) observer.Observer(view.BufferView.Event) {
+pub fn eventSubscriber(self: *Self) event.Subscriber(view.Event) {
     return .{
         .ptr = self,
         .vtable = &.{
-            .handleEvent = handleFileBufferViewEvent,
+            .handle = handleEvent,
         },
     };
 }
 
-fn handleFileBufferViewEvent(ctx: *anyopaque, ev: view.BufferView.Event) anyerror!void {
+fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
     const self: *Self = @ptrCast(@alignCast(ctx));
     switch (ev) {
-        .updated => {
+        .buffer_view_updated => {
             try self.doRender(refreshScreen);
             try self.doRender(refreshBottomLine);
         },
-    }
-}
-
-pub fn commandBufferViewObserver(self: *Self) observer.Observer(view.BufferView.Event) {
-    return .{
-        .ptr = self,
-        .vtable = &.{
-            .handleEvent = handleCommandBufferViewEvent,
-        },
-    };
-}
-
-fn handleCommandBufferViewEvent(ctx: *anyopaque, ev: view.BufferView.Event) anyerror!void {
-    const self: *Self = @ptrCast(@alignCast(ctx));
-    switch (ev) {
-        .updated => {
+        .status_bar_view_updated => {
             try self.doRender(refreshBottomLine);
         },
     }
