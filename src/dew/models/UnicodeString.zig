@@ -45,6 +45,13 @@ pub fn remove(self: *UnicodeString, i: usize) !void {
     try self.refreshIndex();
 }
 
+pub fn clear(self: *UnicodeString) !void {
+    const allocator = self.buffer.allocator;
+    self.buffer.clearAndFree();
+    self.buffer = std.ArrayList(u8).init(allocator);
+    try self.refreshIndex();
+}
+
 pub fn sliceAsRaw(self: *const UnicodeString, i: usize, j: usize) []u8 {
     return self.buffer.items[self.u8_index.items[i]..self.u8_index.items[j]];
 }
@@ -118,4 +125,12 @@ test "UnicodeString: remove" {
     try testing.expectFmt("{ 0, 2, 4, 6, 8 }", "{any}", .{lb.width_index.items});
     try testing.expectEqual(@as(usize, 4), lb.getLen());
     try testing.expectEqual(@as(usize, 8), lb.getWidth());
+}
+
+test "UnicodeString: clear" {
+    var s = try UnicodeString.init(testing.allocator);
+    defer s.deinit();
+    try s.appendSlice("foobar");
+    try s.clear();
+    try testing.expectEqual(@as(usize, 0), s.buffer.items.len);
 }
