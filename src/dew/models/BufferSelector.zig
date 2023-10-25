@@ -24,6 +24,7 @@ pub fn deinit(_: *const Self) void {}
 pub fn toggleCommandBuffer(self: *Self) !void {
     const is_active = self.current_buffer == self.command_buffer;
     if (is_active) {
+        try self.command_buffer.clear();
         self.current_buffer = self.file_buffer;
         try self.event_publisher.publish(.command_buffer_closed);
     } else {

@@ -150,6 +150,13 @@ pub fn breakLine(self: *Buffer) !void {
     try self.notifyUpdate();
 }
 
+pub fn clear(self: *Buffer) !void {
+    std.debug.assert(self.rows.items.len == 1);
+    try self.rows.items[0].clear();
+    try self.setCursor(0, 0);
+    try self.event_publisher.publish(dew.models.Event{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
+}
+
 pub fn notifyUpdate(self: *Buffer) !void {
     try self.event_publisher.publish(.{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
 }
