@@ -29,6 +29,7 @@ pub fn Publisher(comptime E: anytype) type {
             for (self.subscribers.items) |*subscriber| {
                 try subscriber.handle(event);
             }
+            event.deinit();
         }
     };
 }

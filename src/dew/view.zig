@@ -8,6 +8,8 @@ pub const Event = union(enum) {
     buffer_view_updated,
     command_buffer_view_updated,
     status_bar_view_updated,
+
+    pub fn deinit(_: *const Event) void {}
 };
 
 test {
