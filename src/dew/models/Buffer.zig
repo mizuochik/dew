@@ -134,6 +134,10 @@ pub fn killLine(self: *Buffer) !void {
 
 pub fn breakLine(self: *Buffer) !void {
     if (self.mode == Mode.command) {
+        const command_line = try self.rows.items[0].clone();
+        errdefer command_line.deinit();
+        try self.clear();
+        try self.event_publisher.publish(.{ .command_executed = command_line });
         return;
     }
     var new_row = try UnicodeString.init(self.allocator);

@@ -94,6 +94,10 @@ pub fn main() !void {
     };
     try view_event_publisher.addSubscriber(display.eventSubscriber());
 
+    var command_executor = dew.models.CommandExecutor.init();
+    defer command_executor.deinit();
+    try model_event_publisher.addSubscriber(command_executor.eventSubscriber());
+
     try editor.enableRawMode();
     defer editor.disableRawMode() catch unreachable;
     try editor.buffer_controller.openFile(path);
