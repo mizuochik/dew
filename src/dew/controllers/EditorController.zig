@@ -134,39 +134,7 @@ fn insertChar(self: *EditorController, char: u21) !void {
 }
 
 pub fn openFile(self: *EditorController, path: []const u8) !void {
-    var f = try fs.cwd().openFile(path, .{});
-    var reader = f.reader();
-
-    var new_rows = std.ArrayList(UnicodeString).init(self.allocator);
-    errdefer {
-        for (new_rows.items) |row| row.deinit();
-        new_rows.deinit();
-    }
-
-    while (true) {
-        var buf = std.ArrayList(u8).init(self.allocator);
-        defer buf.deinit();
-        reader.streamUntilDelimiter(buf.writer(), '\n', null) catch |err| switch (err) {
-            error.EndOfStream => break,
-            else => return err,
-        };
-        var new_row = try UnicodeString.init(self.allocator);
-        errdefer new_row.deinit();
-        try new_row.appendSlice(buf.items);
-        try new_rows.append(new_row);
-    }
-
-    var last_row = try UnicodeString.init(self.allocator);
-    errdefer last_row.deinit();
-    try new_rows.append(last_row);
-
-    for (self.buffer_selector.current_buffer.rows.items) |row| row.deinit();
-    self.buffer_selector.current_buffer.rows.deinit();
-    self.buffer_selector.current_buffer.rows = new_rows;
-    try self.buffer_selector.current_buffer.notifyUpdate();
-
-    self.file_path = path;
-
+    try self.buffer_selector.current_buffer.openFile(path);
     const new_message = try fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);
     try self.status_message.setMessage(new_message);

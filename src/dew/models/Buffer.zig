@@ -165,6 +165,40 @@ pub fn notifyUpdate(self: *Buffer) !void {
     try self.event_publisher.publish(.{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
 }
 
+pub fn openFile(self: *Buffer, path: []const u8) !void {
+    var f = try std.fs.cwd().openFile(path, .{});
+    defer f.close();
+    var reader = f.reader();
+
+    var new_rows = std.ArrayList(dew.models.UnicodeString).init(self.allocator);
+    errdefer {
+        for (new_rows.items) |row| row.deinit();
+        new_rows.deinit();
+    }
+
+    while (true) {
+        var buf = std.ArrayList(u8).init(self.allocator);
+        defer buf.deinit();
+        reader.streamUntilDelimiter(buf.writer(), '\n', null) catch |err| switch (err) {
+            error.EndOfStream => break,
+            else => return err,
+        };
+        var new_row = try dew.models.UnicodeString.init(self.allocator);
+        errdefer new_row.deinit();
+        try new_row.appendSlice(buf.items);
+        try new_rows.append(new_row);
+    }
+
+    var last_row = try dew.models.UnicodeString.init(self.allocator);
+    errdefer last_row.deinit();
+    try new_rows.append(last_row);
+
+    for (self.rows.items) |row| row.deinit();
+    self.rows.deinit();
+    self.rows = new_rows;
+    try self.notifyUpdate();
+}
+
 test "Buffer: moveForward" {
     var event_publisher = Publisher.init(testing.allocator);
     defer event_publisher.deinit();
