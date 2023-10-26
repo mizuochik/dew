@@ -98,6 +98,20 @@ pub fn getWidth(self: *const UnicodeString) usize {
     return self.width_index.items[self.width_index.items.len - 1];
 }
 
+pub fn clone(self: *const UnicodeString) !UnicodeString {
+    const buffer = try self.buffer.clone();
+    errdefer buffer.deinit();
+    const u8_index = try self.u8_index.clone();
+    errdefer u8_index.deinit();
+    const width_index = try self.width_index.clone();
+    errdefer width_index.deinit();
+    return .{
+        .buffer = buffer,
+        .u8_index = u8_index,
+        .width_index = width_index,
+    };
+}
+
 test "UnicodeString: insert" {
     var lb = try UnicodeString.init(testing.allocator);
     defer lb.deinit();
