@@ -7,6 +7,7 @@ pub const Position = @import("models/Position.zig");
 pub const UnicodeString = @import("models/UnicodeString.zig");
 pub const StatusMessage = @import("models/StatusMessage.zig");
 pub const BufferSelector = @import("models/BufferSelector.zig");
+pub const Command = @import("models/Command.zig");
 pub const CommandExecutor = @import("models/CommandExecutor.zig");
 
 pub const Key = union(enum) {

@@ -1,15 +1,13 @@
 const std = @import("std");
 const dew = @import("../../dew.zig");
 
-const Self = @This();
+const CommandExecutor = @This();
 
-pub fn init() Self {
-    return .{};
-}
+buffer_selector: *dew.models.BufferSelector,
+status_message: *dew.models.StatusMessage,
+allocator: std.mem.Allocator,
 
-pub fn deinit(_: *const Self) void {}
-
-pub fn eventSubscriber(self: *Self) dew.event.Subscriber(dew.models.Event) {
+pub fn eventSubscriber(self: *CommandExecutor) dew.event.Subscriber(dew.models.Event) {
     return .{
         .ptr = self,
         .vtable = &.{
@@ -19,12 +17,43 @@ pub fn eventSubscriber(self: *Self) dew.event.Subscriber(dew.models.Event) {
 }
 
 pub fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
-    const self: *Self = @ptrCast(@alignCast(ctx));
-    _ = self;
+    const self: *CommandExecutor = @ptrCast(@alignCast(ctx));
     switch (event) {
-        .command_executed => |cmd| {
-            std.log.info("cmd = {s}", .{cmd.buffer.items});
+        .command_executed => |command_line| {
+            var parsed = try self.parseCommandLine(command_line.buffer.items);
+            defer parsed.deinit();
+            try parsed.command.run(self.allocator, parsed.arguments);
         },
         else => {},
     }
+}
+
+const ParsedCommandLine = struct {
+    allocator: std.mem.Allocator,
+    command: dew.models.Command,
+    arguments: [][]const u8,
+
+    pub fn deinit(self: *const ParsedCommandLine) void {
+        for (self.arguments) |arg| {
+            self.allocator.free(arg);
+        }
+        self.allocator.free(self.arguments);
+    }
+};
+
+pub fn parseCommandLine(self: *CommandExecutor, command_line: []const u8) !ParsedCommandLine {
+    _ = command_line;
+    var args = try self.allocator.alloc([]const u8, 1);
+    errdefer self.allocator.free(args);
+    args[0] = try std.fmt.allocPrint(self.allocator, "README.md", .{});
+    errdefer self.allocator.free(args[0]);
+    var cmd = dew.models.Command.OpenFile{
+        .buffer_selector = self.buffer_selector,
+        .status_message = self.status_message,
+    };
+    return .{
+        .allocator = self.allocator,
+        .command = cmd.command(),
+        .arguments = args,
+    };
 }

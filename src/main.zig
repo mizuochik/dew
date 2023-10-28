@@ -94,8 +94,11 @@ pub fn main() !void {
     };
     try view_event_publisher.addSubscriber(display.eventSubscriber());
 
-    var command_executor = dew.models.CommandExecutor.init();
-    defer command_executor.deinit();
+    var command_executor = dew.models.CommandExecutor{
+        .buffer_selector = &buffer_selector,
+        .status_message = &status_message,
+        .allocator = gpa.allocator(),
+    };
     try model_event_publisher.addSubscriber(command_executor.eventSubscriber());
 
     try editor.enableRawMode();
