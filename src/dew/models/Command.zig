@@ -27,7 +27,19 @@ pub const OpenFile = struct {
             try self.status_message.setMessage(message);
             return;
         }
-        try self.buffer_selector.file_buffer.openFile(arguments[0]);
+        const file_path = arguments[0];
+        std.log.debug("opening file: {s}", .{file_path});
+        self.buffer_selector.file_buffer.openFile(file_path) catch |err| {
+            switch (err) {
+                error.FileNotFound => {
+                    std.log.debug("cmd: cached FileNotFound", .{});
+                    const message = try std.fmt.allocPrint(allocator, "file not found: {s}", .{file_path});
+                    errdefer allocator.free(message);
+                    try self.status_message.setMessage(message);
+                },
+                else => return err,
+            }
+        };
     }
 
     pub fn command(self: *OpenFile) Command {
