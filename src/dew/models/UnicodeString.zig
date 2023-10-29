@@ -1,14 +1,12 @@
 const std = @import("std");
-const mem = std.mem;
-const unicode = std.unicode;
-const testing = std.testing;
+
 const UnicodeString = @This();
 
 buffer: std.ArrayList(u8),
 u8_index: std.ArrayList(usize),
 width_index: std.ArrayList(usize),
 
-pub fn init(allocator: mem.Allocator) !UnicodeString {
+pub fn init(allocator: std.mem.Allocator) !UnicodeString {
     var buf = UnicodeString{
         .buffer = std.ArrayList(u8).init(allocator),
         .u8_index = std.ArrayList(usize).init(allocator),
@@ -26,7 +24,7 @@ pub fn deinit(self: *const UnicodeString) void {
 
 pub fn insert(self: *UnicodeString, i: usize, c: u21) !void {
     var enc: [4]u8 = undefined;
-    const to = try unicode.utf8Encode(c, &enc);
+    const to = try std.unicode.utf8Encode(c, &enc);
     try self.buffer.insertSlice(self.u8_index.items[i], enc[0..to]);
     try self.refreshIndex();
 }
@@ -65,7 +63,7 @@ fn refreshU8Index(self: *UnicodeString) !void {
     var new_u8_index = std.ArrayList(usize).init(self.buffer.allocator);
     errdefer new_u8_index.deinit();
 
-    const view = try unicode.Utf8View.init(self.buffer.items);
+    const view = try std.unicode.Utf8View.init(self.buffer.items);
     var it = view.iterator();
 
     try new_u8_index.append(it.i);
@@ -113,38 +111,38 @@ pub fn clone(self: *const UnicodeString) !UnicodeString {
 }
 
 test "UnicodeString: insert" {
-    var lb = try UnicodeString.init(testing.allocator);
+    var lb = try UnicodeString.init(std.testing.allocator);
     defer lb.deinit();
 
     try lb.insert(0, '世');
     try lb.insert(1, '界');
 
-    try testing.expectFmt("世界", "{s}", .{lb.buffer.items});
-    try testing.expectFmt("{ 0, 3, 6 }", "{any}", .{lb.u8_index.items});
-    try testing.expectFmt("{ 0, 2, 4 }", "{any}", .{lb.width_index.items});
-    try testing.expectEqual(@as(usize, 2), lb.getLen());
-    try testing.expectEqual(@as(usize, 4), lb.getWidth());
+    try std.testing.expectFmt("世界", "{s}", .{lb.buffer.items});
+    try std.testing.expectFmt("{ 0, 3, 6 }", "{any}", .{lb.u8_index.items});
+    try std.testing.expectFmt("{ 0, 2, 4 }", "{any}", .{lb.width_index.items});
+    try std.testing.expectEqual(@as(usize, 2), lb.getLen());
+    try std.testing.expectEqual(@as(usize, 4), lb.getWidth());
 }
 
 test "UnicodeString: remove" {
-    var lb = try UnicodeString.init(testing.allocator);
+    var lb = try UnicodeString.init(std.testing.allocator);
     defer lb.deinit();
     try lb.appendSlice("こんにちは");
-    std.debug.assert(mem.eql(u8, "こんにちは", lb.buffer.items));
+    std.debug.assert(std.mem.eql(u8, "こんにちは", lb.buffer.items));
 
     try lb.remove(2);
 
-    try testing.expectFmt("こんちは", "{s}", .{lb.buffer.items});
-    try testing.expectFmt("{ 0, 3, 6, 9, 12 }", "{any}", .{lb.u8_index.items});
-    try testing.expectFmt("{ 0, 2, 4, 6, 8 }", "{any}", .{lb.width_index.items});
-    try testing.expectEqual(@as(usize, 4), lb.getLen());
-    try testing.expectEqual(@as(usize, 8), lb.getWidth());
+    try std.testing.expectFmt("こんちは", "{s}", .{lb.buffer.items});
+    try std.testing.expectFmt("{ 0, 3, 6, 9, 12 }", "{any}", .{lb.u8_index.items});
+    try std.testing.expectFmt("{ 0, 2, 4, 6, 8 }", "{any}", .{lb.width_index.items});
+    try std.testing.expectEqual(@as(usize, 4), lb.getLen());
+    try std.testing.expectEqual(@as(usize, 8), lb.getWidth());
 }
 
 test "UnicodeString: clear" {
-    var s = try UnicodeString.init(testing.allocator);
+    var s = try UnicodeString.init(std.testing.allocator);
     defer s.deinit();
     try s.appendSlice("foobar");
     try s.clear();
-    try testing.expectEqual(@as(usize, 0), s.buffer.items.len);
+    try std.testing.expectEqual(@as(usize, 0), s.buffer.items.len);
 }

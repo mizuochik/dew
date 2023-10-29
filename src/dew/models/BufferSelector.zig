@@ -1,16 +1,14 @@
 const dew = @import("../../dew.zig");
-const models = dew.models;
 const std = @import("std");
-const testing = std.testing;
 
 const BufferSelector = @This();
 
-file_buffer: *models.Buffer,
-command_buffer: *models.Buffer,
-current_buffer: *models.Buffer,
-event_publisher: *const dew.event.Publisher(models.Event),
+file_buffer: *dew.models.Buffer,
+command_buffer: *dew.models.Buffer,
+current_buffer: *dew.models.Buffer,
+event_publisher: *const dew.event.Publisher(dew.models.Event),
 
-pub fn init(file_buffer: *models.Buffer, command_buffer: *models.Buffer, event_publisher: *const dew.event.Publisher(models.Event)) BufferSelector {
+pub fn init(file_buffer: *dew.models.Buffer, command_buffer: *dew.models.Buffer, event_publisher: *const dew.event.Publisher(dew.models.Event)) BufferSelector {
     return .{
         .file_buffer = file_buffer,
         .command_buffer = command_buffer,
@@ -34,5 +32,5 @@ pub fn toggleCommandBuffer(self: *BufferSelector) !void {
 }
 
 test {
-    testing.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

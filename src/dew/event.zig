@@ -1,17 +1,13 @@
 const std = @import("std");
 const dew = @import("../dew.zig");
-const Position = dew.models.Position;
-const ArrayList = std.ArrayList;
-const Allocator = std.mem.Allocator;
-const testing = std.testing;
 
 pub fn Publisher(comptime E: anytype) type {
     return struct {
-        subscribers: ArrayList(Subscriber(E)),
+        subscribers: std.ArrayList(Subscriber(E)),
 
-        pub fn init(allocator: Allocator) Publisher(E) {
+        pub fn init(allocator: std.mem.Allocator) Publisher(E) {
             return .{
-                .subscribers = ArrayList(Subscriber(E)).init(allocator),
+                .subscribers = std.ArrayList(Subscriber(E)).init(allocator),
             };
         }
 
@@ -49,18 +45,18 @@ pub fn Subscriber(comptime E: anytype) type {
 
 const StubEvent = union(enum) {
     buffer_updated: struct {
-        from: Position,
-        to: Position,
+        from: dew.models.Position,
+        to: dew.models.Position,
     },
     status_message_updated,
 };
 
 const StubSubscriber = struct {
-    subscribed: ArrayList(StubEvent),
+    subscribed: std.ArrayList(StubEvent),
 
-    pub fn init(allocator: Allocator) StubSubscriber {
+    pub fn init(allocator: std.mem.Allocator) StubSubscriber {
         return .{
-            .subscribed = ArrayList(StubEvent).init(allocator),
+            .subscribed = std.ArrayList(StubEvent).init(allocator),
         };
     }
 
@@ -84,16 +80,16 @@ const StubSubscriber = struct {
 };
 
 test "event: publish and subscribe" {
-    var publisher = Publisher(StubEvent).init(testing.allocator);
+    var publisher = Publisher(StubEvent).init(std.testing.allocator);
     defer publisher.deinit();
-    var subscriber = StubSubscriber.init(testing.allocator);
+    var subscriber = StubSubscriber.init(std.testing.allocator);
     defer subscriber.deinit();
     try publisher.addSubscriber(subscriber.subscriber());
 
     try publisher.publish(.status_message_updated);
     try publisher.publish(.status_message_updated);
 
-    try testing.expectEqual(@as(usize, 2), subscriber.subscribed.items.len);
-    try testing.expectEqual(StubEvent.status_message_updated, subscriber.subscribed.items[0]);
-    try testing.expectEqual(StubEvent.status_message_updated, subscriber.subscribed.items[1]);
+    try std.testing.expectEqual(@as(usize, 2), subscriber.subscribed.items.len);
+    try std.testing.expectEqual(StubEvent.status_message_updated, subscriber.subscribed.items[0]);
+    try std.testing.expectEqual(StubEvent.status_message_updated, subscriber.subscribed.items[1]);
 }

@@ -1,6 +1,4 @@
 const std = @import("std");
-const mem = std.mem;
-const testing = std.testing;
 
 pub fn Observer(comptime E: type) type {
     return struct {
@@ -21,7 +19,7 @@ pub fn ObserverList(comptime E: type) type {
     return struct {
         observers: std.ArrayList(Observer(E)),
 
-        pub fn init(allocator: mem.Allocator) Observer(E) {
+        pub fn init(allocator: std.mem.Allocator) Observer(E) {
             return .{
                 .observers = std.ArrayList(Observer(E)).init(allocator),
             };
@@ -66,9 +64,9 @@ fn handleDummyEvent(ctx: *anyopaque, event: DummyEvent) anyerror!void {
 }
 
 test "observer: notifyEvent/handleEvent" {
-    var handled_events = std.ArrayList(DummyEvent).init(testing.allocator);
+    var handled_events = std.ArrayList(DummyEvent).init(std.testing.allocator);
     defer handled_events.deinit();
-    var dummy_observer_list = ObserverList(DummyEvent).init(testing.allocator);
+    var dummy_observer_list = ObserverList(DummyEvent).init(std.testing.allocator);
     defer dummy_observer_list.deinit();
     var dummy_observer = DummyObserver{
         .handled_events = &handled_events,
@@ -77,6 +75,6 @@ test "observer: notifyEvent/handleEvent" {
     try dummy_observer_list.add(dummy_observer.observer());
     try dummy_observer_list.notifyEvent(.{ .some_event = "executed" });
 
-    try testing.expectEqual(@as(usize, 1), handled_events.items.len);
-    try testing.expectEqualStrings("executed", handled_events.items[0].some_event);
+    try std.testing.expectEqual(@as(usize, 1), handled_events.items.len);
+    try std.testing.expectEqualStrings("executed", handled_events.items[0].some_event);
 }

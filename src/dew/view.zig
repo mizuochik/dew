@@ -1,5 +1,4 @@
 const std = @import("std");
-const testing = std.testing;
 
 pub const BufferView = @import("view/BufferView.zig");
 pub const StatusBarView = @import("view/StatusBarView.zig");
@@ -13,5 +12,5 @@ pub const Event = union(enum) {
 };
 
 test {
-    testing.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

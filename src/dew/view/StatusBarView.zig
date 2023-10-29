@@ -1,20 +1,13 @@
 const std = @import("std");
 const dew = @import("../../dew.zig");
-const testing = std.testing;
-const StatusMessage = dew.models.StatusMessage;
-const Buffer = dew.models.Buffer;
-const Event = dew.models.Event;
-const ViewEventPublisher = dew.event.Publisher(dew.view.Event);
-const Publisher = dew.event.Publisher(Event);
-const Subscriber = dew.event.Subscriber(Event);
 
 const StatusBarView = @This();
 
-status_message: *const StatusMessage,
+status_message: *const dew.models.StatusMessage,
 width: usize,
-view_event_publisher: *const ViewEventPublisher,
+view_event_publisher: *const dew.event.Publisher(dew.view.Event),
 
-pub fn init(status_message: *StatusMessage, view_event_publisher: *const ViewEventPublisher) StatusBarView {
+pub fn init(status_message: *dew.models.StatusMessage, view_event_publisher: *const dew.event.Publisher(dew.view.Event)) StatusBarView {
     return .{
         .status_message = status_message,
         .width = 0,
@@ -31,7 +24,7 @@ pub fn view(self: *const StatusBarView) ![]const u8 {
         self.status_message.message[0..self.width];
 }
 
-pub fn eventSubscriber(self: *StatusBarView) Subscriber {
+pub fn eventSubscriber(self: *StatusBarView) dew.event.Subscriber(dew.models.Event) {
     return .{
         .ptr = self,
         .vtable = &.{
@@ -40,7 +33,7 @@ pub fn eventSubscriber(self: *StatusBarView) Subscriber {
     };
 }
 
-fn handleEvent(ctx: *anyopaque, event: Event) anyerror!void {
+fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
     var self: *StatusBarView = @ptrCast(@alignCast(ctx));
     switch (event) {
         .status_message_updated => {
@@ -55,12 +48,12 @@ fn handleEvent(ctx: *anyopaque, event: Event) anyerror!void {
 }
 
 test "StatusBarView: view" {
-    var event_publisher = Publisher.init(testing.allocator);
+    var event_publisher = dew.event.Publisher(dew.models.Event).init(std.testing.allocator);
     defer event_publisher.deinit();
-    var view_event_publisher = dew.event.Publisher(dew.view.Event).init(testing.allocator);
+    var view_event_publisher = dew.event.Publisher(dew.view.Event).init(std.testing.allocator);
     defer view_event_publisher.deinit();
 
-    var status_message = try StatusMessage.init(testing.allocator, &event_publisher);
+    var status_message = try dew.models.StatusMessage.init(std.testing.allocator, &event_publisher);
     defer status_message.deinit();
     var status_bar_view = StatusBarView.init(
         &status_message,
@@ -69,9 +62,9 @@ test "StatusBarView: view" {
     defer status_bar_view.deinit();
     try event_publisher.addSubscriber(status_bar_view.eventSubscriber());
 
-    var new_message = try std.fmt.allocPrint(testing.allocator, "hello world", .{});
+    var new_message = try std.fmt.allocPrint(std.testing.allocator, "hello world", .{});
     try status_message.setMessage(new_message);
-    try event_publisher.publish(Event{
+    try event_publisher.publish(dew.models.Event{
         .screen_size_changed = .{
             .width = 5,
             .height = 100,
@@ -79,5 +72,5 @@ test "StatusBarView: view" {
     });
 
     const actual = try status_bar_view.view();
-    try testing.expectFmt("hello", "{s}", .{actual});
+    try std.testing.expectFmt("hello", "{s}", .{actual});
 }

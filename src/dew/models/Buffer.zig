@@ -1,14 +1,5 @@
 const std = @import("std");
-const mem = std.mem;
-const testing = std.testing;
 const dew = @import("../../dew.zig");
-const Editor = dew.Editor;
-const Arrow = Editor.Arrow;
-const View = dew.view.View;
-const Event = dew.models.Event;
-const Publisher = dew.event.Publisher(Event);
-const UnicodeString = dew.models.UnicodeString;
-const Position = dew.models.Position;
 
 const Buffer = @This();
 
@@ -17,22 +8,22 @@ const Mode = enum {
     command,
 };
 
-rows: std.ArrayList(UnicodeString),
+rows: std.ArrayList(dew.models.UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-event_publisher: *Publisher,
+event_publisher: *dew.event.Publisher(dew.models.Event),
 mode: Mode,
-allocator: mem.Allocator,
+allocator: std.mem.Allocator,
 
-pub fn init(allocator: mem.Allocator, event_publisher: *Publisher, mode: Mode) !Buffer {
+pub fn init(allocator: std.mem.Allocator, event_publisher: *dew.event.Publisher(dew.models.Event), mode: Mode) !Buffer {
     var buf = .{
-        .rows = std.ArrayList(UnicodeString).init(allocator),
+        .rows = std.ArrayList(dew.models.UnicodeString).init(allocator),
         .event_publisher = event_publisher,
         .mode = mode,
         .allocator = allocator,
     };
     if (mode == Mode.command) {
-        var l = try UnicodeString.init(allocator);
+        var l = try dew.models.UnicodeString.init(allocator);
         errdefer l.deinit();
         try buf.rows.append(l);
     }
@@ -84,7 +75,7 @@ pub fn moveToEndOfLine(self: *Buffer) !void {
     try self.notifyUpdate();
 }
 
-pub fn getCurrentRow(self: *const Buffer) *UnicodeString {
+pub fn getCurrentRow(self: *const Buffer) *dew.models.UnicodeString {
     return &self.rows.items[self.c_y];
 }
 
@@ -140,7 +131,7 @@ pub fn breakLine(self: *Buffer) !void {
         try self.event_publisher.publish(.{ .command_executed = command_line });
         return;
     }
-    var new_row = try UnicodeString.init(self.allocator);
+    var new_row = try dew.models.UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
     if (self.c_x < self.getCurrentRow().getLen()) {
         for (0..self.getCurrentRow().getLen() - self.c_x) |_| {
@@ -200,9 +191,9 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
 }
 
 test "Buffer: moveForward" {
-    var event_publisher = Publisher.init(testing.allocator);
+    var event_publisher = dew.event.Publisher.init(std.testing.allocator);
     defer event_publisher.deinit();
-    var buf = try Buffer.init(testing.allocator, &event_publisher, .file);
+    var buf = try Buffer.init(std.testing.allocator, &event_publisher, .file);
     defer buf.deinit();
     const lines = [_][]const u8{
         "ab",
@@ -210,32 +201,32 @@ test "Buffer: moveForward" {
         "",
     };
     for (lines) |line| {
-        var l = try UnicodeString.init(testing.allocator);
+        var l = try dew.models.UnicodeString.init(std.testing.allocator);
         errdefer l.deinit();
         try l.appendSlice(line);
         try buf.rows.append(l);
     }
 
-    try testing.expectFmt("0 0", "{} {}", .{ buf.c_x, buf.c_y });
+    try std.testing.expectFmt("0 0", "{} {}", .{ buf.c_x, buf.c_y });
 
     try buf.moveForward();
-    try testing.expectFmt("1 0", "{} {}", .{ buf.c_x, buf.c_y });
+    try std.testing.expectFmt("1 0", "{} {}", .{ buf.c_x, buf.c_y });
 
     try buf.moveForward();
-    try testing.expectFmt("2 0", "{} {}", .{ buf.c_x, buf.c_y });
+    try std.testing.expectFmt("2 0", "{} {}", .{ buf.c_x, buf.c_y });
 
     try buf.moveForward();
-    try testing.expectFmt("0 1", "{} {}", .{ buf.c_x, buf.c_y });
+    try std.testing.expectFmt("0 1", "{} {}", .{ buf.c_x, buf.c_y });
 
     try buf.moveForward();
-    try testing.expectFmt("1 1", "{} {}", .{ buf.c_x, buf.c_y });
+    try std.testing.expectFmt("1 1", "{} {}", .{ buf.c_x, buf.c_y });
 
     try buf.moveForward();
-    try testing.expectFmt("2 1", "{} {}", .{ buf.c_x, buf.c_y });
+    try std.testing.expectFmt("2 1", "{} {}", .{ buf.c_x, buf.c_y });
 
     try buf.moveForward();
-    try testing.expectFmt("0 2", "{} {}", .{ buf.c_x, buf.c_y });
+    try std.testing.expectFmt("0 2", "{} {}", .{ buf.c_x, buf.c_y });
 
     try buf.moveForward();
-    try testing.expectFmt("0 2", "{} {}", .{ buf.c_x, buf.c_y });
+    try std.testing.expectFmt("0 2", "{} {}", .{ buf.c_x, buf.c_y });
 }

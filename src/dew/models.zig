@@ -1,5 +1,4 @@
 const std = @import("std");
-const testing = std.testing;
 const dew = @import("../dew.zig");
 
 pub const Buffer = @import("models/Buffer.zig");
@@ -52,5 +51,5 @@ pub const ScreenSize = struct {
 };
 
 test {
-    testing.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

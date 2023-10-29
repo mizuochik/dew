@@ -1,28 +1,16 @@
 const std = @import("std");
-const fs = std.fs;
-const fmt = std.fmt;
-const Allocator = std.mem.Allocator;
-
 const dew = @import("../../dew.zig");
-const view = dew.view;
-const Key = dew.models.Key;
-const models = dew.models;
-const Publisher = dew.event.Publisher;
-const Subscriber = dew.event.Subscriber;
-const Arrow = dew.models.Arrow;
-const Buffer = dew.models.Buffer;
-const UnicodeString = dew.models.UnicodeString;
 
 buffer_view: *dew.view.BufferView,
-status_message: *models.StatusMessage,
+status_message: *dew.models.StatusMessage,
 file_path: ?[]const u8 = null,
-model_event_publisher: *const Publisher(dew.models.Event),
-buffer_selector: *models.BufferSelector,
-allocator: Allocator,
+model_event_publisher: *const dew.event.Publisher(dew.models.Event),
+buffer_selector: *dew.models.BufferSelector,
+allocator: std.mem.Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: Allocator, buffer_view: *view.BufferView, status_message: *models.StatusMessage, buffer_selector: *models.BufferSelector, model_event_publisher: *const Publisher(models.Event)) !EditorController {
+pub fn init(allocator: std.mem.Allocator, buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector, model_event_publisher: *const dew.event.Publisher(dew.models.Event)) !EditorController {
     return EditorController{
         .allocator = allocator,
         .buffer_view = buffer_view,
@@ -34,7 +22,7 @@ pub fn init(allocator: Allocator, buffer_view: *view.BufferView, status_message:
 
 pub fn deinit(_: *const EditorController) void {}
 
-pub fn processKeypress(self: *EditorController, key: Key) !void {
+pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
     switch (key) {
         .del => try self.deleteBackwardChar(),
         .ctrl => |k| switch (k) {
@@ -80,7 +68,7 @@ pub fn processKeypress(self: *EditorController, key: Key) !void {
     }
 }
 
-fn moveCursor(self: *EditorController, k: Arrow) !void {
+fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
     switch (k) {
         .up => {
             const y = self.buffer_view.getCursor().y;
@@ -135,20 +123,20 @@ fn insertChar(self: *EditorController, char: u21) !void {
 
 pub fn openFile(self: *EditorController, path: []const u8) !void {
     try self.buffer_selector.current_buffer.openFile(path);
-    const new_message = try fmt.allocPrint(self.allocator, "{s}", .{path});
+    const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);
     try self.status_message.setMessage(new_message);
 }
 
 fn saveFile(self: *EditorController) !void {
-    var f = try fs.cwd().createFile(self.file_path.?, .{});
+    var f = try std.fs.cwd().createFile(self.file_path.?, .{});
     defer f.close();
     for (self.buffer_selector.current_buffer.rows.items, 0..) |row, i| {
         if (i > 0)
             _ = try f.write("\n");
         _ = try f.write(row.buffer.items);
     }
-    const new_status = try fmt.allocPrint(self.allocator, "Saved: {s}", .{self.file_path.?});
+    const new_status = try std.fmt.allocPrint(self.allocator, "Saved: {s}", .{self.file_path.?});
     errdefer self.allocator.free(new_status);
     try self.status_message.setMessage(new_status);
 }

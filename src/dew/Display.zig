@@ -1,23 +1,15 @@
 const std = @import("std");
-const mem = std.mem;
-const heap = std.heap;
-const io = std.io;
-const fmt = std.fmt;
-
 const dew = @import("../dew.zig");
-const view = dew.view;
-const event = dew.event;
-const Editor = dew.Editor;
 
-buffer_view: *const view.BufferView,
-status_bar_view: *const view.StatusBarView,
-command_buffer_view: *const view.BufferView,
-allocator: mem.Allocator,
-size: Editor.WindowSize,
+buffer_view: *const dew.view.BufferView,
+status_bar_view: *const dew.view.StatusBarView,
+command_buffer_view: *const dew.view.BufferView,
+allocator: std.mem.Allocator,
+size: dew.Editor.WindowSize,
 
 const Display = @This();
 
-pub fn eventSubscriber(self: *Display) event.Subscriber(view.Event) {
+pub fn eventSubscriber(self: *Display) dew.event.Subscriber(dew.view.Event) {
     return .{
         .ptr = self,
         .vtable = &.{
@@ -26,7 +18,7 @@ pub fn eventSubscriber(self: *Display) event.Subscriber(view.Event) {
     };
 }
 
-fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
+fn handleEvent(ctx: *anyopaque, ev: dew.view.Event) anyerror!void {
     const self: *Display = @ptrCast(@alignCast(ctx));
     switch (ev) {
         .buffer_view_updated => {
@@ -41,16 +33,16 @@ fn handleEvent(ctx: *anyopaque, ev: view.Event) anyerror!void {
     }
 }
 
-fn doRender(self: *const Display, render: *const fn (self: *const Display, arena: mem.Allocator, buf: *std.ArrayList(u8)) anyerror!void) !void {
-    var arena = heap.ArenaAllocator.init(self.allocator);
+fn doRender(self: *const Display, render: *const fn (self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) anyerror!void) !void {
+    var arena = std.heap.ArenaAllocator.init(self.allocator);
     defer arena.deinit();
     var buf = std.ArrayList(u8).init(self.allocator);
     defer buf.deinit();
     try render(self, arena.allocator(), &buf);
-    try io.getStdOut().writeAll(buf.items);
+    try std.io.getStdOut().writeAll(buf.items);
 }
 
-fn refreshScreen(self: *const Display, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
+fn refreshScreen(self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try self.hideCursor(buf);
     try self.putCursor(arena, buf, 0, 0);
     try self.drawRows(buf);
@@ -58,7 +50,7 @@ fn refreshScreen(self: *const Display, arena: mem.Allocator, buf: *std.ArrayList
     try self.showCursor(buf);
 }
 
-fn refreshBottomLine(self: *const Display, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
+fn refreshBottomLine(self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try self.hideCursor(buf);
     try self.putCursor(arena, buf, 0, self.size.rows - 1);
 
@@ -89,11 +81,11 @@ fn showCursor(_: *const Display, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25h");
 }
 
-fn putCursor(_: *const Display, arena: mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
-    try buf.appendSlice(try fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
+fn putCursor(_: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
+    try buf.appendSlice(try std.fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
 }
 
-fn putCurrentCursor(self: *const Display, arena: mem.Allocator, buf: *std.ArrayList(u8)) !void {
+fn putCurrentCursor(self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
     const cursor = self.buffer_view.getCursor();
     const cursor_y = if (cursor.y <= self.buffer_view.y_scroll)
         0
@@ -102,7 +94,7 @@ fn putCurrentCursor(self: *const Display, arena: mem.Allocator, buf: *std.ArrayL
     try self.putCursor(arena, buf, cursor.x, cursor_y);
 }
 
-fn clearScreen(_: *const Display, _: mem.Allocator, buf: *std.ArrayList(u8)) !void {
+fn clearScreen(_: *const Display, _: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[2J");
     try buf.appendSlice("\x1b[H");
 }
