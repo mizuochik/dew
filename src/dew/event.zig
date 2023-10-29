@@ -7,25 +7,23 @@ const testing = std.testing;
 
 pub fn Publisher(comptime E: anytype) type {
     return struct {
-        const Self = @This();
-
         subscribers: ArrayList(Subscriber(E)),
 
-        pub fn init(allocator: Allocator) Self {
+        pub fn init(allocator: Allocator) Publisher(E) {
             return .{
                 .subscribers = ArrayList(Subscriber(E)).init(allocator),
             };
         }
 
-        pub fn deinit(self: *const Self) void {
+        pub fn deinit(self: *const Publisher(E)) void {
             self.subscribers.deinit();
         }
 
-        pub fn addSubscriber(self: *Self, subscriber: Subscriber(E)) !void {
+        pub fn addSubscriber(self: *Publisher(E), subscriber: Subscriber(E)) !void {
             try self.subscribers.append(subscriber);
         }
 
-        pub fn publish(self: *const Self, event: E) !void {
+        pub fn publish(self: *const Publisher(E), event: E) !void {
             for (self.subscribers.items) |*subscriber| {
                 try subscriber.handle(event);
             }

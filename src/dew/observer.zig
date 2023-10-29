@@ -4,8 +4,6 @@ const testing = std.testing;
 
 pub fn Observer(comptime E: type) type {
     return struct {
-        const Self = @This();
-
         ptr: *anyopaque,
         vtable: *const VTable,
 
@@ -13,7 +11,7 @@ pub fn Observer(comptime E: type) type {
             handleEvent: *const fn (ctx: *anyopaque, event: E) anyerror!void,
         };
 
-        pub fn handleEvent(self: *Self, event: E) !void {
+        pub fn handleEvent(self: *Observer(E), event: E) !void {
             try self.vtable.handleEvent(self.ptr, event);
         }
     };
@@ -21,25 +19,23 @@ pub fn Observer(comptime E: type) type {
 
 pub fn ObserverList(comptime E: type) type {
     return struct {
-        const Self = @This();
-
         observers: std.ArrayList(Observer(E)),
 
-        pub fn init(allocator: mem.Allocator) Self {
+        pub fn init(allocator: mem.Allocator) Observer(E) {
             return .{
                 .observers = std.ArrayList(Observer(E)).init(allocator),
             };
         }
 
-        pub fn deinit(self: *const Self) void {
+        pub fn deinit(self: *const Observer(E)) void {
             self.observers.deinit();
         }
 
-        pub fn add(self: *Self, observer: Observer(E)) !void {
+        pub fn add(self: *Observer(E), observer: Observer(E)) !void {
             try self.observers.append(observer);
         }
 
-        pub fn notifyEvent(self: *Self, event: E) !void {
+        pub fn notifyEvent(self: *Observer(E), event: E) !void {
             for (self.observers.items) |*observer| {
                 try observer.handleEvent(event);
             }

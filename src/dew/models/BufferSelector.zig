@@ -3,14 +3,14 @@ const models = dew.models;
 const std = @import("std");
 const testing = std.testing;
 
-const Self = @This();
+const BufferSelector = @This();
 
 file_buffer: *models.Buffer,
 command_buffer: *models.Buffer,
 current_buffer: *models.Buffer,
 event_publisher: *const dew.event.Publisher(models.Event),
 
-pub fn init(file_buffer: *models.Buffer, command_buffer: *models.Buffer, event_publisher: *const dew.event.Publisher(models.Event)) Self {
+pub fn init(file_buffer: *models.Buffer, command_buffer: *models.Buffer, event_publisher: *const dew.event.Publisher(models.Event)) BufferSelector {
     return .{
         .file_buffer = file_buffer,
         .command_buffer = command_buffer,
@@ -19,9 +19,9 @@ pub fn init(file_buffer: *models.Buffer, command_buffer: *models.Buffer, event_p
     };
 }
 
-pub fn deinit(_: *const Self) void {}
+pub fn deinit(_: *const BufferSelector) void {}
 
-pub fn toggleCommandBuffer(self: *Self) !void {
+pub fn toggleCommandBuffer(self: *BufferSelector) !void {
     const is_active = self.current_buffer == self.command_buffer;
     if (is_active) {
         try self.command_buffer.clear();

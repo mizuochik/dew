@@ -10,11 +10,9 @@ const Arrow = dew.models.Arrow;
 
 const Keyboard = @This();
 
-const Self = @This();
-
 fixed_buffer_stream: ?io.FixedBufferStream([]const u8) = null, // for testing only
 
-pub fn inputKey(self: *Self) !Key {
+pub fn inputKey(self: *Keyboard) !Key {
     var k = try self.readByte();
     if (k == 0x1b) {
         k = try self.readByte();
@@ -45,7 +43,7 @@ pub fn inputKey(self: *Self) !Key {
     return .{ .plain = try unicode.utf8Decode(buf[0..l]) };
 }
 
-fn readByte(self: *Self) anyerror!u8 {
+fn readByte(self: *Keyboard) anyerror!u8 {
     if (self.fixed_buffer_stream) |*fixed| {
         return try fixed.reader().readByte();
     }
