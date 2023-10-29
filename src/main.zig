@@ -98,9 +98,10 @@ pub fn main() !void {
         },
     });
 
-    const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});
-    errdefer gpa.allocator().free(msg);
-    try status_message.setMessage(msg);
-
+    {
+        const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});
+        errdefer gpa.allocator().free(msg);
+        try status_message.setMessage(msg);
+    }
     try editor.run();
 }
