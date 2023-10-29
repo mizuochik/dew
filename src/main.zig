@@ -26,7 +26,7 @@ fn writeLog(comptime message_level: log.Level, comptime scope: @TypeOf(.enum_lit
 }
 
 pub const std_options = struct {
-    pub const log_level = .info;
+    pub const log_level = .debug;
     pub const logFn = writeLog;
 };
 
