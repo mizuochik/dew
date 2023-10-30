@@ -13,6 +13,7 @@ c_x: usize = 0,
 c_y: usize = 0,
 event_publisher: *dew.event.Publisher(dew.models.Event),
 mode: Mode,
+cursors: std.ArrayList(dew.models.Cursor),
 allocator: std.mem.Allocator,
 
 pub fn init(allocator: std.mem.Allocator, event_publisher: *dew.event.Publisher(dew.models.Event), mode: Mode) !Buffer {
@@ -20,6 +21,7 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *dew.event.Publisher(
         .rows = std.ArrayList(dew.models.UnicodeString).init(allocator),
         .event_publisher = event_publisher,
         .mode = mode,
+        .cursors = std.ArrayList(dew.models.Cursor).init(allocator),
         .allocator = allocator,
     };
     if (mode == Mode.command) {
@@ -33,6 +35,14 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *dew.event.Publisher(
 pub fn deinit(self: *const Buffer) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
+    self.cursors.deinit();
+}
+
+pub fn addCursor(self: *Buffer) !void {
+    try self.cursors.append(dew.models.Cursor{
+        .buffer = self,
+        .event_publisher = self.event_publisher,
+    });
 }
 
 pub fn setCursor(self: *Buffer, x: usize, y: usize) !void {

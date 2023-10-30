@@ -40,12 +40,14 @@ pub fn main() !void {
 
     var buffer = try dew.models.Buffer.init(gpa.allocator(), &model_event_publisher, .file);
     defer buffer.deinit();
+    try buffer.addCursor();
     var buffer_view = dew.view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher, .file);
     defer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
     var command_buffer = try dew.models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
     defer command_buffer.deinit();
+    try command_buffer.addCursor();
     var command_buffer_view = dew.view.BufferView.init(gpa.allocator(), &command_buffer, &view_event_publisher, .command);
     defer command_buffer_view.deinit();
     try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
