@@ -11,7 +11,7 @@ pub fn moveForward(self: *Cursor) !void {
     if (self.x < self.getCurrentRow().getLen()) {
         self.x += 1;
         try self.event_publisher.publish(.cursor_moved);
-    } else if (self.y < self.rows.items.len - 1) {
+    } else if (self.y < self.buffer.rows.items.len - 1) {
         self.y += 1;
         self.x = 0;
         try self.event_publisher.publish(.cursor_moved);
