@@ -89,6 +89,9 @@ fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
             self.buffer_view.updateLastCursorX();
         },
         .right => {
+            for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                try cursor.moveForward();
+            }
             try self.buffer_selector.current_buffer.moveForward();
             self.buffer_view.updateLastCursorX();
         },
