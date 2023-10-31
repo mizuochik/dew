@@ -95,6 +95,11 @@ pub fn insertChar(self: *Buffer, c: u21) !void {
     try self.notifyUpdate();
 }
 
+pub fn _insertChar(self: *Buffer, pos: dew.models.Position, c: u21) !void {
+    try self.rows.items[pos.y].insert(pos.x, c);
+    try self.notifyUpdate();
+}
+
 pub fn deleteChar(self: *Buffer) !void {
     if (self.c_x >= self.getCurrentRow().getLen()) {
         try self.joinLine();

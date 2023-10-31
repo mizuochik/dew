@@ -149,6 +149,12 @@ pub fn eventSubscriber(self: *BufferView) dew.event.Subscriber(dew.models.Event)
 fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
     switch (event) {
+        .cursor_moved => {
+            try self.view_event_publisher.publish(switch (self.mode) {
+                .file => .buffer_view_updated,
+                .command => .command_buffer_view_updated,
+            });
+        },
         .buffer_updated => |_| {
             try self.update();
             try self.view_event_publisher.publish(switch (self.mode) {

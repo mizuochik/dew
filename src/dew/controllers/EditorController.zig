@@ -69,7 +69,11 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
             },
             else => {},
         },
-        .plain => |k| try self.insertChar(k),
+        .plain => |k| {
+            for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                try cursor.insertChar(k);
+            }
+        },
         .arrow => |k| try self.moveCursor(k),
     }
 }

@@ -38,6 +38,18 @@ pub fn moveToEndOfLine(self: *Cursor) !void {
     try self.event_publisher.publish(.cursor_moved);
 }
 
+pub fn insertChar(self: *Cursor, c: u21) !void {
+    try self.buffer._insertChar(self.getPosition(), c);
+    try self.moveForward();
+}
+
+pub fn getPosition(self: *const Cursor) dew.models.Position {
+    return .{
+        .x = self.x,
+        .y = self.y,
+    };
+}
+
 fn getCurrentRow(self: *const Cursor) dew.models.UnicodeString {
     return self.buffer.rows.items[self.y];
 }
