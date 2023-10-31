@@ -18,6 +18,26 @@ pub fn moveForward(self: *Cursor) !void {
     }
 }
 
+pub fn moveBackward(self: *Cursor) !void {
+    if (self.x > 0) {
+        self.x -= 1;
+    } else if (self.y > 0) {
+        self.y -= 1;
+        self.x = self.getCurrentRow().getLen();
+    }
+    try self.event_publisher.publish(.cursor_moved);
+}
+
+pub fn moveToBeginningOfLine(self: *Cursor) !void {
+    self.x = 0;
+    try self.event_publisher.publish(.cursor_moved);
+}
+
+pub fn moveToEndOfLine(self: *Cursor) !void {
+    self.x = self.getCurrentRow().getLen();
+    try self.event_publisher.publish(.cursor_moved);
+}
+
 fn getCurrentRow(self: *const Cursor) dew.models.UnicodeString {
     return self.buffer.rows.items[self.y];
 }

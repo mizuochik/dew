@@ -38,10 +38,16 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
             'B' => try self.moveCursor(.left),
             'J' => try self.buffer_selector.current_buffer.joinLine(),
             'A' => {
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try cursor.moveToBeginningOfLine();
+                }
                 try self.buffer_selector.current_buffer.moveToBeginningOfLine();
                 self.buffer_view.updateLastCursorX();
             },
             'E' => {
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try cursor.moveToEndOfLine();
+                }
                 try self.buffer_selector.current_buffer.moveToEndOfLine();
                 self.buffer_view.updateLastCursorX();
             },
@@ -85,6 +91,9 @@ fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
             }
         },
         .left => {
+            for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                try cursor.moveBackward();
+            }
             try self.buffer_selector.current_buffer.moveBackward();
             self.buffer_view.updateLastCursorX();
         },
