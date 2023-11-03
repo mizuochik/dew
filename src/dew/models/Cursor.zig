@@ -61,6 +61,12 @@ pub fn getPosition(self: *const Cursor) dew.models.Position {
     };
 }
 
+pub fn setPosition(self: *Cursor, pos: dew.models.Position) !void {
+    self.x = pos.x;
+    self.y = pos.y;
+    try self.event_publisher.publish(.cursor_moved);
+}
+
 fn getCurrentRow(self: *const Cursor) dew.models.UnicodeString {
     return self.buffer.rows.items[self.y];
 }

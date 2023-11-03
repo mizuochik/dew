@@ -95,15 +95,19 @@ fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
         .up => {
             const y = self.buffer_view.getCursor().y;
             if (y > 0) {
-                const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.buffer_view.last_cursor_x, .y = y - 1 });
-                try self.buffer_selector.current_buffer.setCursor(new_cursor.x, new_cursor.y);
+                const pos = self.buffer_view.getBufferPopsition(.{ .x = self.buffer_view.last_cursor_x, .y = y - 1 });
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try cursor.setPosition(pos);
+                }
             }
         },
         .down => {
             const y = self.buffer_view.getCursor().y;
             if (y < self.buffer_view.getNumberOfLines() - 1) {
-                const new_cursor = self.buffer_view.getBufferPopsition(.{ .x = self.buffer_view.last_cursor_x, .y = y + 1 });
-                try self.buffer_selector.current_buffer.setCursor(new_cursor.x, new_cursor.y);
+                const pos = self.buffer_view.getBufferPopsition(.{ .x = self.buffer_view.last_cursor_x, .y = y + 1 });
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try cursor.setPosition(pos);
+                }
             }
         },
         .left => {
