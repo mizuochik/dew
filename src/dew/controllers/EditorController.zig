@@ -29,7 +29,11 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
             'Q' => return error.Quit,
             'S' => try self.saveFile(),
             'K' => try self.killLine(),
-            'D' => try self.deleteChar(),
+            'D' => {
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try cursor.deleteChar();
+                }
+            },
             'H' => try self.deleteBackwardChar(),
             'M' => try self.breakLine(),
             'P' => try self.moveCursor(.up),
@@ -113,7 +117,9 @@ fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
 }
 
 fn deleteChar(self: *EditorController) !void {
-    try self.buffer_selector.current_buffer.deleteChar();
+    for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+        try cursor.deleteChar();
+    }
     self.buffer_view.updateLastCursorX();
 }
 

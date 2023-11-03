@@ -109,6 +109,16 @@ pub fn deleteChar(self: *Buffer) !void {
     try self.notifyUpdate();
 }
 
+pub fn _deleteChar(self: *Buffer, pos: dew.models.Position) !void {
+    var row = &self.rows.items[pos.y];
+    if (pos.x >= row.getLen()) {
+        try self._joinLine(pos);
+        return;
+    }
+    try row.remove(pos.x);
+    try self.notifyUpdate();
+}
+
 pub fn deleteBackwardChar(self: *Buffer) !void {
     try self.moveBackward();
     try self.deleteChar();
@@ -123,6 +133,18 @@ pub fn joinLine(self: *Buffer) !void {
     try self.getCurrentRow().appendSlice(next_row.buffer.items);
     next_row.deinit();
     _ = self.rows.orderedRemove(self.c_y + 1);
+    try self.notifyUpdate();
+}
+
+pub fn _joinLine(self: *Buffer, pos: dew.models.Position) !void {
+    if (pos.y >= self.rows.items.len - 1) {
+        return;
+    }
+    var row = self.rows.items[pos.y];
+    var next_row = self.rows.items[pos.y + 1];
+    try row.appendSlice(next_row.buffer.items);
+    next_row.deinit();
+    _ = self.rows.orderedRemove(pos.y + 1);
     try self.notifyUpdate();
 }
 

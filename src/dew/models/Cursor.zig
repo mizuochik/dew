@@ -1,4 +1,5 @@
 const dew = @import("../../dew.zig");
+const std = @import("std");
 
 buffer: *dew.models.Buffer,
 x: usize = 0,
@@ -41,6 +42,11 @@ pub fn moveToEndOfLine(self: *Cursor) !void {
 pub fn insertChar(self: *Cursor, c: u21) !void {
     try self.buffer._insertChar(self.getPosition(), c);
     try self.moveForward();
+}
+
+pub fn deleteChar(self: *Cursor) !void {
+    try self.buffer._deleteChar(self.getPosition());
+    try self.event_publisher.publish(.cursor_moved);
 }
 
 pub fn getPosition(self: *const Cursor) dew.models.Position {
