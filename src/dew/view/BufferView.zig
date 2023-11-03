@@ -49,11 +49,13 @@ pub fn deinit(self: *const BufferView) void {
     self.rows.deinit();
 }
 
-pub fn getRowView(self: *const BufferView, y: usize) []const u8 {
-    if (y >= self.rows.items.len)
+pub fn viewRow(self: *const BufferView, y: usize) []const u8 {
+    const y_offset = y + self.y_scroll;
+    if (y_offset >= self.rows.items.len) {
         return empty;
-    const row_slice = self.rows.items[y];
-    return self.buffer.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end);
+    }
+    const row = self.rows.items[y_offset];
+    return self.buffer.rows.items[row.buf_y].sliceAsRaw(row.buf_x_start, row.buf_x_end);
 }
 
 pub fn getCursor(self: *const BufferView) dew.models.Position {

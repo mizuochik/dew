@@ -55,7 +55,7 @@ fn refreshBottomLine(self: *const Display, arena: std.mem.Allocator, buf: *std.A
     try self.putCursor(arena, buf, 0, self.size.rows - 1);
 
     const status_bar = try self.status_bar_view.view();
-    const command_buffer = self.command_buffer_view.getRowView(0);
+    const command_buffer = self.command_buffer_view.viewRow(0);
 
     try buf.appendSlice("\x1b[K");
     try buf.appendSlice(command_buffer);
@@ -103,7 +103,7 @@ fn drawRows(self: *const Display, buf: *std.ArrayList(u8)) !void {
     for (0..self.buffer_view.height) |y| {
         if (y > 0) try buf.appendSlice("\r\n");
         try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(self.buffer_view.getRowView(y + self.buffer_view.y_scroll));
+        try buf.appendSlice(self.buffer_view.viewRow(y));
     }
     try buf.appendSlice("\r\n");
 }
