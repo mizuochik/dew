@@ -45,19 +45,6 @@ pub fn addCursor(self: *Buffer) !void {
     });
 }
 
-pub fn setCursor(self: *Buffer, x: usize, y: usize) !void {
-    self.c_x = x;
-    self.c_y = switch (self.mode) {
-        .command => 0,
-        else => y,
-    };
-    try self.notifyUpdate();
-}
-
-pub fn getCurrentRow(self: *const Buffer) *dew.models.UnicodeString {
-    return &self.rows.items[self.c_y];
-}
-
 pub fn insertChar(self: *Buffer, pos: dew.models.Position, c: u21) !void {
     try self.rows.items[pos.y].insert(pos.x, c);
     try self.notifyUpdate();
@@ -127,7 +114,6 @@ pub fn breakLine(self: *Buffer, pos: dew.models.Position) !void {
 pub fn clear(self: *Buffer) !void {
     std.debug.assert(self.rows.items.len == 1);
     try self.rows.items[0].clear();
-    try self.setCursor(0, 0);
     try self.event_publisher.publish(dew.models.Event{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
 }
 

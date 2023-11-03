@@ -26,7 +26,8 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
     switch (key) {
         .del => {
             for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
-                try cursor.deleteBackwardChar();
+                try cursor.moveBackward();
+                try self.buffer_selector.current_buffer.deleteChar(cursor.getPosition());
             }
         },
         .ctrl => |k| switch (k) {
@@ -35,12 +36,13 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
             'K' => try self.killLine(),
             'D' => {
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
-                    try cursor.deleteChar();
+                    try self.buffer_selector.current_buffer.deleteChar(cursor.getPosition());
                 }
             },
             'H' => {
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
-                    try cursor.deleteBackwardChar();
+                    try cursor.moveBackward();
+                    try self.buffer_selector.current_buffer.deleteChar(cursor.getPosition());
                 }
             },
             'M' => try self.breakLine(),
@@ -70,22 +72,26 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
             },
             'V' => {
                 self.buffer_view.scrollDown(self.buffer_view.height * 15 / 16);
-                const cur = self.buffer_view.getNormalizedCursor();
-                try self.buffer_selector.current_buffer.setCursor(cur.x, cur.y);
+                const pos = self.buffer_view.getNormalizedCursor();
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try cursor.setPosition(pos);
+                }
             },
             else => {},
         },
         .meta => |k| switch (k) {
             'v' => {
                 self.buffer_view.scrollUp(self.buffer_view.height * 15 / 16);
-                const cur = self.buffer_view.getNormalizedCursor();
-                try self.buffer_selector.current_buffer.setCursor(cur.x, cur.y);
+                const pos = self.buffer_view.getNormalizedCursor();
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try cursor.setPosition(pos);
+                }
             },
             else => {},
         },
         .plain => |k| {
             for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
-                try cursor.insertChar(k);
+                try self.buffer_selector.current_buffer.insertChar(cursor.getPosition(), k);
             }
         },
         .arrow => |k| try self.moveCursor(k),
@@ -126,18 +132,6 @@ fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
         },
     }
     self.buffer_view.normalizeScroll();
-}
-
-fn deleteChar(self: *EditorController) !void {
-    for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
-        try cursor.deleteChar();
-    }
-    self.buffer_view.updateLastCursorX();
-}
-
-fn deleteBackwardChar(self: *EditorController) !void {
-    try self.buffer_selector.current_buffer.deleteBackwardChar();
-    self.buffer_view.updateLastCursorX();
 }
 
 fn breakLine(self: *EditorController) !void {

@@ -1,7 +1,7 @@
 const dew = @import("../../dew.zig");
 const std = @import("std");
 
-buffer: *dew.models.Buffer,
+buffer: *const dew.models.Buffer,
 x: usize = 0,
 y: usize = 0,
 event_publisher: *const dew.event.Publisher(dew.models.Event),
@@ -37,21 +37,6 @@ pub fn moveToBeginningOfLine(self: *Cursor) !void {
 pub fn moveToEndOfLine(self: *Cursor) !void {
     self.x = self.getCurrentRow().getLen();
     try self.event_publisher.publish(.cursor_moved);
-}
-
-pub fn insertChar(self: *Cursor, c: u21) !void {
-    try self.buffer.insertChar(self.getPosition(), c);
-    try self.moveForward();
-}
-
-pub fn deleteChar(self: *Cursor) !void {
-    try self.buffer.deleteChar(self.getPosition());
-    try self.event_publisher.publish(.cursor_moved);
-}
-
-pub fn deleteBackwardChar(self: *Cursor) !void {
-    try self.moveBackward();
-    try self.deleteChar();
 }
 
 pub fn getPosition(self: *const Cursor) dew.models.Position {
