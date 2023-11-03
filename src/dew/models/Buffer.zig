@@ -54,37 +54,6 @@ pub fn setCursor(self: *Buffer, x: usize, y: usize) !void {
     try self.notifyUpdate();
 }
 
-pub fn moveForward(self: *Buffer) !void {
-    const row = self.getCurrentRow();
-    if (self.c_x < row.getLen()) {
-        self.c_x += 1;
-    } else if (self.c_y < self.rows.items.len - 1) {
-        self.c_y += 1;
-        self.c_x = 0;
-    }
-    try self.notifyUpdate();
-}
-
-pub fn moveBackward(self: *Buffer) !void {
-    if (self.c_x > 0) {
-        self.c_x -= 1;
-    } else if (self.c_y > 0) {
-        self.c_y -= 1;
-        self.c_x = self.getCurrentRow().getLen();
-    }
-    try self.notifyUpdate();
-}
-
-pub fn moveToBeginningOfLine(self: *Buffer) !void {
-    self.c_x = 0;
-    try self.notifyUpdate();
-}
-
-pub fn moveToEndOfLine(self: *Buffer) !void {
-    self.c_x = self.getCurrentRow().getLen();
-    try self.notifyUpdate();
-}
-
 pub fn getCurrentRow(self: *const Buffer) *dew.models.UnicodeString {
     return &self.rows.items[self.c_y];
 }
