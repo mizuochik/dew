@@ -24,7 +24,11 @@ pub fn deinit(_: *const EditorController) void {}
 
 pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
     switch (key) {
-        .del => try self.deleteBackwardChar(),
+        .del => {
+            for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                try cursor.deleteBackwardChar();
+            }
+        },
         .ctrl => |k| switch (k) {
             'Q' => return error.Quit,
             'S' => try self.saveFile(),
@@ -34,7 +38,11 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
                     try cursor.deleteChar();
                 }
             },
-            'H' => try self.deleteBackwardChar(),
+            'H' => {
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try cursor.deleteBackwardChar();
+                }
+            },
             'M' => try self.breakLine(),
             'P' => try self.moveCursor(.up),
             'N' => try self.moveCursor(.down),

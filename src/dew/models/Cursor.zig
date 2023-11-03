@@ -49,6 +49,11 @@ pub fn deleteChar(self: *Cursor) !void {
     try self.event_publisher.publish(.cursor_moved);
 }
 
+pub fn deleteBackwardChar(self: *Cursor) !void {
+    try self.moveBackward();
+    try self.deleteChar();
+}
+
 pub fn getPosition(self: *const Cursor) dew.models.Position {
     return .{
         .x = self.x,
