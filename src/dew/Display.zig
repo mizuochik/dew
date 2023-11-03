@@ -86,12 +86,12 @@ fn putCursor(_: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8
 }
 
 fn putCurrentCursor(self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    const cursor = self.buffer_view.getCursor();
-    const cursor_y = if (cursor.y <= self.buffer_view.y_scroll)
-        0
-    else
-        cursor.y - self.buffer_view.y_scroll;
-    try self.putCursor(arena, buf, cursor.x, cursor_y);
+    if (self.buffer_view.viewCursor()) |cursor| {
+        try self.putCursor(arena, buf, cursor.x, cursor.y);
+    }
+    if (self.command_buffer_view.viewCursor()) |cursor| {
+        try self.putCursor(arena, buf, cursor.x, self.size.rows - 1);
+    }
 }
 
 fn clearScreen(_: *const Display, _: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {

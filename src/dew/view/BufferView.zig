@@ -58,6 +58,21 @@ pub fn viewRow(self: *const BufferView, y: usize) []const u8 {
     return self.buffer.rows.items[row.buf_y].sliceAsRaw(row.buf_x_start, row.buf_x_end);
 }
 
+pub fn viewCursor(self: *const BufferView) ?dew.models.Position {
+    if (!self.is_active) {
+        return null;
+    }
+    const cursor = self.getCursor();
+    const y_offset = cursor.y - self.y_scroll;
+    if (y_offset < 0) {
+        return null;
+    }
+    return .{
+        .x = cursor.x,
+        .y = y_offset,
+    };
+}
+
 pub fn getCursor(self: *const BufferView) dew.models.Position {
     const c_y = self.buffer.cursors.items[0].y;
     const c_x = self.buffer.cursors.items[0].x;
