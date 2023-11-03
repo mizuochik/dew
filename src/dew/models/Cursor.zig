@@ -40,12 +40,12 @@ pub fn moveToEndOfLine(self: *Cursor) !void {
 }
 
 pub fn insertChar(self: *Cursor, c: u21) !void {
-    try self.buffer._insertChar(self.getPosition(), c);
+    try self.buffer.insertChar(self.getPosition(), c);
     try self.moveForward();
 }
 
 pub fn deleteChar(self: *Cursor) !void {
-    try self.buffer._deleteChar(self.getPosition());
+    try self.buffer.deleteChar(self.getPosition());
     try self.event_publisher.publish(.cursor_moved);
 }
 

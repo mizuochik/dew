@@ -48,7 +48,11 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
             'N' => try self.moveCursor(.down),
             'F' => try self.moveCursor(.right),
             'B' => try self.moveCursor(.left),
-            'J' => try self.buffer_selector.current_buffer.joinLine(),
+            'J' => {
+                for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+                    try self.buffer_selector.current_buffer.joinLine(cursor.getPosition());
+                }
+            },
             'A' => {
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.moveToBeginningOfLine();
@@ -141,12 +145,17 @@ fn deleteBackwardChar(self: *EditorController) !void {
 }
 
 fn breakLine(self: *EditorController) !void {
-    try self.buffer_selector.current_buffer.breakLine();
+    for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+        try self.buffer_selector.current_buffer.breakLine(cursor.getPosition());
+        try cursor.moveForward();
+    }
     self.buffer_view.updateLastCursorX();
 }
 
 fn killLine(self: *EditorController) !void {
-    try self.buffer_selector.current_buffer.killLine();
+    for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+        try self.buffer_selector.current_buffer.killLine(cursor.getPosition());
+    }
     self.buffer_view.updateLastCursorX();
 }
 

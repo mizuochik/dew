@@ -89,30 +89,15 @@ pub fn getCurrentRow(self: *const Buffer) *dew.models.UnicodeString {
     return &self.rows.items[self.c_y];
 }
 
-pub fn insertChar(self: *Buffer, c: u21) !void {
-    try self.getCurrentRow().insert(self.c_x, c);
-    try self.moveForward();
-    try self.notifyUpdate();
-}
-
-pub fn _insertChar(self: *Buffer, pos: dew.models.Position, c: u21) !void {
+pub fn insertChar(self: *Buffer, pos: dew.models.Position, c: u21) !void {
     try self.rows.items[pos.y].insert(pos.x, c);
     try self.notifyUpdate();
 }
 
-pub fn deleteChar(self: *Buffer) !void {
-    if (self.c_x >= self.getCurrentRow().getLen()) {
-        try self.joinLine();
-        return;
-    }
-    try self.getCurrentRow().remove(self.c_x);
-    try self.notifyUpdate();
-}
-
-pub fn _deleteChar(self: *Buffer, pos: dew.models.Position) !void {
+pub fn deleteChar(self: *Buffer, pos: dew.models.Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
-        try self._joinLine(pos);
+        try self.joinLine(pos);
         return;
     }
     try row.remove(pos.x);
@@ -125,42 +110,31 @@ pub fn deleteBackwardChar(self: *Buffer) !void {
     try self.notifyUpdate();
 }
 
-pub fn joinLine(self: *Buffer) !void {
-    if (self.c_y >= self.rows.items.len - 1) {
-        return;
-    }
-    var next_row = self.rows.items[self.c_y + 1];
-    try self.getCurrentRow().appendSlice(next_row.buffer.items);
-    next_row.deinit();
-    _ = self.rows.orderedRemove(self.c_y + 1);
-    try self.notifyUpdate();
-}
-
-pub fn _joinLine(self: *Buffer, pos: dew.models.Position) !void {
+pub fn joinLine(self: *Buffer, pos: dew.models.Position) !void {
     if (pos.y >= self.rows.items.len - 1) {
         return;
     }
-    var row = self.rows.items[pos.y];
-    var next_row = self.rows.items[pos.y + 1];
+    var row = &self.rows.items[pos.y];
+    var next_row = &self.rows.items[pos.y + 1];
     try row.appendSlice(next_row.buffer.items);
     next_row.deinit();
     _ = self.rows.orderedRemove(pos.y + 1);
     try self.notifyUpdate();
 }
 
-pub fn killLine(self: *Buffer) !void {
-    const row = self.getCurrentRow();
-    if (self.c_x >= row.getLen()) {
-        try self.deleteChar();
+pub fn killLine(self: *Buffer, pos: dew.models.Position) !void {
+    var row = &self.rows.items[pos.y];
+    if (pos.x >= row.getLen()) {
+        try self.deleteChar(pos);
         return;
     }
-    for (0..row.getLen() - self.c_x) |_| {
-        try self.deleteChar();
+    for (0..row.getLen() - pos.x) |_| {
+        try self.deleteChar(pos);
     }
     try self.notifyUpdate();
 }
 
-pub fn breakLine(self: *Buffer) !void {
+pub fn breakLine(self: *Buffer, pos: dew.models.Position) !void {
     if (self.mode == Mode.command) {
         const command_line = try self.rows.items[0].clone();
         errdefer command_line.deinit();
@@ -170,15 +144,14 @@ pub fn breakLine(self: *Buffer) !void {
     }
     var new_row = try dew.models.UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
-    if (self.c_x < self.getCurrentRow().getLen()) {
-        for (0..self.getCurrentRow().getLen() - self.c_x) |_| {
-            const r = self.getCurrentRow();
-            try new_row.appendSlice(r.buffer.items[r.u8_index.items[self.c_x]..r.u8_index.items[self.c_x + 1]]);
-            try self.deleteChar();
+    const row = &self.rows.items[pos.y];
+    if (pos.x < row.getLen()) {
+        for (0..row.getLen() - pos.x) |_| {
+            try new_row.appendSlice(row.buffer.items[row.u8_index.items[pos.x]..row.u8_index.items[pos.x + 1]]);
+            try self.deleteChar(pos);
         }
     }
-    try self.rows.insert(self.c_y + 1, new_row);
-    try self.moveForward();
+    try self.rows.insert(pos.y + 1, new_row);
     try self.notifyUpdate();
 }
 
