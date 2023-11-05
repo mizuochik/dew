@@ -19,6 +19,8 @@ pub const OpenFile = struct {
     status_message: *dew.models.StatusMessage,
 
     fn doRun(ptr: *anyopaque, allocator: std.mem.Allocator, arguments: [][]const u8) anyerror!void {
+        std.log.debug("trace: opening file", .{});
+
         const self: *OpenFile = @ptrCast(@alignCast(ptr));
         const want_arguments_len = 1;
         if (arguments.len != want_arguments_len) {

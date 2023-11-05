@@ -22,9 +22,6 @@ pub fn deinit(_: *const BufferSelector) void {}
 pub fn toggleCommandBuffer(self: *BufferSelector) !void {
     const is_active = self.current_buffer == self.command_buffer;
     if (is_active) {
-        for (self.command_buffer.cursors.items) |*cursor| {
-            try cursor.setPosition(.{ .x = 0, .y = 0 });
-        }
         try self.command_buffer.clear();
         self.current_buffer = self.file_buffer;
         try self.event_publisher.publish(.command_buffer_closed);

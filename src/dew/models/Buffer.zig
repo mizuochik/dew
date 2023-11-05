@@ -45,6 +45,15 @@ pub fn addCursor(self: *Buffer) !void {
     });
 }
 
+pub fn resetCursors(self: *Buffer) !void {
+    for (self.cursors.items) |*cursor| {
+        try cursor.setPosition(.{
+            .x = 0,
+            .y = 0,
+        });
+    }
+}
+
 pub fn insertChar(self: *Buffer, pos: dew.models.Position, c: u21) !void {
     try self.rows.items[pos.y].insert(pos.x, c);
     try self.notifyUpdate();
@@ -91,13 +100,6 @@ pub fn killLine(self: *Buffer, pos: dew.models.Position) !void {
 }
 
 pub fn breakLine(self: *Buffer, pos: dew.models.Position) !void {
-    if (self.mode == Mode.command) {
-        const command_line = try self.rows.items[0].clone();
-        errdefer command_line.deinit();
-        try self.clear();
-        try self.event_publisher.publish(.{ .command_executed = command_line });
-        return;
-    }
     var new_row = try dew.models.UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
     const row = &self.rows.items[pos.y];
@@ -111,8 +113,19 @@ pub fn breakLine(self: *Buffer, pos: dew.models.Position) !void {
     try self.notifyUpdate();
 }
 
+pub fn evaluateCommand(self: *Buffer) !void {
+    std.log.debug("trace: evaluate command", .{});
+
+    std.debug.assert(self.mode == .command);
+    const command_line = try self.rows.items[0].clone();
+    errdefer command_line.deinit();
+    try self.clear();
+    try self.event_publisher.publish(.{ .command_executed = command_line });
+}
+
 pub fn clear(self: *Buffer) !void {
     std.debug.assert(self.rows.items.len == 1);
+    try self.resetCursors();
     try self.rows.items[0].clear();
     try self.event_publisher.publish(dew.models.Event{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
 }
@@ -122,6 +135,8 @@ pub fn notifyUpdate(self: *Buffer) !void {
 }
 
 pub fn openFile(self: *Buffer, path: []const u8) !void {
+    try self.resetCursors();
+
     var f = try std.fs.cwd().openFile(path, .{});
     defer f.close();
     var reader = f.reader();
@@ -131,7 +146,6 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
         for (new_rows.items) |row| row.deinit();
         new_rows.deinit();
     }
-
     while (true) {
         var buf = std.ArrayList(u8).init(self.allocator);
         defer buf.deinit();
@@ -144,7 +158,6 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
         try new_row.appendSlice(buf.items);
         try new_rows.append(new_row);
     }
-
     var last_row = try dew.models.UnicodeString.init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
@@ -152,6 +165,7 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
     self.rows = new_rows;
+
     try self.notifyUpdate();
 }
 

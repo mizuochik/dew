@@ -76,15 +76,18 @@ pub fn viewCursor(self: *const BufferView) ?dew.models.Position {
 pub fn getCursor(self: *const BufferView) dew.models.Position {
     const c_y = self.buffer.cursors.items[0].y;
     const c_x = self.buffer.cursors.items[0].x;
-    var j: usize = self.rows.items.len - 1;
-    const y = while (true) {
-        const row = self.rows.items[j];
+    if (self.rows.items.len <= 0) {
+        return .{
+            .x = 0,
+            .y = 0,
+        };
+    }
+    var j: usize = self.rows.items.len;
+    const y = while (j > 0) : (j -= 1) {
+        const row = self.rows.items[j - 1];
         if (row.buf_y == c_y and row.buf_x_start <= c_x and c_x <= row.buf_x_end)
-            break j;
-        if (j <= 0)
-            break 0;
-        j -= 1;
-    };
+            break j - 1;
+    } else 0;
     const row_slice = self.rows.items[y];
     var x = for (row_slice.buf_x_start..row_slice.buf_x_end + 1) |i| {
         if (i == c_x) {

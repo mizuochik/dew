@@ -45,7 +45,16 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
                     try self.buffer_selector.current_buffer.deleteChar(cursor.getPosition());
                 }
             },
-            'M' => try self.breakLine(),
+            'M' => {
+                switch (self.buffer_selector.current_buffer.mode) {
+                    .command => {
+                        try self.buffer_selector.command_buffer.evaluateCommand();
+                    },
+                    else => {
+                        try self.breakLine();
+                    },
+                }
+            },
             'P' => try self.moveCursor(.up),
             'N' => try self.moveCursor(.down),
             'F' => try self.moveCursor(.right),
