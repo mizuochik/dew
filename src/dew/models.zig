@@ -1,6 +1,7 @@
 const std = @import("std");
 const dew = @import("../dew.zig");
 
+pub const debug = @import("models/debug.zig");
 pub const Buffer = @import("models/Buffer.zig");
 pub const Position = @import("models/Position.zig");
 pub const UnicodeString = @import("models/UnicodeString.zig");

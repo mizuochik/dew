@@ -55,6 +55,12 @@ pub fn main() !void {
     var buffer_selector = dew.models.BufferSelector.init(&buffer, &command_buffer, &model_event_publisher);
     defer buffer_selector.deinit();
 
+    var debug_handler = dew.models.debug.Handler{
+        .buffer_selector = &buffer_selector,
+        .allocator = gpa.allocator(),
+    };
+    try model_event_publisher.addSubscriber(debug_handler.eventSubscriber());
+
     var status_message = try dew.models.StatusMessage.init(gpa.allocator(), &model_event_publisher);
     defer status_message.deinit();
     var status_var_view = dew.view.StatusBarView.init(&status_message, &view_event_publisher);
