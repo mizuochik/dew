@@ -63,8 +63,8 @@ pub fn viewCursor(self: *const BufferView) ?dew.models.Position {
         return null;
     }
     const cursor = self.getCursor();
-    const y_offset = cursor.y - self.y_scroll;
-    if (y_offset < 0) {
+    const y_offset = if (cursor.y >= self.y_scroll) cursor.y - self.y_scroll else return null;
+    if (y_offset >= self.height) {
         return null;
     }
     return .{
@@ -130,13 +130,14 @@ pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
 
 pub fn normalizeScroll(self: *BufferView) void {
     const cursor = self.getCursor();
-    const upper_limit = self.y_scroll + self.height / 16;
-    const bottom_limit = self.y_scroll + self.height * 15 / 16;
-    if (cursor.y < upper_limit and cursor.y >= self.height / 16) {
-        self.y_scroll = cursor.y - self.height / 16;
+    const edge_height = self.height / 16;
+    const upper_limit = self.y_scroll + edge_height;
+    const bottom_limit = self.y_scroll + self.height - edge_height;
+    if (cursor.y < upper_limit) {
+        self.y_scroll = if (cursor.y > edge_height) cursor.y - edge_height else 0;
     }
     if (cursor.y >= bottom_limit) {
-        self.y_scroll = cursor.y - self.height * 15 / 16;
+        self.y_scroll = cursor.y + edge_height - self.height;
     }
 }
 
@@ -170,6 +171,7 @@ fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
     switch (event) {
         .cursor_moved => {
+            self.normalizeScroll();
             try self.view_event_publisher.publish(switch (self.mode) {
                 .file => .buffer_view_updated,
                 .command => .command_buffer_view_updated,
