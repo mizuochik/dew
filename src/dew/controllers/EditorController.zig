@@ -141,7 +141,6 @@ fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
             self.buffer_view.updateLastCursorX();
         },
     }
-    self.buffer_view.normalizeScroll();
 }
 
 fn breakLine(self: *EditorController) !void {
