@@ -70,6 +70,7 @@ pub fn main() !void {
     var buffer_controller = try dew.controllers.EditorController.init(
         gpa.allocator(),
         &buffer_view,
+        &command_buffer_view,
         &status_message,
         &buffer_selector,
         &model_event_publisher,

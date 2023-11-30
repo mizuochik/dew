@@ -1,7 +1,8 @@
 const std = @import("std");
 const dew = @import("../../dew.zig");
 
-buffer_view: *dew.view.BufferView,
+file_buffer_view: *dew.view.BufferView,
+command_buffer_view: *dew.view.BufferView,
 status_message: *dew.models.StatusMessage,
 file_path: ?[]const u8 = null,
 model_event_publisher: *const dew.event.Publisher(dew.models.Event),
@@ -10,10 +11,11 @@ allocator: std.mem.Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector, model_event_publisher: *const dew.event.Publisher(dew.models.Event)) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, command_buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector, model_event_publisher: *const dew.event.Publisher(dew.models.Event)) !EditorController {
     return EditorController{
         .allocator = allocator,
-        .buffer_view = buffer_view,
+        .file_buffer_view = file_buffer_view,
+        .command_buffer_view = command_buffer_view,
         .status_message = status_message,
         .buffer_selector = buffer_selector,
         .model_event_publisher = model_event_publisher,
@@ -68,20 +70,20 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.moveToBeginningOfLine();
                 }
-                self.buffer_view.updateLastCursorX();
+                self.file_buffer_view.updateLastCursorX();
             },
             'E' => {
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.moveToEndOfLine();
                 }
-                self.buffer_view.updateLastCursorX();
+                self.file_buffer_view.updateLastCursorX();
             },
             'X' => {
                 try self.buffer_selector.toggleCommandBuffer();
             },
             'V' => {
-                self.buffer_view.scrollDown(self.buffer_view.height * 15 / 16);
-                const pos = self.buffer_view.getNormalizedCursor();
+                self.file_buffer_view.scrollDown(self.file_buffer_view.height * 15 / 16);
+                const pos = self.file_buffer_view.getNormalizedCursor();
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
                 }
@@ -90,8 +92,8 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
         },
         .meta => |k| switch (k) {
             'v' => {
-                self.buffer_view.scrollUp(self.buffer_view.height * 15 / 16);
-                const pos = self.buffer_view.getNormalizedCursor();
+                self.file_buffer_view.scrollUp(self.file_buffer_view.height * 15 / 16);
+                const pos = self.file_buffer_view.getNormalizedCursor();
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
                 }
@@ -111,18 +113,18 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
 fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
     switch (k) {
         .up => {
-            const y = self.buffer_view.getCursor().y;
+            const y = self.file_buffer_view.getCursor().y;
             if (y > 0) {
-                const pos = self.buffer_view.getBufferPopsition(.{ .x = self.buffer_view.last_cursor_x, .y = y - 1 });
+                const pos = self.file_buffer_view.getBufferPopsition(.{ .x = self.file_buffer_view.last_cursor_x, .y = y - 1 });
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
                 }
             }
         },
         .down => {
-            const y = self.buffer_view.getCursor().y;
-            if (y < self.buffer_view.getNumberOfLines() - 1) {
-                const pos = self.buffer_view.getBufferPopsition(.{ .x = self.buffer_view.last_cursor_x, .y = y + 1 });
+            const y = self.file_buffer_view.getCursor().y;
+            if (y < self.file_buffer_view.getNumberOfLines() - 1) {
+                const pos = self.file_buffer_view.getBufferPopsition(.{ .x = self.file_buffer_view.last_cursor_x, .y = y + 1 });
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
                 }
@@ -132,13 +134,13 @@ fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
             for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                 try cursor.moveBackward();
             }
-            self.buffer_view.updateLastCursorX();
+            self.file_buffer_view.updateLastCursorX();
         },
         .right => {
             for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                 try cursor.moveForward();
             }
-            self.buffer_view.updateLastCursorX();
+            self.file_buffer_view.updateLastCursorX();
         },
     }
 }
@@ -148,19 +150,19 @@ fn breakLine(self: *EditorController) !void {
         try self.buffer_selector.current_buffer.breakLine(cursor.getPosition());
         try cursor.moveForward();
     }
-    self.buffer_view.updateLastCursorX();
+    self.file_buffer_view.updateLastCursorX();
 }
 
 fn killLine(self: *EditorController) !void {
     for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
         try self.buffer_selector.current_buffer.killLine(cursor.getPosition());
     }
-    self.buffer_view.updateLastCursorX();
+    self.file_buffer_view.updateLastCursorX();
 }
 
 fn insertChar(self: *EditorController, char: u21) !void {
     try self.buffer_selector.current_buffer.insertChar(char);
-    self.buffer_view.updateLastCursorX();
+    self.file_buffer_view.updateLastCursorX();
 }
 
 pub fn openFile(self: *EditorController, path: []const u8) !void {
