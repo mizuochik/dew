@@ -70,20 +70,20 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.moveToBeginningOfLine();
                 }
-                self.file_buffer_view.updateLastCursorX();
+                self.getCurrentView().updateLastCursorX();
             },
             'E' => {
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.moveToEndOfLine();
                 }
-                self.file_buffer_view.updateLastCursorX();
+                self.getCurrentView().updateLastCursorX();
             },
             'X' => {
                 try self.buffer_selector.toggleCommandBuffer();
             },
             'V' => {
-                self.file_buffer_view.scrollDown(self.file_buffer_view.height * 15 / 16);
-                const pos = self.file_buffer_view.getNormalizedCursor();
+                self.getCurrentView().scrollDown(self.getCurrentView().height * 15 / 16);
+                const pos = self.getCurrentView().getNormalizedCursor();
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
                 }
@@ -92,8 +92,8 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
         },
         .meta => |k| switch (k) {
             'v' => {
-                self.file_buffer_view.scrollUp(self.file_buffer_view.height * 15 / 16);
-                const pos = self.file_buffer_view.getNormalizedCursor();
+                self.getCurrentView().scrollUp(self.getCurrentView().height * 15 / 16);
+                const pos = self.getCurrentView().getNormalizedCursor();
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
                 }
@@ -113,18 +113,18 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
 fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
     switch (k) {
         .up => {
-            const y = self.file_buffer_view.getCursor().y;
+            const y = self.getCurrentView().getCursor().y;
             if (y > 0) {
-                const pos = self.file_buffer_view.getBufferPopsition(.{ .x = self.file_buffer_view.last_cursor_x, .y = y - 1 });
+                const pos = self.getCurrentView().getBufferPopsition(.{ .x = self.getCurrentView().last_cursor_x, .y = y - 1 });
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
                 }
             }
         },
         .down => {
-            const y = self.file_buffer_view.getCursor().y;
-            if (y < self.file_buffer_view.getNumberOfLines() - 1) {
-                const pos = self.file_buffer_view.getBufferPopsition(.{ .x = self.file_buffer_view.last_cursor_x, .y = y + 1 });
+            const y = self.getCurrentView().getCursor().y;
+            if (y < self.getCurrentView().getNumberOfLines() - 1) {
+                const pos = self.getCurrentView().getBufferPopsition(.{ .x = self.getCurrentView().last_cursor_x, .y = y + 1 });
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
                 }
@@ -134,13 +134,13 @@ fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
             for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                 try cursor.moveBackward();
             }
-            self.file_buffer_view.updateLastCursorX();
+            self.getCurrentView().updateLastCursorX();
         },
         .right => {
             for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                 try cursor.moveForward();
             }
-            self.file_buffer_view.updateLastCursorX();
+            self.getCurrentView().updateLastCursorX();
         },
     }
 }
@@ -150,19 +150,26 @@ fn breakLine(self: *EditorController) !void {
         try self.buffer_selector.current_buffer.breakLine(cursor.getPosition());
         try cursor.moveForward();
     }
-    self.file_buffer_view.updateLastCursorX();
+    self.getCurrentView().updateLastCursorX();
 }
 
 fn killLine(self: *EditorController) !void {
     for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
         try self.buffer_selector.current_buffer.killLine(cursor.getPosition());
     }
-    self.file_buffer_view.updateLastCursorX();
+    self.getCurrentView().updateLastCursorX();
 }
 
 fn insertChar(self: *EditorController, char: u21) !void {
     try self.buffer_selector.current_buffer.insertChar(char);
-    self.file_buffer_view.updateLastCursorX();
+    self.getCurrentView().updateLastCursorX();
+}
+
+fn getCurrentView(self: *const EditorController) *dew.view.BufferView {
+    return switch (self.buffer_selector.current_buffer.mode) {
+        dew.models.Buffer.Mode.file => self.file_buffer_view,
+        dew.models.Buffer.Mode.command => self.command_buffer_view,
+    };
 }
 
 pub fn openFile(self: *EditorController, path: []const u8) !void {
