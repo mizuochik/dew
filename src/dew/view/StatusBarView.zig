@@ -62,7 +62,7 @@ test "StatusBarView: view" {
     defer status_bar_view.deinit();
     try event_publisher.addSubscriber(status_bar_view.eventSubscriber());
 
-    var new_message = try std.fmt.allocPrint(std.testing.allocator, "hello world", .{});
+    const new_message = try std.fmt.allocPrint(std.testing.allocator, "hello world", .{});
     try status_message.setMessage(new_message);
     try event_publisher.publish(dew.models.Event{
         .screen_size_changed = .{

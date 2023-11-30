@@ -89,7 +89,7 @@ pub fn getCursor(self: *const BufferView) dew.models.Position {
             break j - 1;
     } else 0;
     const row_slice = self.rows.items[y];
-    var x = for (row_slice.buf_x_start..row_slice.buf_x_end + 1) |i| {
+    const x = for (row_slice.buf_x_start..row_slice.buf_x_end + 1) |i| {
         if (i == c_x) {
             const buf_row = self.buffer.rows.items[row_slice.buf_y];
             break buf_row.width_index.items[i] - buf_row.width_index.items[row_slice.buf_x_start];

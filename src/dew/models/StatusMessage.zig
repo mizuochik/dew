@@ -8,7 +8,7 @@ event_publisher: *dew.event.Publisher(dew.models.Event),
 allocator: std.mem.Allocator,
 
 pub fn init(allocator: std.mem.Allocator, event_publisher: *dew.event.Publisher(dew.models.Event)) !StatusMessage {
-    var empty_message = try allocator.alloc(u8, 0);
+    const empty_message = try allocator.alloc(u8, 0);
     errdefer allocator.free(empty_message);
     return .{
         .allocator = allocator,
