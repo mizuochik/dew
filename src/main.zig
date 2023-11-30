@@ -97,7 +97,7 @@ pub fn main() !void {
 
     try editor.enableRawMode();
     defer editor.disableRawMode() catch unreachable;
-    try editor.buffer_controller.openFile(path);
+    try editor.editor_controller.openFile(path);
 
     try model_event_publisher.publish(.{
         .screen_size_changed = .{
