@@ -3,7 +3,7 @@ const dew = @import("../../dew.zig");
 
 const Buffer = @This();
 
-const Mode = enum {
+pub const Mode = enum {
     file,
     command,
 };

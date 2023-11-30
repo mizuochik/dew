@@ -14,23 +14,17 @@ const empty: []const u8 = b: {
     break :b &s;
 };
 
-const Mode = enum {
-    file,
-    command,
-};
-
 buffer: *const dew.models.Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 y_scroll: usize = 0,
 view_event_publisher: *const dew.event.Publisher(dew.view.Event),
-mode: Mode,
 is_active: bool,
 last_cursor_x: usize = 0,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, buffer: *const dew.models.Buffer, vevents: *const dew.event.Publisher(dew.view.Event), mode: Mode) BufferView {
+pub fn init(allocator: std.mem.Allocator, buffer: *const dew.models.Buffer, vevents: *const dew.event.Publisher(dew.view.Event)) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -39,8 +33,7 @@ pub fn init(allocator: std.mem.Allocator, buffer: *const dew.models.Buffer, veve
         .width = 0,
         .height = 0,
         .view_event_publisher = vevents,
-        .mode = mode,
-        .is_active = mode != Mode.command,
+        .is_active = buffer.mode != dew.models.Buffer.Mode.command,
         .allocator = allocator,
     };
 }
@@ -172,21 +165,21 @@ fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
     switch (event) {
         .cursor_moved => {
             self.normalizeScroll();
-            try self.view_event_publisher.publish(switch (self.mode) {
+            try self.view_event_publisher.publish(switch (self.buffer.mode) {
                 .file => .buffer_view_updated,
                 .command => .command_buffer_view_updated,
             });
         },
         .buffer_updated => |_| {
             try self.update();
-            try self.view_event_publisher.publish(switch (self.mode) {
+            try self.view_event_publisher.publish(switch (self.buffer.mode) {
                 .file => .buffer_view_updated,
                 .command => .command_buffer_view_updated,
             });
         },
         .screen_size_changed => |new_size| {
             self.width = new_size.width;
-            self.height = switch (self.mode) {
+            self.height = switch (self.buffer.mode) {
                 .file => new_size.height - 1,
                 .command => 1,
             };
@@ -194,11 +187,11 @@ fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         .command_buffer_opened => {
-            self.is_active = self.mode == Mode.command;
+            self.is_active = self.buffer.mode == dew.models.Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         .command_buffer_closed => {
-            self.is_active = self.mode != Mode.command;
+            self.is_active = self.buffer.mode != dew.models.Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},
