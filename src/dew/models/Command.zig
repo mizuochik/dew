@@ -8,19 +8,45 @@ vtable: *const VTable,
 
 const VTable = struct {
     run: *const fn (ptr: *anyopaque, allocator: std.mem.Allocator, arguments: [][]const u8) anyerror!void,
+    deinit: *const fn (ptr: *anyopaque) void,
 };
 
 pub fn run(self: *Command, allocator: std.mem.Allocator, arguments: [][]const u8) !void {
     try self.vtable.run(self.ptr, allocator, arguments);
 }
 
+pub fn deinit(self: *Command) void {
+    self.vtable.deinit(self.ptr);
+}
+
 pub const OpenFile = struct {
     buffer_selector: *dew.models.BufferSelector,
     status_message: *dew.models.StatusMessage,
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator, buffer_selector: *dew.models.BufferSelector, status_message: *dew.models.StatusMessage) !Command {
+        const cmd = try allocator.create(OpenFile);
+        errdefer allocator.destroy(cmd);
+        cmd.* = OpenFile{
+            .buffer_selector = buffer_selector,
+            .status_message = status_message,
+            .allocator = allocator,
+        };
+        return Command{
+            .ptr = cmd,
+            .vtable = &.{
+                .run = doRun,
+                .deinit = doDeinit,
+            },
+        };
+    }
+
+    fn doDeinit(ptr: *anyopaque) void {
+        const cmd: *OpenFile = @ptrCast(@alignCast(ptr));
+        cmd.allocator.destroy(cmd);
+    }
 
     fn doRun(ptr: *anyopaque, allocator: std.mem.Allocator, arguments: [][]const u8) anyerror!void {
-        std.log.debug("trace: opening file", .{});
-
         const self: *OpenFile = @ptrCast(@alignCast(ptr));
         const want_arguments_len = 1;
         if (arguments.len != want_arguments_len) {
@@ -30,7 +56,6 @@ pub const OpenFile = struct {
             return;
         }
         const file_path = arguments[0];
-        std.log.debug("opening file: {s}", .{file_path});
         self.buffer_selector.file_buffer.openFile(file_path) catch |err| {
             switch (err) {
                 error.FileNotFound => {
@@ -41,15 +66,6 @@ pub const OpenFile = struct {
                 },
                 else => return err,
             }
-        };
-    }
-
-    pub fn command(self: *OpenFile) Command {
-        return .{
-            .ptr = self,
-            .vtable = &.{
-                .run = doRun,
-            },
         };
     }
 };

@@ -20,9 +20,13 @@ pub fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
     const self: *CommandExecutor = @ptrCast(@alignCast(ctx));
     switch (event) {
         .command_executed => |command_line| {
+            std.log.info("parsing", .{});
             var parsed = try self.parseCommandLine(command_line.buffer.items);
             defer parsed.deinit();
+            std.log.info("parsed", .{});
+            std.log.info("command running", .{});
             try parsed.command.run(self.allocator, parsed.arguments);
+            std.log.info("command run", .{});
         },
         else => {},
     }
@@ -47,13 +51,11 @@ pub fn parseCommandLine(self: *CommandExecutor, command_line: []const u8) !Parse
     errdefer self.allocator.free(args);
     args[0] = try std.fmt.allocPrint(self.allocator, "README.md", .{});
     errdefer self.allocator.free(args[0]);
-    var cmd = dew.models.Command.OpenFile{
-        .buffer_selector = self.buffer_selector,
-        .status_message = self.status_message,
-    };
+    var cmd = try dew.models.Command.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
+    errdefer cmd.deinit();
     return .{
         .allocator = self.allocator,
-        .command = cmd.command(),
+        .command = cmd,
         .arguments = args,
     };
 }
