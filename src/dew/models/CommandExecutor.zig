@@ -20,13 +20,9 @@ pub fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
     const self: *CommandExecutor = @ptrCast(@alignCast(ctx));
     switch (event) {
         .command_executed => |command_line| {
-            std.log.info("parsing", .{});
             var parsed = try self.parseCommandLine(command_line.buffer.items);
             defer parsed.deinit();
-            std.log.info("parsed", .{});
-            std.log.info("command running", .{});
             try parsed.command.run(self.allocator, parsed.arguments);
-            std.log.info("command run", .{});
         },
         else => {},
     }

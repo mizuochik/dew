@@ -59,7 +59,6 @@ pub const OpenFile = struct {
         self.buffer_selector.file_buffer.openFile(file_path) catch |err| {
             switch (err) {
                 error.FileNotFound => {
-                    std.log.debug("cmd: cached FileNotFound", .{});
                     const message = try std.fmt.allocPrint(allocator, "file not found: {s}", .{file_path});
                     errdefer allocator.free(message);
                     try self.status_message.setMessage(message);

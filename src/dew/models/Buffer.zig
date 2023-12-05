@@ -114,8 +114,6 @@ pub fn breakLine(self: *Buffer, pos: dew.models.Position) !void {
 }
 
 pub fn evaluateCommand(self: *Buffer) !void {
-    std.log.debug("trace: evaluate command", .{});
-
     std.debug.assert(self.mode == .command);
     const command_line = try self.rows.items[0].clone();
     errdefer command_line.deinit();
