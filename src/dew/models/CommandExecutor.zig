@@ -23,6 +23,7 @@ pub fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
             var parsed = try self.parseCommandLine(command_line.buffer.items);
             defer parsed.deinit();
             try parsed.command.run(self.allocator, parsed.arguments);
+            try self.buffer_selector.toggleCommandBuffer();
         },
         else => {},
     }
