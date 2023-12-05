@@ -42,6 +42,7 @@ const ParsedCommandLine = struct {
             self.allocator.free(arg);
         }
         self.allocator.free(self.arguments);
+        self.command.deinit();
     }
 };
 

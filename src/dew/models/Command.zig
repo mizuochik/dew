@@ -15,7 +15,7 @@ pub fn run(self: *Command, allocator: std.mem.Allocator, arguments: [][]const u8
     try self.vtable.run(self.ptr, allocator, arguments);
 }
 
-pub fn deinit(self: *Command) void {
+pub fn deinit(self: *const Command) void {
     self.vtable.deinit(self.ptr);
 }
 
