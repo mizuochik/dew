@@ -84,6 +84,10 @@ fn setInput(self: *CommandLineParser, input: []const u8) !void {
     }
     const in = try cps.toOwnedSlice();
     errdefer self.allocator.free(in);
+    for (self.input) |cp| {
+        self.allocator.free(cp);
+    }
+    self.allocator.free(self.input);
     self.input = in;
 }
 
