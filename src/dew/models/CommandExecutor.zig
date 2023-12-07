@@ -43,17 +43,23 @@ const ParsedCommandLine = struct {
     }
 };
 
-pub fn parseCommandLine(self: *CommandExecutor, command_line: []const u8) !ParsedCommandLine {
-    _ = command_line;
-    var args = try self.allocator.alloc([]const u8, 1);
-    errdefer self.allocator.free(args);
-    args[0] = try std.fmt.allocPrint(self.allocator, "README.md", .{});
-    errdefer self.allocator.free(args[0]);
-    var cmd = try dew.models.Command.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
-    errdefer cmd.deinit();
-    return .{
-        .allocator = self.allocator,
-        .command = cmd,
-        .arguments = args,
-    };
+pub fn parseCommandLine(self: *CommandExecutor, input: []const u8) !ParsedCommandLine {
+    var parser = try dew.models.CommandLineParser.init(self.allocator);
+    defer parser.deinit();
+    const command_line = try parser.parse(input);
+    errdefer {
+        for (command_line.arguments) |argument| self.allocator.free(argument);
+        self.allocator.free(command_line.arguments);
+    }
+    defer self.allocator.free(command_line.command);
+    if (std.mem.eql(u8, "open-file", command_line.command)) {
+        const command = try dew.models.Command.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
+        errdefer command.deinit();
+        return .{
+            .allocator = self.allocator,
+            .command = command,
+            .arguments = command_line.arguments,
+        };
+    }
+    return error.CommandNotFound;
 }
