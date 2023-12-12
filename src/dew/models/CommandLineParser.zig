@@ -4,20 +4,26 @@ const dew = @import("../../dew.zig");
 allocator: std.mem.Allocator,
 input: [][]const u8,
 index: usize,
+buffer_selector: *dew.models.BufferSelector,
+status_message: *dew.models.StatusMessage,
 
 const CommandLineParser = @This();
 
 pub const CommandLine = struct {
     allocator: std.mem.Allocator,
-    command: []const u8,
     arguments: [][]const u8,
+    command: dew.models.Command,
 
     pub fn deinit(self: *const CommandLine) void {
-        self.allocator.free(self.command);
+        self.command.deinit();
         for (self.arguments) |argument| {
             self.allocator.free(argument);
         }
         self.allocator.free(self.arguments);
+    }
+
+    pub fn evaluate(self: *CommandLine) !void {
+        try self.command.run(self.allocator, self.arguments);
     }
 };
 
@@ -26,13 +32,15 @@ const Error = error{
     Error,
 };
 
-pub fn init(allocator: std.mem.Allocator) !CommandLineParser {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *dew.models.BufferSelector, status_message: *dew.models.StatusMessage) !CommandLineParser {
     const in = try allocator.alloc([]u8, 0);
     errdefer allocator.free(in);
     return .{
         .allocator = allocator,
         .input = in,
         .index = 0,
+        .buffer_selector = buffer_selector,
+        .status_message = status_message,
     };
 }
 
@@ -46,7 +54,7 @@ pub fn deinit(self: *const CommandLineParser) void {
 pub fn parse(self: *CommandLineParser, input: []const u8) !CommandLine {
     try self.setInput(input);
     const cmd = try self.parseCommand();
-    errdefer self.allocator.free(cmd);
+    errdefer cmd.deinit();
     var arg_list = std.ArrayList([]const u8).init(self.allocator);
     errdefer {
         for (arg_list.items) |arg| self.allocator.free(arg);
@@ -91,14 +99,19 @@ fn setInput(self: *CommandLineParser, input: []const u8) !void {
     self.input = in;
 }
 
-fn parseCommand(self: *CommandLineParser) ![]const u8 {
-    var cmd = std.ArrayList(u8).init(self.allocator);
-    errdefer cmd.deinit();
-    try cmd.appendSlice(try self.parseAnyLetter());
+fn parseCommand(self: *CommandLineParser) !dew.models.Command {
+    var command_name_al = std.ArrayList(u8).init(self.allocator);
+    defer command_name_al.deinit();
+    try command_name_al.appendSlice(try self.parseAnyLetter());
     while (self.parseAnyLetter()) |letter| {
-        try cmd.appendSlice(letter);
+        try command_name_al.appendSlice(letter);
     } else |_| {}
-    return cmd.toOwnedSlice();
+    if (std.mem.eql(u8, "open-file", command_name_al.items)) {
+        const command = try dew.models.Command.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
+        errdefer command.deinit();
+        return command;
+    }
+    return error.CommandNotFound;
 }
 
 fn parseAnyLetter(self: *CommandLineParser) ![]const u8 {
