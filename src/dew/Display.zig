@@ -1,6 +1,7 @@
 const std = @import("std");
 const dew = @import("../dew.zig");
 
+buffer: [][]u8,
 buffer_view: *const dew.view.BufferView,
 status_bar_view: *const dew.view.StatusBarView,
 command_buffer_view: *const dew.view.BufferView,
@@ -8,6 +9,39 @@ allocator: std.mem.Allocator,
 size: dew.Editor.WindowSize,
 
 const Display = @This();
+
+pub fn init(allocator: std.mem.Allocator, buffer_view: *const dew.view.BufferView, status_bar_view: *const dew.view.StatusBarView, command_buffer_view: *const dew.view.BufferView, size: dew.Editor.WindowSize) !Display {
+    var buffer_al = std.ArrayList([]u8).init(allocator);
+    errdefer {
+        for (buffer_al.items) |row| {
+            allocator.free(row);
+        }
+        buffer_al.deinit();
+    }
+    var y: usize = 0;
+    while (y < size.rows) : (y += 1) {
+        const row_buffer = try allocator.alloc(u8, size.cols);
+        errdefer allocator.free(row_buffer);
+        try buffer_al.append(row_buffer);
+    }
+    const buffer = try buffer_al.toOwnedSlice();
+    errdefer allocator.free(buffer);
+    return .{
+        .buffer = buffer,
+        .buffer_view = buffer_view,
+        .status_bar_view = status_bar_view,
+        .command_buffer_view = command_buffer_view,
+        .allocator = allocator,
+        .size = size,
+    };
+}
+
+pub fn deinit(self: *const Display) void {
+    for (self.buffer) |row| {
+        self.allocator.free(row);
+    }
+    self.allocator.free(self.buffer);
+}
 
 pub fn eventSubscriber(self: *Display) dew.event.Subscriber(dew.view.Event) {
     return .{

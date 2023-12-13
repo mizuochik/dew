@@ -80,13 +80,8 @@ pub fn main() !void {
     var editor = dew.Editor.init(gpa.allocator(), &buffer_controller);
 
     const win_size = try editor.getWindowSize();
-    var display = dew.Display{
-        .buffer_view = &buffer_view,
-        .status_bar_view = &status_var_view,
-        .command_buffer_view = &command_buffer_view,
-        .allocator = gpa.allocator(),
-        .size = win_size,
-    };
+    var display = try dew.Display.init(gpa.allocator(), &buffer_view, &status_var_view, &command_buffer_view, win_size);
+    defer display.deinit();
     try view_event_publisher.addSubscriber(display.eventSubscriber());
 
     var command_executor = dew.models.CommandExecutor{
