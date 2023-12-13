@@ -59,11 +59,9 @@ fn handleEvent(ctx: *anyopaque, ev: dew.view.Event) anyerror!void {
             try self.synchronizeBufferView();
             try self.writeUpdates();
         },
-        .command_buffer_view_updated => {
-            try self.doRender(refreshBottomLine);
-        },
-        .status_bar_view_updated => {
-            try self.doRender(refreshBottomLine);
+        .command_buffer_view_updated, .status_bar_view_updated => {
+            try self.updateBottomLine();
+            try self.writeUpdates();
         },
     }
 }
@@ -85,20 +83,34 @@ fn writeUpdates(self: *const Display) !void {
     try std.io.getStdOut().writeAll(tmp.items);
 }
 
-fn doRender(self: *const Display, render: *const fn (self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) anyerror!void) !void {
-    var arena = std.heap.ArenaAllocator.init(self.allocator);
-    defer arena.deinit();
-    var buf = std.ArrayList(u8).init(self.allocator);
-    defer buf.deinit();
-    try render(self, arena.allocator(), &buf);
-    try std.io.getStdOut().writeAll(buf.items);
-}
-
 fn synchronizeBufferView(self: *Display) !void {
     for (0..self.buffer_view.height) |i| {
         const row = self.buffer_view.viewRow(i);
         for (0..self.size.cols) |j| {
             self.display_buffer[i][j] = if (j < row.len) row[j] else ' ';
+        }
+    }
+}
+
+fn updateBottomLine(self: *Display) !void {
+    const status_bar = try self.status_bar_view.view();
+    const command_buffer = self.command_buffer_view.viewRow(0);
+    const bottom = self.size.rows - 1;
+    for (0..command_buffer.len) |x| {
+        self.display_buffer[bottom][x] = command_buffer[x];
+    }
+    if (self.size.cols >= command_buffer.len + status_bar.len) {
+        const space = self.size.cols - (command_buffer.len + status_bar.len);
+        for (0..space) |i| {
+            self.display_buffer[bottom][command_buffer.len + i] = ' ';
+        }
+        for (0..status_bar.len) |i| {
+            self.display_buffer[bottom][command_buffer.len + space + i] = status_bar[i];
+        }
+    } else {
+        const overlap = command_buffer.len + status_bar.len - self.size.cols;
+        for (0..status_bar.len - overlap) |i| {
+            self.display_buffer[bottom][command_buffer.len + i] = status_bar[i - overlap];
         }
     }
 }
@@ -113,29 +125,6 @@ fn synchronizeScreen(self: *const Display, arena: std.mem.Allocator, buf: *std.A
         try buf.appendSlice(self.display_buffer[y]);
     }
     try buf.appendSlice("\r\n");
-
-    try self.putCurrentCursor(arena, buf);
-    try self.showCursor(buf);
-}
-
-fn refreshBottomLine(self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    try self.hideCursor(buf);
-    try self.putCursor(arena, buf, 0, self.size.rows - 1);
-
-    const status_bar = try self.status_bar_view.view();
-    const command_buffer = self.command_buffer_view.viewRow(0);
-
-    try buf.appendSlice("\x1b[K");
-    try buf.appendSlice(command_buffer);
-    const status_offset = if (self.size.cols >= command_buffer.len + status_bar.len) 0 else self.size.cols - (command_buffer.len + status_bar.len);
-    if (status_offset == 0) {
-        const blank = try arena.alloc(u8, self.size.cols - (command_buffer.len + status_bar.len));
-        for (0..blank.len) |i| {
-            blank[i] = ' ';
-        }
-        try buf.appendSlice(blank);
-    }
-    try buf.appendSlice(status_bar[status_offset..]);
 
     try self.putCurrentCursor(arena, buf);
     try self.showCursor(buf);
