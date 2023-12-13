@@ -75,12 +75,11 @@ fn writeUpdates(self: *const Display) !void {
     defer tmp.deinit();
     try self.hideCursor(&tmp);
     try self.putCursor(arena.allocator(), &tmp, 0, 0);
-    for (0..self.size.rows - 1) |y| {
+    for (0..self.size.rows) |y| {
         if (y > 0) try tmp.appendSlice("\r\n");
         try tmp.appendSlice("\x1b[K");
         try tmp.appendSlice(self.display_buffer[y]);
     }
-    try tmp.appendSlice("\r\n");
     try self.putCurrentCursor(arena.allocator(), &tmp);
     try self.showCursor(&tmp);
     try std.io.getStdOut().writeAll(tmp.items);
