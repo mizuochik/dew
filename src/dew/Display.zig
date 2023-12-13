@@ -115,21 +115,6 @@ fn updateBottomLine(self: *Display) !void {
     }
 }
 
-fn synchronizeScreen(self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    try self.hideCursor(buf);
-    try self.putCursor(arena, buf, 0, 0);
-
-    for (0..self.size.rows - 1) |y| {
-        if (y > 0) try buf.appendSlice("\r\n");
-        try buf.appendSlice("\x1b[K");
-        try buf.appendSlice(self.display_buffer[y]);
-    }
-    try buf.appendSlice("\r\n");
-
-    try self.putCurrentCursor(arena, buf);
-    try self.showCursor(buf);
-}
-
 fn hideCursor(_: *const Display, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25l");
 }
@@ -149,9 +134,4 @@ fn putCurrentCursor(self: *const Display, arena: std.mem.Allocator, buf: *std.Ar
     if (self.command_buffer_view.viewCursor()) |cursor| {
         try self.putCursor(arena, buf, cursor.x, self.size.rows - 1);
     }
-}
-
-fn clearScreen(_: *const Display, _: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    try buf.appendSlice("\x1b[2J");
-    try buf.appendSlice("\x1b[H");
 }
