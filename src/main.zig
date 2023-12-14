@@ -109,3 +109,7 @@ pub fn main() !void {
     }
     try editor.run();
 }
+
+test {
+    std.testing.refAllDecls(dew);
+}
