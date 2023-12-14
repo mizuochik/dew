@@ -67,7 +67,7 @@ pub fn main() !void {
     defer status_var_view.deinit();
     try model_event_publisher.addSubscriber(status_var_view.eventSubscriber());
 
-    var buffer_controller = try dew.controllers.EditorController.init(
+    var editor_controller = try dew.controllers.EditorController.init(
         gpa.allocator(),
         &buffer_view,
         &command_buffer_view,
@@ -75,9 +75,9 @@ pub fn main() !void {
         &buffer_selector,
         &model_event_publisher,
     );
-    defer buffer_controller.deinit();
+    defer editor_controller.deinit();
 
-    var editor = dew.Editor.init(gpa.allocator(), &buffer_controller);
+    var editor = dew.Editor.init(gpa.allocator(), &editor_controller);
 
     const win_size = try editor.terminal.getWindowSize();
     var display = try dew.Display.init(gpa.allocator(), &buffer_view, &status_var_view, &command_buffer_view, win_size);
@@ -93,7 +93,7 @@ pub fn main() !void {
 
     try editor.terminal.enableRawMode();
     defer editor.terminal.disableRawMode() catch unreachable;
-    try editor.editor_controller.openFile(path);
+    try editor.controller.openFile(path);
 
     try model_event_publisher.publish(.{
         .screen_size_changed = .{
@@ -110,7 +110,7 @@ pub fn main() !void {
 
     while (true) {
         const key = try editor.keyboard.inputKey();
-        editor.editor_controller.processKeypress(key) catch |err| switch (err) {
+        editor.controller.processKeypress(key) catch |err| switch (err) {
             error.Quit => return,
             else => return err,
         };
