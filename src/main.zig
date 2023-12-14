@@ -73,7 +73,6 @@ pub fn main() !void {
         &command_buffer_view,
         &status_message,
         &buffer_selector,
-        &model_event_publisher,
     );
     defer editor_controller.deinit();
 

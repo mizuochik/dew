@@ -5,20 +5,18 @@ file_buffer_view: *dew.view.BufferView,
 command_buffer_view: *dew.view.BufferView,
 status_message: *dew.models.StatusMessage,
 file_path: ?[]const u8 = null,
-model_event_publisher: *const dew.event.Publisher(dew.models.Event),
 buffer_selector: *dew.models.BufferSelector,
 allocator: std.mem.Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, command_buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector, model_event_publisher: *const dew.event.Publisher(dew.models.Event)) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, command_buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector) !EditorController {
     return EditorController{
         .allocator = allocator,
         .file_buffer_view = file_buffer_view,
         .command_buffer_view = command_buffer_view,
         .status_message = status_message,
         .buffer_selector = buffer_selector,
-        .model_event_publisher = model_event_publisher,
     };
 }
 
