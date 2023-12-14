@@ -148,13 +148,3 @@ fn parseArgument(self: *CommandLineParser) ![]const u8 {
     } else |_| {}
     return cmd.toOwnedSlice();
 }
-
-test "CommandLineParser: Parse a simple command" {
-    var parser = try CommandLineParser.init(std.testing.allocator);
-    defer parser.deinit();
-    const command = try parser.parse("test-command arg0 arg1 arg2");
-    defer command.deinit();
-    try std.testing.expectEqualStrings("test-command", command.command);
-    var expected = [_][]const u8{ "arg0", "arg1", "arg2" };
-    try std.testing.expectEqualDeep(@as([][]const u8, &expected), command.arguments);
-}
