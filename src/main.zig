@@ -91,8 +91,8 @@ pub fn main() !void {
     };
     try model_event_publisher.addSubscriber(command_executor.eventSubscriber());
 
-    try editor.enableRawMode();
-    defer editor.disableRawMode() catch unreachable;
+    try editor.terminal.enableRawMode();
+    defer editor.terminal.disableRawMode() catch unreachable;
     try editor.editor_controller.openFile(path);
 
     try model_event_publisher.publish(.{

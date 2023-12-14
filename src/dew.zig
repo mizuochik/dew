@@ -7,6 +7,7 @@ pub const controllers = @import("dew/controllers.zig");
 pub const Editor = @import("dew/Editor.zig");
 pub const Keyboard = @import("dew/Keyboard.zig");
 pub const Display = @import("dew/Display.zig");
+pub const Terminal = @import("dew/Terminal.zig");
 pub const c = @import("dew/c.zig");
 
 test {
