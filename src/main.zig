@@ -111,5 +111,5 @@ pub fn main() !void {
 }
 
 test {
-    std.testing.refAllDecls(dew);
+    _ = dew;
 }

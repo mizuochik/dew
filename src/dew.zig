@@ -11,4 +11,5 @@ pub const c = @import("dew/c.zig");
 
 test {
     std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(@import("dew/tests.zig"));
 }
