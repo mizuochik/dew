@@ -79,7 +79,7 @@ pub fn main() !void {
 
     var editor = dew.Editor.init(gpa.allocator(), &buffer_controller);
 
-    const win_size = try editor.getWindowSize();
+    const win_size = try editor.terminal.getWindowSize();
     var display = try dew.Display.init(gpa.allocator(), &buffer_view, &status_var_view, &command_buffer_view, win_size);
     defer display.deinit();
     try view_event_publisher.addSubscriber(display.eventSubscriber());

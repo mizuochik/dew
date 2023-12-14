@@ -1,4 +1,5 @@
 const std = @import("std");
+const dew = @import("../dew.zig");
 
 const darwin_ECHO: std.os.tcflag_t = 0x8;
 const darwin_ICANON: std.os.tcflag_t = 0x100;
@@ -31,4 +32,21 @@ pub fn disableRawMode(self: *Terminal) !void {
     if (self.orig_termios) |orig| {
         try std.os.tcsetattr(std.os.STDIN_FILENO, std.os.TCSA.FLUSH, orig);
     }
+}
+
+pub const WindowSize = struct {
+    rows: u32,
+    cols: u32,
+};
+
+pub fn getWindowSize(_: *const Terminal) !WindowSize {
+    var ws: dew.c.winsize = undefined;
+    const status = dew.c.ioctl(std.io.getStdOut().handle, dew.c.TIOCGWINSZ, &ws);
+    if (status != 0) {
+        return error.UnknownWinsize;
+    }
+    return WindowSize{
+        .rows = ws.ws_row,
+        .cols = ws.ws_col,
+    };
 }

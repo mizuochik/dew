@@ -39,20 +39,3 @@ pub fn run(self: *Editor) !void {
         };
     }
 }
-
-pub const WindowSize = struct {
-    rows: u32,
-    cols: u32,
-};
-
-pub fn getWindowSize(_: *const Editor) !WindowSize {
-    var ws: dew.c.winsize = undefined;
-    const status = dew.c.ioctl(std.io.getStdOut().handle, dew.c.TIOCGWINSZ, &ws);
-    if (status != 0) {
-        return error.UnknownWinsize;
-    }
-    return WindowSize{
-        .rows = ws.ws_row,
-        .cols = ws.ws_col,
-    };
-}

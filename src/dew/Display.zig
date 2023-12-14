@@ -6,11 +6,11 @@ buffer_view: *const dew.view.BufferView,
 status_bar_view: *const dew.view.StatusBarView,
 command_buffer_view: *const dew.view.BufferView,
 allocator: std.mem.Allocator,
-size: dew.Editor.WindowSize,
+size: dew.Terminal.WindowSize,
 
 const Display = @This();
 
-pub fn init(allocator: std.mem.Allocator, buffer_view: *const dew.view.BufferView, status_bar_view: *const dew.view.StatusBarView, command_buffer_view: *const dew.view.BufferView, size: dew.Editor.WindowSize) !Display {
+pub fn init(allocator: std.mem.Allocator, buffer_view: *const dew.view.BufferView, status_bar_view: *const dew.view.StatusBarView, command_buffer_view: *const dew.view.BufferView, size: dew.Terminal.WindowSize) !Display {
     var display_buffer_al = std.ArrayList([]u8).init(allocator);
     errdefer {
         for (display_buffer_al.items) |row| {
