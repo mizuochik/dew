@@ -29,13 +29,3 @@ pub fn init(allocator: std.mem.Allocator, editor_controller: *dew.controllers.Ed
         .terminal = .{},
     };
 }
-
-pub fn run(self: *Editor) !void {
-    while (true) {
-        const key = try self.keyboard.inputKey();
-        self.editor_controller.processKeypress(key) catch |err| switch (err) {
-            error.Quit => return,
-            else => return err,
-        };
-    }
-}

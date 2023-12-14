@@ -107,7 +107,14 @@ pub fn main() !void {
         errdefer gpa.allocator().free(msg);
         try status_message.setMessage(msg);
     }
-    try editor.run();
+
+    while (true) {
+        const key = try editor.keyboard.inputKey();
+        editor.editor_controller.processKeypress(key) catch |err| switch (err) {
+            error.Quit => return,
+            else => return err,
+        };
+    }
 }
 
 test {
