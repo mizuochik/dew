@@ -1,27 +1,7 @@
 const std = @import("std");
 const dew = @import("dew.zig");
 
-var log_file: ?std.fs.File = null;
-const log_file_name = "dew.log";
-
-fn writeLog(comptime message_level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
-    _ = scope;
-    _ = message_level;
-    const f = log_file orelse return;
-    f.writer().print(format ++ "\n", args) catch return;
-}
-
-pub const std_options = struct {
-    pub const log_level = .debug;
-    pub const logFn = writeLog;
-};
-
 pub fn main() !void {
-    log_file = try std.fs.cwd().createFile(log_file_name, .{ .truncate = false });
-    defer if (log_file) |f| f.close();
-    const stat = try log_file.?.stat();
-    try log_file.?.seekTo(stat.size);
-
     var gpa = std.heap.GeneralPurposeAllocator(.{
         .verbose_log = false,
     }){};
@@ -36,11 +16,10 @@ pub fn main() !void {
     var editor = try dew.Editor.init(gpa.allocator());
     defer editor.deinit();
 
-    const win_size = try editor.terminal.getWindowSize();
-
     try editor.terminal.enableRawMode();
     defer editor.terminal.disableRawMode() catch unreachable;
 
+    const win_size = try editor.terminal.getWindowSize();
     try editor.controller.changeDisplaySize(win_size.cols, win_size.rows);
     try editor.controller.openFile(path);
 
