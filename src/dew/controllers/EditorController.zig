@@ -6,12 +6,12 @@ command_buffer_view: *dew.view.BufferView,
 status_message: *dew.models.StatusMessage,
 file_path: ?[]const u8 = null,
 buffer_selector: *dew.models.BufferSelector,
-display_size: *dew.models.DisplaySize,
+display_size: *dew.view.DisplaySize,
 allocator: std.mem.Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, command_buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector, display_size: *dew.models.DisplaySize) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, command_buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector, display_size: *dew.view.DisplaySize) !EditorController {
     return EditorController{
         .allocator = allocator,
         .file_buffer_view = file_buffer_view,

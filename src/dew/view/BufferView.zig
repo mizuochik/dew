@@ -177,15 +177,6 @@ fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
                 .command => .command_buffer_view_updated,
             });
         },
-        .screen_size_changed => |new_size| {
-            self.width = new_size.width;
-            self.height = switch (self.buffer.mode) {
-                .file => new_size.height - 1,
-                .command => 1,
-            };
-            try self.update();
-            try self.view_event_publisher.publish(.buffer_view_updated);
-        },
         .command_buffer_opened => {
             self.is_active = self.buffer.mode == dew.models.Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
@@ -196,6 +187,13 @@ fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
         },
         else => {},
     }
+}
+
+pub fn setSize(self: *BufferView, width: usize, height: usize) !void {
+    self.width = width;
+    self.height = height;
+    try self.update();
+    try self.view_event_publisher.publish(.status_bar_view_updated);
 }
 
 fn update(self: *BufferView) !void {

@@ -2,15 +2,15 @@ const std = @import("std");
 const dew = @import("../dew.zig");
 
 display_buffer: [][]u8,
-buffer_view: *const dew.view.BufferView,
-status_bar_view: *const dew.view.StatusBarView,
-command_buffer_view: *const dew.view.BufferView,
+buffer_view: *dew.view.BufferView,
+status_bar_view: *dew.view.StatusBarView,
+command_buffer_view: *dew.view.BufferView,
 allocator: std.mem.Allocator,
-size: *dew.models.DisplaySize,
+size: *dew.view.DisplaySize,
 
 const Display = @This();
 
-pub fn init(allocator: std.mem.Allocator, buffer_view: *const dew.view.BufferView, status_bar_view: *const dew.view.StatusBarView, command_buffer_view: *const dew.view.BufferView, size: *dew.models.DisplaySize) !Display {
+pub fn init(allocator: std.mem.Allocator, buffer_view: *dew.view.BufferView, status_bar_view: *dew.view.StatusBarView, command_buffer_view: *dew.view.BufferView, size: *dew.view.DisplaySize) !Display {
     var display_buffer_al = std.ArrayList([]u8).init(allocator);
     errdefer {
         for (display_buffer_al.items) |row| {
@@ -62,6 +62,11 @@ fn handleEvent(ctx: *anyopaque, ev: dew.view.Event) anyerror!void {
         .command_buffer_view_updated, .status_bar_view_updated => {
             try self.updateBottomLine();
             try self.writeUpdates();
+        },
+        .screen_size_changed => {
+            try self.buffer_view.setSize(self.size.cols, self.size.rows - 1);
+            try self.command_buffer_view.setSize(self.size.cols, 1);
+            try self.status_bar_view.setSize(self.size.cols);
         },
     }
 }

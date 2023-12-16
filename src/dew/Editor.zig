@@ -14,7 +14,7 @@ buffer_selector: *dew.models.BufferSelector,
 debug_handler: *dew.models.debug.Handler,
 status_message: *dew.models.StatusMessage,
 status_bar_view: *dew.view.StatusBarView,
-display_size: *dew.models.DisplaySize,
+display_size: *dew.view.DisplaySize,
 controller: *dew.controllers.EditorController,
 command_executor: *dew.models.CommandExecutor,
 keyboard: *dew.Keyboard,
@@ -80,9 +80,9 @@ pub fn init(allocator: std.mem.Allocator) !Editor {
     errdefer status_bar_view.deinit();
     try model_event_publisher.addSubscriber(status_bar_view.eventSubscriber());
 
-    const display_size = try allocator.create(dew.models.DisplaySize);
+    const display_size = try allocator.create(dew.view.DisplaySize);
     errdefer allocator.destroy(display_size);
-    display_size.* = dew.models.DisplaySize.init(model_event_publisher);
+    display_size.* = dew.view.DisplaySize.init(view_event_publisher);
 
     const editor_controller = try allocator.create(dew.controllers.EditorController);
     errdefer allocator.destroy(editor_controller);

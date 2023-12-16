@@ -39,12 +39,13 @@ fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
         .status_message_updated => {
             try self.view_event_publisher.publish(.status_bar_view_updated);
         },
-        .screen_size_changed => |new_size| {
-            self.width = new_size.width;
-            try self.view_event_publisher.publish(.status_bar_view_updated);
-        },
         else => {},
     }
+}
+
+pub fn setSize(self: *StatusBarView, width: usize) !void {
+    self.width = width;
+    try self.view_event_publisher.publish(.status_bar_view_updated);
 }
 
 test "StatusBarView: view" {
