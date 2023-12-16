@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const dew = @import("../dew.zig");
 
 display_buffer: [][]u8,
@@ -92,6 +93,9 @@ fn handleEvent(ctx: *anyopaque, ev: dew.view.Event) anyerror!void {
 }
 
 fn writeUpdates(self: *const Display) !void {
+    if (builtin.is_test) {
+        return;
+    }
     var arena = std.heap.ArenaAllocator.init(self.allocator);
     defer arena.deinit();
     var tmp = std.ArrayList(u8).init(self.allocator);
