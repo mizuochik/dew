@@ -7,7 +7,6 @@ pub const Position = @import("models/Position.zig");
 pub const UnicodeString = @import("models/UnicodeString.zig");
 pub const StatusMessage = @import("models/StatusMessage.zig");
 pub const BufferSelector = @import("models/BufferSelector.zig");
-pub const DisplaySize = @import("models/DisplaySize.zig");
 pub const Cursor = @import("models/Cursor.zig");
 pub const Command = @import("models/Command.zig");
 pub const CommandExecutor = @import("models/CommandExecutor.zig");
@@ -34,7 +33,6 @@ pub const Event = union(enum) {
         to: Position,
     },
     status_message_updated,
-    screen_size_changed: ScreenSize,
     command_buffer_opened,
     command_buffer_closed,
     command_executed: dew.models.UnicodeString,
@@ -48,11 +46,6 @@ pub const Event = union(enum) {
             else => {},
         }
     }
-};
-
-pub const ScreenSize = struct {
-    width: usize,
-    height: usize,
 };
 
 test {
