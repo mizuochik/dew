@@ -33,65 +33,10 @@ pub fn main() !void {
     }
     const path: []const u8 = std.mem.span(std.os.argv[1]);
 
-    var model_event_publisher = dew.event.Publisher(dew.models.Event).init(gpa.allocator());
-    defer model_event_publisher.deinit();
-    var view_event_publisher = dew.event.Publisher(dew.view.Event).init(gpa.allocator());
-    defer view_event_publisher.deinit();
-
-    var buffer = try dew.models.Buffer.init(gpa.allocator(), &model_event_publisher, .file);
-    defer buffer.deinit();
-    try buffer.addCursor();
-    var buffer_view = dew.view.BufferView.init(gpa.allocator(), &buffer, &view_event_publisher);
-    defer buffer_view.deinit();
-    try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
-
-    var command_buffer = try dew.models.Buffer.init(gpa.allocator(), &model_event_publisher, .command);
-    defer command_buffer.deinit();
-    try command_buffer.addCursor();
-    var command_buffer_view = dew.view.BufferView.init(gpa.allocator(), &command_buffer, &view_event_publisher);
-    defer command_buffer_view.deinit();
-    try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
-
-    var buffer_selector = dew.models.BufferSelector.init(&buffer, &command_buffer, &model_event_publisher);
-    defer buffer_selector.deinit();
-
-    var debug_handler = dew.models.debug.Handler{
-        .buffer_selector = &buffer_selector,
-        .allocator = gpa.allocator(),
-    };
-    try model_event_publisher.addSubscriber(debug_handler.eventSubscriber());
-
-    var status_message = try dew.models.StatusMessage.init(gpa.allocator(), &model_event_publisher);
-    defer status_message.deinit();
-    var status_var_view = dew.view.StatusBarView.init(&status_message, &view_event_publisher);
-    defer status_var_view.deinit();
-    try model_event_publisher.addSubscriber(status_var_view.eventSubscriber());
-    var display_size = dew.models.DisplaySize.init(&model_event_publisher);
-
-    var editor_controller = try dew.controllers.EditorController.init(
-        gpa.allocator(),
-        &buffer_view,
-        &command_buffer_view,
-        &status_message,
-        &buffer_selector,
-        &display_size,
-    );
-    defer editor_controller.deinit();
-
-    var editor = try dew.Editor.init(gpa.allocator(), &editor_controller);
+    var editor = try dew.Editor.init(gpa.allocator());
     defer editor.deinit();
 
     const win_size = try editor.terminal.getWindowSize();
-    var display = try dew.Display.init(gpa.allocator(), &buffer_view, &status_var_view, &command_buffer_view, win_size);
-    defer display.deinit();
-    try view_event_publisher.addSubscriber(display.eventSubscriber());
-
-    var command_executor = dew.models.CommandExecutor{
-        .buffer_selector = &buffer_selector,
-        .status_message = &status_message,
-        .allocator = gpa.allocator(),
-    };
-    try model_event_publisher.addSubscriber(command_executor.eventSubscriber());
 
     try editor.terminal.enableRawMode();
     defer editor.terminal.disableRawMode() catch unreachable;
@@ -102,7 +47,7 @@ pub fn main() !void {
     {
         const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});
         errdefer gpa.allocator().free(msg);
-        try status_message.setMessage(msg);
+        try editor.status_message.setMessage(msg);
     }
 
     while (true) {
