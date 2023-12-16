@@ -66,6 +66,7 @@ pub fn main() !void {
     var status_var_view = dew.view.StatusBarView.init(&status_message, &view_event_publisher);
     defer status_var_view.deinit();
     try model_event_publisher.addSubscriber(status_var_view.eventSubscriber());
+    var display_size = dew.models.DisplaySize.init(&model_event_publisher);
 
     var editor_controller = try dew.controllers.EditorController.init(
         gpa.allocator(),
@@ -73,6 +74,7 @@ pub fn main() !void {
         &command_buffer_view,
         &status_message,
         &buffer_selector,
+        &display_size,
     );
     defer editor_controller.deinit();
 
@@ -94,12 +96,7 @@ pub fn main() !void {
     defer editor.terminal.disableRawMode() catch unreachable;
     try editor.controller.openFile(path);
 
-    try model_event_publisher.publish(.{
-        .screen_size_changed = .{
-            .width = win_size.cols,
-            .height = win_size.rows,
-        },
-    });
+    try editor.controller.changeDisplaySize(win_size.cols, win_size.rows);
 
     {
         const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});

@@ -6,17 +6,19 @@ command_buffer_view: *dew.view.BufferView,
 status_message: *dew.models.StatusMessage,
 file_path: ?[]const u8 = null,
 buffer_selector: *dew.models.BufferSelector,
+display_size: *dew.models.DisplaySize,
 allocator: std.mem.Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, command_buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, command_buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector, display_size: *dew.models.DisplaySize) !EditorController {
     return EditorController{
         .allocator = allocator,
         .file_buffer_view = file_buffer_view,
         .command_buffer_view = command_buffer_view,
         .status_message = status_message,
         .buffer_selector = buffer_selector,
+        .display_size = display_size,
     };
 }
 
@@ -106,6 +108,10 @@ pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
         },
         .arrow => |k| try self.moveCursor(k),
     }
+}
+
+pub fn changeDisplaySize(self: *const EditorController, cols: usize, rows: usize) !void {
+    try self.display_size.set(cols, rows);
 }
 
 fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
