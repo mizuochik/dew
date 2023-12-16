@@ -40,9 +40,9 @@ pub fn main() !void {
 
     try editor.terminal.enableRawMode();
     defer editor.terminal.disableRawMode() catch unreachable;
-    try editor.controller.openFile(path);
 
     try editor.controller.changeDisplaySize(win_size.cols, win_size.rows);
+    try editor.controller.openFile(path);
 
     {
         const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});
