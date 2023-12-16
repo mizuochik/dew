@@ -64,6 +64,26 @@ fn handleEvent(ctx: *anyopaque, ev: dew.view.Event) anyerror!void {
             try self.writeUpdates();
         },
         .screen_size_changed => {
+            var new_buffer = try self.allocator.alloc([]u8, self.size.rows);
+            var end: usize = 0;
+            errdefer {
+                for (0..end) |i| {
+                    self.allocator.free(new_buffer[i]);
+                }
+                self.allocator.free(new_buffer);
+            }
+            for (0..self.size.rows) |i| {
+                new_buffer[i] = try self.allocator.alloc(u8, self.size.cols);
+                errdefer self.allocator.free(new_buffer[i]);
+                end = i + 1;
+            }
+            for (0..self.display_buffer.len) |i| {
+                self.allocator.free(self.display_buffer[i]);
+            }
+            self.allocator.free(self.display_buffer);
+
+            self.display_buffer = new_buffer;
+
             try self.buffer_view.setSize(self.size.cols, self.size.rows - 1);
             try self.command_buffer_view.setSize(self.size.cols, 1);
             try self.status_bar_view.setSize(self.size.cols);

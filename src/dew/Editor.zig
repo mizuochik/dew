@@ -113,10 +113,6 @@ pub fn init(allocator: std.mem.Allocator) !Editor {
     errdefer allocator.destroy(terminal);
     terminal.* = .{};
 
-    const win_size = try terminal.getWindowSize();
-    display_size.rows = win_size.rows;
-    display_size.cols = win_size.cols;
-
     const display = try allocator.create(dew.Display);
     errdefer allocator.destroy(display);
     display.* = try dew.Display.init(allocator, buffer_view, status_bar_view, command_buffer_view, display_size);
