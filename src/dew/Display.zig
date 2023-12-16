@@ -2,8 +2,8 @@ const std = @import("std");
 const builtin = @import("builtin");
 const dew = @import("../dew.zig");
 
-display_buffer: [][]u8,
-buffer_view: *dew.view.BufferView,
+buffer: [][]u8,
+file_buffer_view: *dew.view.BufferView,
 status_bar_view: *dew.view.StatusBarView,
 command_buffer_view: *dew.view.BufferView,
 allocator: std.mem.Allocator,
@@ -11,25 +11,25 @@ size: *dew.view.DisplaySize,
 
 const Display = @This();
 
-pub fn init(allocator: std.mem.Allocator, buffer_view: *dew.view.BufferView, status_bar_view: *dew.view.StatusBarView, command_buffer_view: *dew.view.BufferView, size: *dew.view.DisplaySize) !Display {
-    var display_buffer_al = std.ArrayList([]u8).init(allocator);
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, status_bar_view: *dew.view.StatusBarView, command_buffer_view: *dew.view.BufferView, size: *dew.view.DisplaySize) !Display {
+    var buffer_al = std.ArrayList([]u8).init(allocator);
     errdefer {
-        for (display_buffer_al.items) |row| {
+        for (buffer_al.items) |row| {
             allocator.free(row);
         }
-        display_buffer_al.deinit();
+        buffer_al.deinit();
     }
     var y: usize = 0;
     while (y < size.rows) : (y += 1) {
         const row_buffer = try allocator.alloc(u8, size.cols);
         errdefer allocator.free(row_buffer);
-        try display_buffer_al.append(row_buffer);
+        try buffer_al.append(row_buffer);
     }
-    const display_buffer = try display_buffer_al.toOwnedSlice();
-    errdefer allocator.free(display_buffer);
+    const buffer = try buffer_al.toOwnedSlice();
+    errdefer allocator.free(buffer);
     return .{
-        .display_buffer = display_buffer,
-        .buffer_view = buffer_view,
+        .buffer = buffer,
+        .file_buffer_view = file_buffer_view,
         .status_bar_view = status_bar_view,
         .command_buffer_view = command_buffer_view,
         .allocator = allocator,
@@ -38,10 +38,10 @@ pub fn init(allocator: std.mem.Allocator, buffer_view: *dew.view.BufferView, sta
 }
 
 pub fn deinit(self: *const Display) void {
-    for (self.display_buffer) |row| {
+    for (self.buffer) |row| {
         self.allocator.free(row);
     }
-    self.allocator.free(self.display_buffer);
+    self.allocator.free(self.buffer);
 }
 
 pub fn eventSubscriber(self: *Display) dew.event.Subscriber(dew.view.Event) {
@@ -53,9 +53,9 @@ pub fn eventSubscriber(self: *Display) dew.event.Subscriber(dew.view.Event) {
     };
 }
 
-fn handleEvent(ctx: *anyopaque, ev: dew.view.Event) anyerror!void {
+fn handleEvent(ctx: *anyopaque, event: dew.view.Event) anyerror!void {
     const self: *Display = @ptrCast(@alignCast(ctx));
-    switch (ev) {
+    switch (event) {
         .buffer_view_updated => {
             try self.synchronizeBufferView();
             try self.writeUpdates();
@@ -78,14 +78,14 @@ fn handleEvent(ctx: *anyopaque, ev: dew.view.Event) anyerror!void {
                 errdefer self.allocator.free(new_buffer[i]);
                 end = i + 1;
             }
-            for (0..self.display_buffer.len) |i| {
-                self.allocator.free(self.display_buffer[i]);
+            for (0..self.buffer.len) |i| {
+                self.allocator.free(self.buffer[i]);
             }
-            self.allocator.free(self.display_buffer);
+            self.allocator.free(self.buffer);
 
-            self.display_buffer = new_buffer;
+            self.buffer = new_buffer;
 
-            try self.buffer_view.setSize(self.size.cols, self.size.rows - 1);
+            try self.file_buffer_view.setSize(self.size.cols, self.size.rows - 1);
             try self.command_buffer_view.setSize(self.size.cols, 1);
             try self.status_bar_view.setSize(self.size.cols);
         },
@@ -105,7 +105,7 @@ fn writeUpdates(self: *const Display) !void {
     for (0..self.size.rows) |y| {
         if (y > 0) try tmp.appendSlice("\r\n");
         try tmp.appendSlice("\x1b[K");
-        try tmp.appendSlice(self.display_buffer[y]);
+        try tmp.appendSlice(self.buffer[y]);
     }
     try self.putCurrentCursor(arena.allocator(), &tmp);
     try self.showCursor(&tmp);
@@ -113,10 +113,10 @@ fn writeUpdates(self: *const Display) !void {
 }
 
 fn synchronizeBufferView(self: *Display) !void {
-    for (0..self.buffer_view.height) |i| {
-        const row = self.buffer_view.viewRow(i);
+    for (0..self.file_buffer_view.height) |i| {
+        const row = self.file_buffer_view.viewRow(i);
         for (0..self.size.cols) |j| {
-            self.display_buffer[i][j] = if (j < row.len) row[j] else ' ';
+            self.buffer[i][j] = if (j < row.len) row[j] else ' ';
         }
     }
 }
@@ -126,20 +126,20 @@ fn updateBottomLine(self: *Display) !void {
     const command_buffer = self.command_buffer_view.viewRow(0);
     const bottom = self.size.rows - 1;
     for (0..command_buffer.len) |x| {
-        self.display_buffer[bottom][x] = command_buffer[x];
+        self.buffer[bottom][x] = command_buffer[x];
     }
     if (self.size.cols >= command_buffer.len + status_bar.len) {
         const space = self.size.cols - (command_buffer.len + status_bar.len);
         for (0..space) |i| {
-            self.display_buffer[bottom][command_buffer.len + i] = ' ';
+            self.buffer[bottom][command_buffer.len + i] = ' ';
         }
         for (0..status_bar.len) |i| {
-            self.display_buffer[bottom][command_buffer.len + space + i] = status_bar[i];
+            self.buffer[bottom][command_buffer.len + space + i] = status_bar[i];
         }
     } else {
         const overlap = command_buffer.len + status_bar.len - self.size.cols;
         for (0..status_bar.len - overlap) |i| {
-            self.display_buffer[bottom][command_buffer.len + i] = status_bar[i - overlap];
+            self.buffer[bottom][command_buffer.len + i] = status_bar[i - overlap];
         }
     }
 }
@@ -157,7 +157,7 @@ fn putCursor(_: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8
 }
 
 fn putCurrentCursor(self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    if (self.buffer_view.viewCursor()) |cursor| {
+    if (self.file_buffer_view.viewCursor()) |cursor| {
         try self.putCursor(arena, buf, cursor.x, cursor.y);
     }
     if (self.command_buffer_view.viewCursor()) |cursor| {
