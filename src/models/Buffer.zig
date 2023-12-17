@@ -19,19 +19,21 @@ cursors: std.ArrayList(models.Cursor),
 allocator: std.mem.Allocator,
 
 pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event), mode: Mode) !Buffer {
-    var buf = .{
-        .rows = std.ArrayList(models.UnicodeString).init(allocator),
+    var rows = std.ArrayList(models.UnicodeString).init(allocator);
+    errdefer rows.deinit();
+    errdefer for (rows.items) |row| row.deinit();
+    {
+        var l = try models.UnicodeString.init(allocator);
+        errdefer l.deinit();
+        try rows.append(l);
+    }
+    return .{
+        .rows = rows,
         .event_publisher = event_publisher,
         .mode = mode,
         .cursors = std.ArrayList(models.Cursor).init(allocator),
         .allocator = allocator,
     };
-    if (mode == Mode.command) {
-        var l = try models.UnicodeString.init(allocator);
-        errdefer l.deinit();
-        try buf.rows.append(l);
-    }
-    return buf;
 }
 
 pub fn deinit(self: *const Buffer) void {
