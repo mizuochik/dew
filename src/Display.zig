@@ -12,6 +12,34 @@ size: *view.DisplaySize,
 
 const Display = @This();
 
+pub const Area = struct {
+    rows: [][]u8,
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Area {
+        var rows = try allocator.alloc([]u8, height);
+        errdefer allocator.free(rows);
+        var i: usize = 0;
+        errdefer for (0..i) |j| {
+            allocator.free(rows[j]);
+        };
+        while (i < height) : (i += 1) {
+            rows[i] = try allocator.alloc(u8, width);
+        }
+        return .{
+            .rows = rows,
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *const Area) void {
+        for (0..self.rows.len) |i| {
+            self.allocator.free(self.rows[i]);
+        }
+        self.allocator.free(self.rows);
+    }
+};
+
 pub fn init(allocator: std.mem.Allocator, file_buffer_view: *view.BufferView, status_bar_view: *view.StatusBarView, command_buffer_view: *view.BufferView, size: *view.DisplaySize) !Display {
     var buffer_al = std.ArrayList([]u8).init(allocator);
     errdefer {
@@ -52,6 +80,15 @@ pub fn eventSubscriber(self: *Display) event.Subscriber(view.Event) {
             .handle = handleEvent,
         },
     };
+}
+
+pub fn getArea(self: *const Display, top: usize, bottom: usize, left: usize, right: usize) !Area {
+    var area = try Area.init(self.allocator, right - left, bottom - top);
+    errdefer area.deinit();
+    for (0..(bottom - top)) |i| {
+        std.mem.copy(u8, area.rows[i], self.buffer[top + i][left..right]);
+    }
+    return area;
 }
 
 fn handleEvent(ctx: *anyopaque, event_: view.Event) anyerror!void {
