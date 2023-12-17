@@ -41,21 +41,11 @@ pub const Area = struct {
 };
 
 pub fn init(allocator: std.mem.Allocator, file_buffer_view: *view.BufferView, status_bar_view: *view.StatusBarView, command_buffer_view: *view.BufferView, size: *view.DisplaySize) !Display {
-    var buffer_al = std.ArrayList([]u8).init(allocator);
+    const buffer = try initBuffer(allocator, size);
     errdefer {
-        for (buffer_al.items) |row| {
-            allocator.free(row);
-        }
-        buffer_al.deinit();
+        for (0..buffer.len) |i| allocator.free(buffer[i]);
+        allocator.free(buffer);
     }
-    var y: usize = 0;
-    while (y < size.rows) : (y += 1) {
-        const row_buffer = try allocator.alloc(u8, size.cols);
-        errdefer allocator.free(row_buffer);
-        try buffer_al.append(row_buffer);
-    }
-    const buffer = try buffer_al.toOwnedSlice();
-    errdefer allocator.free(buffer);
     return .{
         .buffer = buffer,
         .file_buffer_view = file_buffer_view,
@@ -91,6 +81,24 @@ pub fn getArea(self: *const Display, top: usize, bottom: usize, left: usize, rig
     return area;
 }
 
+fn initBuffer(allocator: std.mem.Allocator, display_size: *view.DisplaySize) ![][]u8 {
+    var new_buffer = try allocator.alloc([]u8, display_size.rows);
+    var i: usize = 0;
+    errdefer {
+        for (0..i) |j| {
+            allocator.free(new_buffer[j]);
+        }
+        allocator.free(new_buffer);
+    }
+    while (i < display_size.rows) : (i += 1) {
+        new_buffer[i] = try allocator.alloc(u8, display_size.cols);
+        for (0..display_size.cols) |j| {
+            new_buffer[i][j] = ' ';
+        }
+    }
+    return new_buffer;
+}
+
 fn handleEvent(ctx: *anyopaque, event_: view.Event) anyerror!void {
     const self: *Display = @ptrCast(@alignCast(ctx));
     switch (event_) {
@@ -103,22 +111,12 @@ fn handleEvent(ctx: *anyopaque, event_: view.Event) anyerror!void {
             try self.writeUpdates();
         },
         .screen_size_changed => {
-            var new_buffer = try self.allocator.alloc([]u8, self.size.rows);
-            var end: usize = 0;
+            const new_buffer = try initBuffer(self.allocator, self.size);
             errdefer {
-                for (0..end) |i| {
-                    self.allocator.free(new_buffer[i]);
-                }
+                for (0..new_buffer.len) |i| self.allocator.free(new_buffer[i]);
                 self.allocator.free(new_buffer);
             }
-            for (0..self.size.rows) |i| {
-                new_buffer[i] = try self.allocator.alloc(u8, self.size.cols);
-                errdefer self.allocator.free(new_buffer[i]);
-                end = i + 1;
-            }
-            for (0..self.buffer.len) |i| {
-                self.allocator.free(self.buffer[i]);
-            }
+            for (0..self.buffer.len) |i| self.allocator.free(self.buffer[i]);
             self.allocator.free(self.buffer);
 
             self.buffer = new_buffer;
