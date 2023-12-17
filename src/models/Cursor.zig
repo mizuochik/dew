@@ -1,10 +1,12 @@
-const dew = @import("../../dew.zig");
 const std = @import("std");
+const event = @import("../event.zig");
+const models = @import("../models.zig");
+const Buffer = @import("Buffer.zig");
 
-buffer: *const dew.models.Buffer,
+buffer: *const Buffer,
 x: usize = 0,
 y: usize = 0,
-event_publisher: *const dew.event.Publisher(dew.models.Event),
+event_publisher: *const event.Publisher(models.Event),
 
 const Cursor = @This();
 
@@ -39,19 +41,19 @@ pub fn moveToEndOfLine(self: *Cursor) !void {
     try self.event_publisher.publish(.cursor_moved);
 }
 
-pub fn getPosition(self: *const Cursor) dew.models.Position {
+pub fn getPosition(self: *const Cursor) models.Position {
     return .{
         .x = self.x,
         .y = self.y,
     };
 }
 
-pub fn setPosition(self: *Cursor, pos: dew.models.Position) !void {
+pub fn setPosition(self: *Cursor, pos: models.Position) !void {
     self.x = pos.x;
     self.y = pos.y;
     try self.event_publisher.publish(.cursor_moved);
 }
 
-fn getCurrentRow(self: *const Cursor) dew.models.UnicodeString {
+fn getCurrentRow(self: *const Cursor) models.UnicodeString {
     return self.buffer.rows.items[self.y];
 }

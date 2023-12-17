@@ -1,18 +1,20 @@
 const std = @import("std");
-const dew = @import("../../dew.zig");
+const BufferSelector = @import("BufferSelector.zig");
+const StatusMessage = @import("StatusMessage.zig");
+const Command = @import("Command.zig");
 
 allocator: std.mem.Allocator,
 input: [][]const u8,
 index: usize,
-buffer_selector: *dew.models.BufferSelector,
-status_message: *dew.models.StatusMessage,
+buffer_selector: *BufferSelector,
+status_message: *StatusMessage,
 
 const CommandLineParser = @This();
 
 pub const CommandLine = struct {
     allocator: std.mem.Allocator,
     arguments: [][]const u8,
-    command: dew.models.Command,
+    command: Command,
 
     pub fn deinit(self: *const CommandLine) void {
         self.command.deinit();
@@ -32,7 +34,7 @@ const Error = error{
     Error,
 };
 
-pub fn init(allocator: std.mem.Allocator, buffer_selector: *dew.models.BufferSelector, status_message: *dew.models.StatusMessage) !CommandLineParser {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status_message: *StatusMessage) !CommandLineParser {
     const in = try allocator.alloc([]u8, 0);
     errdefer allocator.free(in);
     return .{
@@ -99,7 +101,7 @@ fn setInput(self: *CommandLineParser, input: []const u8) !void {
     self.input = in;
 }
 
-fn parseCommand(self: *CommandLineParser) !dew.models.Command {
+fn parseCommand(self: *CommandLineParser) !Command {
     var command_name_al = std.ArrayList(u8).init(self.allocator);
     defer command_name_al.deinit();
     try command_name_al.appendSlice(try self.parseAnyLetter());
@@ -107,7 +109,7 @@ fn parseCommand(self: *CommandLineParser) !dew.models.Command {
         try command_name_al.appendSlice(letter);
     } else |_| {}
     if (std.mem.eql(u8, "open-file", command_name_al.items)) {
-        const command = try dew.models.Command.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
+        const command = try Command.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
         errdefer command.deinit();
         return command;
     }

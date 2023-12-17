@@ -1,5 +1,7 @@
 const std = @import("std");
-const dew = @import("../../dew.zig");
+const UnicodeString = @import("UnicodeString.zig");
+const event = @import("../event.zig");
+const models = @import("../models.zig");
 
 const Buffer = @This();
 
@@ -8,24 +10,24 @@ pub const Mode = enum {
     command,
 };
 
-rows: std.ArrayList(dew.models.UnicodeString),
+rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-event_publisher: *dew.event.Publisher(dew.models.Event),
+event_publisher: *event.Publisher(models.Event),
 mode: Mode,
-cursors: std.ArrayList(dew.models.Cursor),
+cursors: std.ArrayList(models.Cursor),
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, event_publisher: *dew.event.Publisher(dew.models.Event), mode: Mode) !Buffer {
+pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event), mode: Mode) !Buffer {
     var buf = .{
-        .rows = std.ArrayList(dew.models.UnicodeString).init(allocator),
+        .rows = std.ArrayList(models.UnicodeString).init(allocator),
         .event_publisher = event_publisher,
         .mode = mode,
-        .cursors = std.ArrayList(dew.models.Cursor).init(allocator),
+        .cursors = std.ArrayList(models.Cursor).init(allocator),
         .allocator = allocator,
     };
     if (mode == Mode.command) {
-        var l = try dew.models.UnicodeString.init(allocator);
+        var l = try models.UnicodeString.init(allocator);
         errdefer l.deinit();
         try buf.rows.append(l);
     }
@@ -39,7 +41,7 @@ pub fn deinit(self: *const Buffer) void {
 }
 
 pub fn addCursor(self: *Buffer) !void {
-    try self.cursors.append(dew.models.Cursor{
+    try self.cursors.append(models.Cursor{
         .buffer = self,
         .event_publisher = self.event_publisher,
     });
@@ -54,12 +56,12 @@ pub fn resetCursors(self: *Buffer) !void {
     }
 }
 
-pub fn insertChar(self: *Buffer, pos: dew.models.Position, c: u21) !void {
+pub fn insertChar(self: *Buffer, pos: models.Position, c: u21) !void {
     try self.rows.items[pos.y].insert(pos.x, c);
     try self.notifyUpdate();
 }
 
-pub fn deleteChar(self: *Buffer, pos: dew.models.Position) !void {
+pub fn deleteChar(self: *Buffer, pos: models.Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
         try self.joinLine(pos);
@@ -75,7 +77,7 @@ pub fn deleteBackwardChar(self: *Buffer) !void {
     try self.notifyUpdate();
 }
 
-pub fn joinLine(self: *Buffer, pos: dew.models.Position) !void {
+pub fn joinLine(self: *Buffer, pos: models.Position) !void {
     if (pos.y >= self.rows.items.len - 1) {
         return;
     }
@@ -87,7 +89,7 @@ pub fn joinLine(self: *Buffer, pos: dew.models.Position) !void {
     try self.notifyUpdate();
 }
 
-pub fn killLine(self: *Buffer, pos: dew.models.Position) !void {
+pub fn killLine(self: *Buffer, pos: models.Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
         try self.deleteChar(pos);
@@ -99,8 +101,8 @@ pub fn killLine(self: *Buffer, pos: dew.models.Position) !void {
     try self.notifyUpdate();
 }
 
-pub fn breakLine(self: *Buffer, pos: dew.models.Position) !void {
-    var new_row = try dew.models.UnicodeString.init(self.allocator);
+pub fn breakLine(self: *Buffer, pos: models.Position) !void {
+    var new_row = try models.UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
     const row = &self.rows.items[pos.y];
     if (pos.x < row.getLen()) {
@@ -125,7 +127,7 @@ pub fn clear(self: *Buffer) !void {
     std.debug.assert(self.rows.items.len == 1);
     try self.resetCursors();
     try self.rows.items[0].clear();
-    try self.event_publisher.publish(dew.models.Event{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
+    try self.event_publisher.publish(models.Event{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
 }
 
 pub fn notifyUpdate(self: *Buffer) !void {
@@ -139,7 +141,7 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
     defer f.close();
     var reader = f.reader();
 
-    var new_rows = std.ArrayList(dew.models.UnicodeString).init(self.allocator);
+    var new_rows = std.ArrayList(models.UnicodeString).init(self.allocator);
     errdefer {
         for (new_rows.items) |row| row.deinit();
         new_rows.deinit();
@@ -151,12 +153,12 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
             error.EndOfStream => break,
             else => return err,
         };
-        var new_row = try dew.models.UnicodeString.init(self.allocator);
+        var new_row = try models.UnicodeString.init(self.allocator);
         errdefer new_row.deinit();
         try new_row.appendSlice(buf.items);
         try new_rows.append(new_row);
     }
-    var last_row = try dew.models.UnicodeString.init(self.allocator);
+    var last_row = try models.UnicodeString.init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
 

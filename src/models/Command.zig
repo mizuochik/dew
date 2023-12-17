@@ -1,5 +1,6 @@
 const std = @import("std");
-const dew = @import("../../dew.zig");
+const BufferSelector = @import("BufferSelector.zig");
+const StatusMessage = @import("StatusMessage.zig");
 
 const Command = @This();
 
@@ -20,11 +21,11 @@ pub fn deinit(self: *const Command) void {
 }
 
 pub const OpenFile = struct {
-    buffer_selector: *dew.models.BufferSelector,
-    status_message: *dew.models.StatusMessage,
+    buffer_selector: *BufferSelector,
+    status_message: *StatusMessage,
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, buffer_selector: *dew.models.BufferSelector, status_message: *dew.models.StatusMessage) !Command {
+    pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status_message: *StatusMessage) !Command {
         const cmd = try allocator.create(OpenFile);
         errdefer allocator.destroy(cmd);
         cmd.* = OpenFile{

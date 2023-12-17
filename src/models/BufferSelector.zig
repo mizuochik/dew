@@ -1,14 +1,16 @@
-const dew = @import("../../dew.zig");
 const std = @import("std");
+const event = @import("../event.zig");
+const models = @import("../models.zig");
+const Buffer = @import("Buffer.zig");
 
 const BufferSelector = @This();
 
-file_buffer: *dew.models.Buffer,
-command_buffer: *dew.models.Buffer,
-current_buffer: *dew.models.Buffer,
-event_publisher: *const dew.event.Publisher(dew.models.Event),
+file_buffer: *Buffer,
+command_buffer: *Buffer,
+current_buffer: *Buffer,
+event_publisher: *const event.Publisher(models.Event),
 
-pub fn init(file_buffer: *dew.models.Buffer, command_buffer: *dew.models.Buffer, event_publisher: *const dew.event.Publisher(dew.models.Event)) BufferSelector {
+pub fn init(file_buffer: *models.Buffer, command_buffer: *models.Buffer, event_publisher: *const event.Publisher(models.Event)) BufferSelector {
     return .{
         .file_buffer = file_buffer,
         .command_buffer = command_buffer,

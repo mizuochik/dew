@@ -1,17 +1,18 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const dew = @import("../dew.zig");
+const view = @import("view.zig");
+const event = @import("event.zig");
 
 buffer: [][]u8,
-file_buffer_view: *dew.view.BufferView,
-status_bar_view: *dew.view.StatusBarView,
-command_buffer_view: *dew.view.BufferView,
+file_buffer_view: *view.BufferView,
+status_bar_view: *view.StatusBarView,
+command_buffer_view: *view.BufferView,
 allocator: std.mem.Allocator,
-size: *dew.view.DisplaySize,
+size: *view.DisplaySize,
 
 const Display = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, status_bar_view: *dew.view.StatusBarView, command_buffer_view: *dew.view.BufferView, size: *dew.view.DisplaySize) !Display {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *view.BufferView, status_bar_view: *view.StatusBarView, command_buffer_view: *view.BufferView, size: *view.DisplaySize) !Display {
     var buffer_al = std.ArrayList([]u8).init(allocator);
     errdefer {
         for (buffer_al.items) |row| {
@@ -44,7 +45,7 @@ pub fn deinit(self: *const Display) void {
     self.allocator.free(self.buffer);
 }
 
-pub fn eventSubscriber(self: *Display) dew.event.Subscriber(dew.view.Event) {
+pub fn eventSubscriber(self: *Display) event.Subscriber(view.Event) {
     return .{
         .ptr = self,
         .vtable = &.{
@@ -53,9 +54,9 @@ pub fn eventSubscriber(self: *Display) dew.event.Subscriber(dew.view.Event) {
     };
 }
 
-fn handleEvent(ctx: *anyopaque, event: dew.view.Event) anyerror!void {
+fn handleEvent(ctx: *anyopaque, event_: view.Event) anyerror!void {
     const self: *Display = @ptrCast(@alignCast(ctx));
-    switch (event) {
+    switch (event_) {
         .buffer_view_updated => {
             try self.synchronizeBufferView();
             try self.writeUpdates();
@@ -122,7 +123,7 @@ fn synchronizeBufferView(self: *Display) !void {
 }
 
 fn updateBottomLine(self: *Display) !void {
-    const status_bar = try self.status_bar_view.view();
+    const status_bar = try self.status_bar_view.viewContent();
     const command_buffer = self.command_buffer_view.viewRow(0);
     const bottom = self.size.rows - 1;
     for (0..command_buffer.len) |x| {

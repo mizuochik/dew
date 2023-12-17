@@ -1,11 +1,11 @@
 const std = @import("std");
-const dew = @import("../dew.zig");
+const models = @import("models.zig");
 
 const Keyboard = @This();
 
 fixed_buffer_stream: ?std.io.FixedBufferStream([]const u8) = null, // for testing only
 
-pub fn inputKey(self: *Keyboard) !dew.models.Key {
+pub fn inputKey(self: *Keyboard) !models.Key {
     var k = try self.readByte();
     if (k == 0x1b) {
         k = try self.readByte();
@@ -45,17 +45,17 @@ fn readByte(self: *Keyboard) anyerror!u8 {
 
 test "Keyboard: inputKey" {
     const cases = .{
-        .{ .given = "\x00", .expected = dew.models.Key{ .ctrl = '@' } },
-        .{ .given = "\x08", .expected = dew.models.Key{ .ctrl = 'H' } },
-        .{ .given = "A", .expected = dew.models.Key{ .plain = 'A' } },
-        .{ .given = "あ", .expected = dew.models.Key{ .plain = 'あ' } },
-        .{ .given = "\x1b[A", .expected = dew.models.Key{ .arrow = .up } },
-        .{ .given = "\x1b[B", .expected = dew.models.Key{ .arrow = .down } },
-        .{ .given = "\x1b[C", .expected = dew.models.Key{ .arrow = .right } },
-        .{ .given = "\x1b[D", .expected = dew.models.Key{ .arrow = .left } },
-        .{ .given = "\x1bA", .expected = dew.models.Key{ .meta = 'A' } },
-        .{ .given = "\x1bz", .expected = dew.models.Key{ .meta = 'z' } },
-        .{ .given = "\x7f", .expected = dew.models.Key.del },
+        .{ .given = "\x00", .expected = models.Key{ .ctrl = '@' } },
+        .{ .given = "\x08", .expected = models.Key{ .ctrl = 'H' } },
+        .{ .given = "A", .expected = models.Key{ .plain = 'A' } },
+        .{ .given = "あ", .expected = models.Key{ .plain = 'あ' } },
+        .{ .given = "\x1b[A", .expected = models.Key{ .arrow = .up } },
+        .{ .given = "\x1b[B", .expected = models.Key{ .arrow = .down } },
+        .{ .given = "\x1b[C", .expected = models.Key{ .arrow = .right } },
+        .{ .given = "\x1b[D", .expected = models.Key{ .arrow = .left } },
+        .{ .given = "\x1bA", .expected = models.Key{ .meta = 'A' } },
+        .{ .given = "\x1bz", .expected = models.Key{ .meta = 'z' } },
+        .{ .given = "\x7f", .expected = models.Key.del },
     };
     inline for (cases) |case| {
         var k = Keyboard{

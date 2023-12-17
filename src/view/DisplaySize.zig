@@ -1,13 +1,14 @@
 const std = @import("std");
-const dew = @import("../../dew.zig");
+const event = @import("../event.zig");
+const view = @import("../view.zig");
 
 const DisplaySize = @This();
 
 cols: usize,
 rows: usize,
-event_publisher: *dew.event.Publisher(dew.view.Event),
+event_publisher: *event.Publisher(view.Event),
 
-pub fn init(event_publisher: *dew.event.Publisher(dew.view.Event)) DisplaySize {
+pub fn init(event_publisher: *event.Publisher(view.Event)) DisplaySize {
     return .{
         .cols = 0,
         .rows = 0,

@@ -1,5 +1,4 @@
 const std = @import("std");
-const dew = @import("../dew.zig");
 
 pub const debug = @import("models/debug.zig");
 pub const Buffer = @import("models/Buffer.zig");
@@ -35,7 +34,7 @@ pub const Event = union(enum) {
     status_message_updated,
     command_buffer_opened,
     command_buffer_closed,
-    command_executed: dew.models.UnicodeString,
+    command_executed: UnicodeString,
     cursor_moved,
 
     pub fn deinit(self: Event) void {

@@ -1,13 +1,15 @@
 const std = @import("std");
-const dew = @import("../../dew.zig");
+const models = @import("../models.zig");
+const view = @import("../view.zig");
+const event = @import("../event.zig");
 
 const StatusBarView = @This();
 
-status_message: *const dew.models.StatusMessage,
+status_message: *const models.StatusMessage,
 width: usize,
-view_event_publisher: *const dew.event.Publisher(dew.view.Event),
+view_event_publisher: *const event.Publisher(view.Event),
 
-pub fn init(status_message: *dew.models.StatusMessage, view_event_publisher: *const dew.event.Publisher(dew.view.Event)) StatusBarView {
+pub fn init(status_message: *models.StatusMessage, view_event_publisher: *const event.Publisher(view.Event)) StatusBarView {
     return .{
         .status_message = status_message,
         .width = 0,
@@ -17,14 +19,14 @@ pub fn init(status_message: *dew.models.StatusMessage, view_event_publisher: *co
 
 pub fn deinit(_: *StatusBarView) void {}
 
-pub fn view(self: *const StatusBarView) ![]const u8 {
+pub fn viewContent(self: *const StatusBarView) ![]const u8 {
     return if (self.status_message.message.len < self.width)
         self.status_message.message[0..]
     else
         self.status_message.message[0..self.width];
 }
 
-pub fn eventSubscriber(self: *StatusBarView) dew.event.Subscriber(dew.models.Event) {
+pub fn eventSubscriber(self: *StatusBarView) event.Subscriber(models.Event) {
     return .{
         .ptr = self,
         .vtable = &.{
@@ -33,9 +35,9 @@ pub fn eventSubscriber(self: *StatusBarView) dew.event.Subscriber(dew.models.Eve
     };
 }
 
-fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
+fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
     var self: *StatusBarView = @ptrCast(@alignCast(ctx));
-    switch (event) {
+    switch (event_) {
         .status_message_updated => {
             try self.view_event_publisher.publish(.status_bar_view_updated);
         },

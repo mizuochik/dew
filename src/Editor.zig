@@ -1,92 +1,98 @@
 const std = @import("std");
-const dew = @import("../dew.zig");
+const event = @import("event.zig");
+const models = @import("models.zig");
+const view = @import("view.zig");
+const controllers = @import("controllers.zig");
+const Keyboard = @import("Keyboard.zig");
+const Terminal = @import("Terminal.zig");
+const Display = @import("Display.zig");
 
 const Editor = @This();
 
 allocator: std.mem.Allocator,
-model_event_publisher: *dew.event.Publisher(dew.models.Event),
-view_event_publisher: *dew.event.Publisher(dew.view.Event),
-buffer: *dew.models.Buffer,
-buffer_view: *dew.view.BufferView,
-command_buffer: *dew.models.Buffer,
-command_buffer_view: *dew.view.BufferView,
-buffer_selector: *dew.models.BufferSelector,
-debug_handler: *dew.models.debug.Handler,
-status_message: *dew.models.StatusMessage,
-status_bar_view: *dew.view.StatusBarView,
-display_size: *dew.view.DisplaySize,
-controller: *dew.controllers.EditorController,
-command_executor: *dew.models.CommandExecutor,
-keyboard: *dew.Keyboard,
-terminal: *dew.Terminal,
-display: *dew.Display,
+model_event_publisher: *event.Publisher(models.Event),
+view_event_publisher: *event.Publisher(view.Event),
+buffer: *models.Buffer,
+buffer_view: *view.BufferView,
+command_buffer: *models.Buffer,
+command_buffer_view: *view.BufferView,
+buffer_selector: *models.BufferSelector,
+debug_handler: *models.debug.Handler,
+status_message: *models.StatusMessage,
+status_bar_view: *view.StatusBarView,
+display_size: *view.DisplaySize,
+controller: *controllers.EditorController,
+command_executor: *models.CommandExecutor,
+keyboard: *Keyboard,
+terminal: *Terminal,
+display: *Display,
 
 pub fn init(allocator: std.mem.Allocator) !Editor {
-    const model_event_publisher = try allocator.create(dew.event.Publisher(dew.models.Event));
+    const model_event_publisher = try allocator.create(event.Publisher(models.Event));
     errdefer allocator.destroy(model_event_publisher);
-    model_event_publisher.* = dew.event.Publisher(dew.models.Event).init(allocator);
+    model_event_publisher.* = event.Publisher(models.Event).init(allocator);
     errdefer model_event_publisher.deinit();
 
-    const view_event_publisher = try allocator.create(dew.event.Publisher(dew.view.Event));
+    const view_event_publisher = try allocator.create(event.Publisher(view.Event));
     errdefer allocator.destroy(view_event_publisher);
-    view_event_publisher.* = dew.event.Publisher(dew.view.Event).init(allocator);
+    view_event_publisher.* = event.Publisher(view.Event).init(allocator);
     errdefer view_event_publisher.deinit();
 
-    const buffer = try allocator.create(dew.models.Buffer);
+    const buffer = try allocator.create(models.Buffer);
     errdefer allocator.destroy(buffer);
-    buffer.* = try dew.models.Buffer.init(allocator, model_event_publisher, .file);
+    buffer.* = try models.Buffer.init(allocator, model_event_publisher, .file);
     errdefer buffer.deinit();
     try buffer.addCursor();
 
-    const buffer_view = try allocator.create(dew.view.BufferView);
+    const buffer_view = try allocator.create(view.BufferView);
     errdefer allocator.destroy(buffer_view);
-    buffer_view.* = dew.view.BufferView.init(allocator, buffer, view_event_publisher);
+    buffer_view.* = view.BufferView.init(allocator, buffer, view_event_publisher);
     errdefer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
-    const command_buffer = try allocator.create(dew.models.Buffer);
+    const command_buffer = try allocator.create(models.Buffer);
     errdefer allocator.destroy(command_buffer);
-    command_buffer.* = try dew.models.Buffer.init(allocator, model_event_publisher, .command);
+    command_buffer.* = try models.Buffer.init(allocator, model_event_publisher, .command);
     errdefer command_buffer.deinit();
     try command_buffer.addCursor();
 
-    const command_buffer_view = try allocator.create(dew.view.BufferView);
+    const command_buffer_view = try allocator.create(view.BufferView);
     errdefer allocator.destroy(command_buffer_view);
-    command_buffer_view.* = dew.view.BufferView.init(allocator, command_buffer, view_event_publisher);
+    command_buffer_view.* = view.BufferView.init(allocator, command_buffer, view_event_publisher);
     errdefer command_buffer_view.deinit();
     try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
 
-    const buffer_selector = try allocator.create(dew.models.BufferSelector);
+    const buffer_selector = try allocator.create(models.BufferSelector);
     errdefer allocator.destroy(buffer_selector);
-    buffer_selector.* = dew.models.BufferSelector.init(buffer, command_buffer, model_event_publisher);
+    buffer_selector.* = models.BufferSelector.init(buffer, command_buffer, model_event_publisher);
     errdefer buffer_selector.deinit();
 
-    const debug_handler = try allocator.create(dew.models.debug.Handler);
+    const debug_handler = try allocator.create(models.debug.Handler);
     errdefer allocator.destroy(debug_handler);
-    debug_handler.* = dew.models.debug.Handler{
+    debug_handler.* = models.debug.Handler{
         .buffer_selector = buffer_selector,
         .allocator = allocator,
     };
     try model_event_publisher.addSubscriber(debug_handler.eventSubscriber());
 
-    const status_message = try allocator.create(dew.models.StatusMessage);
+    const status_message = try allocator.create(models.StatusMessage);
     errdefer allocator.destroy(status_message);
-    status_message.* = try dew.models.StatusMessage.init(allocator, model_event_publisher);
+    status_message.* = try models.StatusMessage.init(allocator, model_event_publisher);
     errdefer status_message.deinit();
 
-    const status_bar_view = try allocator.create(dew.view.StatusBarView);
+    const status_bar_view = try allocator.create(view.StatusBarView);
     errdefer allocator.destroy(status_bar_view);
-    status_bar_view.* = dew.view.StatusBarView.init(status_message, view_event_publisher);
+    status_bar_view.* = view.StatusBarView.init(status_message, view_event_publisher);
     errdefer status_bar_view.deinit();
     try model_event_publisher.addSubscriber(status_bar_view.eventSubscriber());
 
-    const display_size = try allocator.create(dew.view.DisplaySize);
+    const display_size = try allocator.create(view.DisplaySize);
     errdefer allocator.destroy(display_size);
-    display_size.* = dew.view.DisplaySize.init(view_event_publisher);
+    display_size.* = view.DisplaySize.init(view_event_publisher);
 
-    const editor_controller = try allocator.create(dew.controllers.EditorController);
+    const editor_controller = try allocator.create(controllers.EditorController);
     errdefer allocator.destroy(editor_controller);
-    editor_controller.* = try dew.controllers.EditorController.init(
+    editor_controller.* = try controllers.EditorController.init(
         allocator,
         buffer_view,
         command_buffer_view,
@@ -96,26 +102,26 @@ pub fn init(allocator: std.mem.Allocator) !Editor {
     );
     errdefer editor_controller.deinit();
 
-    const command_executor = try allocator.create(dew.models.CommandExecutor);
+    const command_executor = try allocator.create(models.CommandExecutor);
     errdefer allocator.destroy(command_executor);
-    command_executor.* = dew.models.CommandExecutor{
+    command_executor.* = models.CommandExecutor{
         .buffer_selector = buffer_selector,
         .status_message = status_message,
         .allocator = allocator,
     };
     try model_event_publisher.addSubscriber(command_executor.eventSubscriber());
 
-    const keyboard = try allocator.create(dew.Keyboard);
+    const keyboard = try allocator.create(Keyboard);
     errdefer allocator.destroy(keyboard);
-    keyboard.* = dew.Keyboard{};
+    keyboard.* = Keyboard{};
 
-    const terminal = try allocator.create(dew.Terminal);
+    const terminal = try allocator.create(Terminal);
     errdefer allocator.destroy(terminal);
     terminal.* = .{};
 
-    const display = try allocator.create(dew.Display);
+    const display = try allocator.create(Display);
     errdefer allocator.destroy(display);
-    display.* = try dew.Display.init(allocator, buffer_view, status_bar_view, command_buffer_view, display_size);
+    display.* = try Display.init(allocator, buffer_view, status_bar_view, command_buffer_view, display_size);
     errdefer display.deinit();
     try view_event_publisher.addSubscriber(display.eventSubscriber());
 
@@ -181,4 +187,14 @@ pub fn deinit(self: *const Editor) void {
 
     self.model_event_publisher.deinit();
     self.allocator.destroy(self.model_event_publisher);
+}
+
+test {
+    _ = event;
+    _ = models;
+    _ = view;
+    _ = controllers;
+    _ = Keyboard;
+    _ = Terminal;
+    _ = Display;
 }

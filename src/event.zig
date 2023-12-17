@@ -1,5 +1,4 @@
 const std = @import("std");
-const dew = @import("../dew.zig");
 
 pub fn Publisher(comptime E: anytype) type {
     return struct {

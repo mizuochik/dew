@@ -1,5 +1,7 @@
 const std = @import("std");
-const dew = @import("../../dew.zig");
+const models = @import("../models.zig");
+const event = @import("../event.zig");
+const view = @import("../view.zig");
 
 const BufferView = @This();
 
@@ -14,17 +16,17 @@ const empty: []const u8 = b: {
     break :b &s;
 };
 
-buffer: *const dew.models.Buffer,
+buffer: *const models.Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 y_scroll: usize = 0,
-view_event_publisher: *const dew.event.Publisher(dew.view.Event),
+view_event_publisher: *const event.Publisher(view.Event),
 is_active: bool,
 last_cursor_x: usize = 0,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, buffer: *const dew.models.Buffer, vevents: *const dew.event.Publisher(dew.view.Event)) BufferView {
+pub fn init(allocator: std.mem.Allocator, buffer: *const models.Buffer, vevents: *const event.Publisher(view.Event)) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -33,7 +35,7 @@ pub fn init(allocator: std.mem.Allocator, buffer: *const dew.models.Buffer, veve
         .width = 0,
         .height = 0,
         .view_event_publisher = vevents,
-        .is_active = buffer.mode != dew.models.Buffer.Mode.command,
+        .is_active = buffer.mode != models.Buffer.Mode.command,
         .allocator = allocator,
     };
 }
@@ -51,7 +53,7 @@ pub fn viewRow(self: *const BufferView, y: usize) []const u8 {
     return self.buffer.rows.items[row.buf_y].sliceAsRaw(row.buf_x_start, row.buf_x_end);
 }
 
-pub fn viewCursor(self: *const BufferView) ?dew.models.Position {
+pub fn viewCursor(self: *const BufferView) ?models.Position {
     if (!self.is_active) {
         return null;
     }
@@ -66,7 +68,7 @@ pub fn viewCursor(self: *const BufferView) ?dew.models.Position {
     };
 }
 
-pub fn getCursor(self: *const BufferView) dew.models.Position {
+pub fn getCursor(self: *const BufferView) models.Position {
     const c_y = self.buffer.cursors.items[0].y;
     const c_x = self.buffer.cursors.items[0].x;
     if (self.rows.items.len <= 0) {
@@ -98,7 +100,7 @@ pub fn getNumberOfLines(self: *const BufferView) usize {
     return self.rows.items.len;
 }
 
-pub fn getBufferPopsition(self: *const BufferView, view_position: dew.models.Position) dew.models.Position {
+pub fn getBufferPopsition(self: *const BufferView, view_position: models.Position) models.Position {
     const row_slice = self.rows.items[view_position.y];
     const buffer_row = self.buffer.rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
@@ -134,7 +136,7 @@ pub fn normalizeScroll(self: *BufferView) void {
     }
 }
 
-pub fn getNormalizedCursor(self: *BufferView) dew.models.Position {
+pub fn getNormalizedCursor(self: *BufferView) models.Position {
     const upper_limit = self.y_scroll + self.height / 16;
     const bottom_limit = self.y_scroll + self.height * 15 / 16;
     const cursor = self.getCursor();
@@ -151,8 +153,8 @@ pub fn updateLastCursorX(self: *BufferView) void {
     self.last_cursor_x = self.getCursor().x;
 }
 
-pub fn eventSubscriber(self: *BufferView) dew.event.Subscriber(dew.models.Event) {
-    return dew.event.Subscriber(dew.models.Event){
+pub fn eventSubscriber(self: *BufferView) event.Subscriber(models.Event) {
+    return event.Subscriber(models.Event){
         .ptr = self,
         .vtable = &.{
             .handle = handleEvent,
@@ -160,9 +162,9 @@ pub fn eventSubscriber(self: *BufferView) dew.event.Subscriber(dew.models.Event)
     };
 }
 
-fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
+fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
     const self: *BufferView = @ptrCast(@alignCast(ctx));
-    switch (event) {
+    switch (event_) {
         .cursor_moved => {
             self.normalizeScroll();
             try self.view_event_publisher.publish(switch (self.buffer.mode) {
@@ -178,11 +180,11 @@ fn handleEvent(ctx: *anyopaque, event: dew.models.Event) anyerror!void {
             });
         },
         .command_buffer_opened => {
-            self.is_active = self.buffer.mode == dew.models.Buffer.Mode.command;
+            self.is_active = self.buffer.mode == models.Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         .command_buffer_closed => {
-            self.is_active = self.buffer.mode != dew.models.Buffer.Mode.command;
+            self.is_active = self.buffer.mode != models.Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},

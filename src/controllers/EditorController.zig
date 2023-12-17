@@ -1,17 +1,18 @@
 const std = @import("std");
-const dew = @import("../../dew.zig");
+const view = @import("../view.zig");
+const models = @import("../models.zig");
 
-file_buffer_view: *dew.view.BufferView,
-command_buffer_view: *dew.view.BufferView,
-status_message: *dew.models.StatusMessage,
+file_buffer_view: *view.BufferView,
+command_buffer_view: *view.BufferView,
+status_message: *models.StatusMessage,
 file_path: ?[]const u8 = null,
-buffer_selector: *dew.models.BufferSelector,
-display_size: *dew.view.DisplaySize,
+buffer_selector: *models.BufferSelector,
+display_size: *view.DisplaySize,
 allocator: std.mem.Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView, command_buffer_view: *dew.view.BufferView, status_message: *dew.models.StatusMessage, buffer_selector: *dew.models.BufferSelector, display_size: *dew.view.DisplaySize) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *view.BufferView, command_buffer_view: *view.BufferView, status_message: *models.StatusMessage, buffer_selector: *models.BufferSelector, display_size: *view.DisplaySize) !EditorController {
     return EditorController{
         .allocator = allocator,
         .file_buffer_view = file_buffer_view,
@@ -24,7 +25,7 @@ pub fn init(allocator: std.mem.Allocator, file_buffer_view: *dew.view.BufferView
 
 pub fn deinit(_: *const EditorController) void {}
 
-pub fn processKeypress(self: *EditorController, key: dew.models.Key) !void {
+pub fn processKeypress(self: *EditorController, key: models.Key) !void {
     switch (key) {
         .del => {
             for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
@@ -114,7 +115,7 @@ pub fn changeDisplaySize(self: *const EditorController, cols: usize, rows: usize
     try self.display_size.set(cols, rows);
 }
 
-fn moveCursor(self: *EditorController, k: dew.models.Arrow) !void {
+fn moveCursor(self: *EditorController, k: models.Arrow) !void {
     switch (k) {
         .up => {
             const y = self.getCurrentView().getCursor().y;
@@ -169,10 +170,10 @@ fn insertChar(self: *EditorController, char: u21) !void {
     self.getCurrentView().updateLastCursorX();
 }
 
-fn getCurrentView(self: *const EditorController) *dew.view.BufferView {
+fn getCurrentView(self: *const EditorController) *view.BufferView {
     return switch (self.buffer_selector.current_buffer.mode) {
-        dew.models.Buffer.Mode.file => self.file_buffer_view,
-        dew.models.Buffer.Mode.command => self.command_buffer_view,
+        models.Buffer.Mode.file => self.file_buffer_view,
+        models.Buffer.Mode.command => self.command_buffer_view,
     };
 }
 

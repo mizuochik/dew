@@ -1,5 +1,5 @@
 const std = @import("std");
-const dew = @import("../dew.zig");
+const c = @import("c.zig");
 
 const darwin_ECHO: std.os.tcflag_t = 0x8;
 const darwin_ICANON: std.os.tcflag_t = 0x100;
@@ -40,8 +40,8 @@ pub const WindowSize = struct {
 };
 
 pub fn getWindowSize(_: *const Terminal) !WindowSize {
-    var ws: dew.c.winsize = undefined;
-    const status = dew.c.ioctl(std.io.getStdOut().handle, dew.c.TIOCGWINSZ, &ws);
+    var ws: c.winsize = undefined;
+    const status = c.ioctl(std.io.getStdOut().handle, c.TIOCGWINSZ, &ws);
     if (status != 0) {
         return error.UnknownWinsize;
     }

@@ -1,5 +1,5 @@
 const std = @import("std");
-const dew = @import("dew.zig");
+const Editor = @import("Editor.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{
@@ -13,7 +13,7 @@ pub fn main() !void {
     }
     const path: []const u8 = std.mem.span(std.os.argv[1]);
 
-    var editor = try dew.Editor.init(gpa.allocator());
+    var editor = try Editor.init(gpa.allocator());
     defer editor.deinit();
 
     try editor.terminal.enableRawMode();
@@ -39,5 +39,5 @@ pub fn main() !void {
 }
 
 test {
-    _ = dew;
+    _ = Editor;
 }
