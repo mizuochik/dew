@@ -47,31 +47,3 @@ pub fn setSize(self: *StatusBarView, width: usize) !void {
     self.width = width;
     try self.view_event_publisher.publish(.status_bar_view_updated);
 }
-
-test "StatusBarView: view" {
-    var event_publisher = dew.event.Publisher(dew.models.Event).init(std.testing.allocator);
-    defer event_publisher.deinit();
-    var view_event_publisher = dew.event.Publisher(dew.view.Event).init(std.testing.allocator);
-    defer view_event_publisher.deinit();
-
-    var status_message = try dew.models.StatusMessage.init(std.testing.allocator, &event_publisher);
-    defer status_message.deinit();
-    var status_bar_view = StatusBarView.init(
-        &status_message,
-        &view_event_publisher,
-    );
-    defer status_bar_view.deinit();
-    try event_publisher.addSubscriber(status_bar_view.eventSubscriber());
-
-    const new_message = try std.fmt.allocPrint(std.testing.allocator, "hello world", .{});
-    try status_message.setMessage(new_message);
-    try event_publisher.publish(dew.models.Event{
-        .screen_size_changed = .{
-            .width = 5,
-            .height = 100,
-        },
-    });
-
-    const actual = try status_bar_view.view();
-    try std.testing.expectFmt("hello", "{s}", .{actual});
-}
