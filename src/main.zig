@@ -39,5 +39,13 @@ pub fn main() !void {
 }
 
 test {
-    _ = Editor;
+    _ = @import("Editor.zig");
+    _ = @import("Display.zig");
+    _ = @import("Terminal.zig");
+    _ = @import("event.zig");
+    _ = @import("keyboard.zig");
+    _ = @import("view.zig");
+    _ = @import("controllers.zig");
+    _ = @import("models.zig");
+    _ = @import("tests.zig");
 }

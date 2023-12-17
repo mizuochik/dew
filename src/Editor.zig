@@ -188,13 +188,3 @@ pub fn deinit(self: *const Editor) void {
     self.model_event_publisher.deinit();
     self.allocator.destroy(self.model_event_publisher);
 }
-
-test {
-    _ = event;
-    _ = models;
-    _ = view;
-    _ = controllers;
-    _ = Keyboard;
-    _ = Terminal;
-    _ = Display;
-}
