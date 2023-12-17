@@ -47,5 +47,5 @@ test {
     _ = @import("view.zig");
     _ = @import("controllers.zig");
     _ = @import("models.zig");
-    _ = @import("tests.zig");
+    _ = @import("e2e.zig");
 }
