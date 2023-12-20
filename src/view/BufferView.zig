@@ -105,8 +105,9 @@ pub fn getBufferPopsition(self: *const BufferView, view_position: models.Positio
     const buffer_row = self.buffer.rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
     const buf_x = for (row_slice.buf_x_start..row_slice.buf_x_end) |bx| {
-        const view_x = buffer_row.width_index.items[bx] - start_width;
-        if (view_x >= view_position.x) {
+        const view_x_left = buffer_row.width_index.items[bx] - start_width;
+        const view_x_right = buffer_row.width_index.items[bx + 1] - start_width;
+        if (view_x_left <= view_position.x and view_position.x + 1 <= view_x_right) {
             break bx;
         }
     } else row_slice.buf_x_end;
