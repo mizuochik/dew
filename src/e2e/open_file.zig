@@ -20,3 +20,22 @@ test "show the opened file" {
     defer area.deinit();
     try std.testing.expectEqualStrings("Hello World", area.rows[0]);
 }
+
+test "open file via command" {
+    var editor = try Editor.init(std.testing.allocator);
+    defer editor.deinit();
+    try editor.controller.changeDisplaySize(100, 100);
+
+    try editor.controller.processKeypress(.{ .ctrl = 'X' });
+    for ("open-file src/e2e/hello-world.txt") |c| {
+        try editor.controller.processKeypress(.{ .plain = c });
+    }
+    const footer_area = try editor.display.getArea(99, 100, 0, 40);
+    defer footer_area.deinit();
+    try std.testing.expectEqualStrings("open-file src/e2e/hello-world.txt       ", footer_area.rows[0]);
+
+    try editor.controller.processKeypress(.{ .ctrl = 'M' });
+    const top_area = try editor.display.getArea(0, 99, 0, 20);
+    defer top_area.deinit();
+    try std.testing.expectEqualStrings("Hello World         ", top_area.rows[0]);
+}
