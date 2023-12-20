@@ -126,20 +126,19 @@ pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
 
 pub fn normalizeScroll(self: *BufferView) void {
     const cursor = self.getCursor();
-    const edge_height = self.height / 16;
-    const upper_limit = self.y_scroll + edge_height;
-    const bottom_limit = self.y_scroll + self.height - edge_height;
+    const upper_limit = self.y_scroll;
+    const bottom_limit = self.y_scroll + self.height;
     if (cursor.y < upper_limit) {
-        self.y_scroll = if (cursor.y > edge_height) cursor.y - edge_height else 0;
+        self.y_scroll = cursor.y;
     }
     if (cursor.y >= bottom_limit) {
-        self.y_scroll = cursor.y + edge_height - self.height;
+        self.y_scroll = cursor.y - self.height + 1;
     }
 }
 
 pub fn getNormalizedCursor(self: *BufferView) models.Position {
-    const upper_limit = self.y_scroll + self.height / 16;
-    const bottom_limit = self.y_scroll + self.height * 15 / 16;
+    const upper_limit = self.y_scroll;
+    const bottom_limit = self.y_scroll + self.height;
     const cursor = self.getCursor();
     if (cursor.y < upper_limit) {
         return .{ .x = cursor.x, .y = upper_limit };
@@ -234,7 +233,7 @@ pub fn scrollUp(self: *BufferView, diff: usize) void {
 }
 
 pub fn scrollDown(self: *BufferView, diff: usize) void {
-    const max_scroll = self.rows.items.len - self.height / 16 - 1;
+    const max_scroll = self.rows.items.len - self.height;
     if (self.y_scroll + diff > max_scroll)
         self.y_scroll = max_scroll
     else

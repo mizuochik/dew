@@ -83,7 +83,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
                 try self.buffer_selector.toggleCommandBuffer();
             },
             'V' => {
-                self.getCurrentView().scrollDown(self.getCurrentView().height * 15 / 16);
+                self.getCurrentView().scrollDown(self.getCurrentView().height);
                 const pos = self.getCurrentView().getNormalizedCursor();
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
@@ -93,7 +93,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
         },
         .meta => |k| switch (k) {
             'v' => {
-                self.getCurrentView().scrollUp(self.getCurrentView().height * 15 / 16);
+                self.getCurrentView().scrollUp(self.getCurrentView().height);
                 const pos = self.getCurrentView().getNormalizedCursor();
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
                     try cursor.setPosition(pos);
