@@ -84,9 +84,9 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             },
             'V' => {
                 self.getCurrentView().scrollDown(self.getCurrentView().height);
-                const pos = self.getCurrentView().getNormalizedCursor();
+                const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
-                    try cursor.setPosition(pos);
+                    try cursor.setPosition(buf_pos);
                 }
             },
             else => {},
@@ -94,9 +94,9 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
         .meta => |k| switch (k) {
             'v' => {
                 self.getCurrentView().scrollUp(self.getCurrentView().height);
-                const pos = self.getCurrentView().getNormalizedCursor();
+                const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
                 for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
-                    try cursor.setPosition(pos);
+                    try cursor.setPosition(buf_pos);
                 }
             },
             else => {},
