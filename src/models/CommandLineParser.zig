@@ -2,6 +2,7 @@ const std = @import("std");
 const BufferSelector = @import("BufferSelector.zig");
 const StatusMessage = @import("StatusMessage.zig");
 const Command = @import("Command.zig");
+const commands = @import("commands.zig");
 
 allocator: std.mem.Allocator,
 input: [][]const u8,
@@ -109,7 +110,7 @@ fn parseCommand(self: *CommandLineParser) !Command {
         try command_name_al.appendSlice(letter);
     } else |_| {}
     if (std.mem.eql(u8, "open-file", command_name_al.items)) {
-        const command = try Command.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
+        const command = try commands.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
         errdefer command.deinit();
         return command;
     }
