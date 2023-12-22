@@ -6,9 +6,10 @@ const Buffer = @import("Buffer.zig");
 const BufferSelector = @This();
 
 allocator: std.mem.Allocator,
-file_buffer: *Buffer,
 command_buffer: *Buffer,
-current_buffer: *Buffer,
+is_command_buffer_active: bool,
+current_file_buffer: []const u8,
+file_buffers: std.StringHashMap(*Buffer),
 event_publisher: *const event.Publisher(models.Event),
 
 pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event)) !BufferSelector {
@@ -24,32 +25,51 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
     errdefer command_buffer.deinit();
     try command_buffer.addCursor();
 
+    var file_buffers = std.StringHashMap(*Buffer).init(allocator);
+    errdefer file_buffers.deinit();
+    try file_buffers.put("default", file_buffer);
+
     return .{
         .allocator = allocator,
-        .file_buffer = file_buffer,
         .command_buffer = command_buffer,
+        .current_file_buffer = "default",
+        .is_command_buffer_active = false,
+        .file_buffers = file_buffers,
         .event_publisher = event_publisher,
-        .current_buffer = file_buffer,
     };
 }
 
-pub fn deinit(self: *const BufferSelector) void {
-    self.file_buffer.deinit();
-    self.allocator.destroy(self.file_buffer);
+pub fn deinit(self: *BufferSelector) void {
     self.command_buffer.deinit();
     self.allocator.destroy(self.command_buffer);
+    var it = self.file_buffers.valueIterator();
+    while (it.next()) |buf| {
+        buf.*.deinit();
+        self.allocator.destroy(buf.*);
+    }
+    self.file_buffers.deinit();
 }
 
 pub fn toggleCommandBuffer(self: *BufferSelector) !void {
-    const is_active = self.current_buffer == self.command_buffer;
-    if (is_active) {
+    if (self.is_command_buffer_active) {
         try self.command_buffer.clear();
-        self.current_buffer = self.file_buffer;
+        self.is_command_buffer_active = false;
         try self.event_publisher.publish(.command_buffer_closed);
     } else {
-        self.current_buffer = self.command_buffer;
+        self.is_command_buffer_active = true;
         try self.event_publisher.publish(.command_buffer_opened);
     }
+}
+
+pub fn getFileBuffer(self: *const BufferSelector) *Buffer {
+    return self.file_buffers.get(self.current_file_buffer).?;
+}
+
+pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
+    if (self.is_command_buffer_active) {
+        return self.command_buffer;
+    }
+    return self.getFileBuffer();
 }
 
 test {

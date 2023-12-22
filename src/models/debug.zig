@@ -20,12 +20,12 @@ pub const Handler = struct {
         const self: *Handler = @ptrCast(@alignCast(ptr));
         var cursor_positions = std.ArrayList(models.Position).init(self.allocator);
         defer cursor_positions.deinit();
-        for (self.buffer_selector.current_buffer.cursors.items) |*cursor| {
+        for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
             try cursor_positions.append(cursor.getPosition());
         }
         std.log.debug("event = {}, mode = {}, cursor_positions = {any}", .{
             event_,
-            self.buffer_selector.current_buffer.mode,
+            self.buffer_selector.getCurrentBuffer().mode,
             cursor_positions.items,
         });
     }

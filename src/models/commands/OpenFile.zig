@@ -41,7 +41,7 @@ fn run(ptr: *anyopaque, allocator: std.mem.Allocator, arguments: [][]const u8) a
         return;
     }
     const file_path = arguments[0];
-    self.buffer_selector.file_buffer.openFile(file_path) catch |err| {
+    self.buffer_selector.getFileBuffer().openFile(file_path) catch |err| {
         switch (err) {
             error.FileNotFound => {
                 const message = try std.fmt.allocPrint(allocator, "file not found: {s}", .{file_path});
