@@ -12,9 +12,7 @@ const Editor = @This();
 allocator: std.mem.Allocator,
 model_event_publisher: *event.Publisher(models.Event),
 view_event_publisher: *event.Publisher(view.Event),
-buffer: *models.Buffer,
 buffer_view: *view.BufferView,
-command_buffer: *models.Buffer,
 command_buffer_view: *view.BufferView,
 buffer_selector: *models.BufferSelector,
 debug_handler: *models.debug.Handler,
@@ -38,34 +36,22 @@ pub fn init(allocator: std.mem.Allocator) !Editor {
     view_event_publisher.* = event.Publisher(view.Event).init(allocator);
     errdefer view_event_publisher.deinit();
 
-    const buffer = try allocator.create(models.Buffer);
-    errdefer allocator.destroy(buffer);
-    buffer.* = try models.Buffer.init(allocator, model_event_publisher, .file);
-    errdefer buffer.deinit();
-    try buffer.addCursor();
+    const buffer_selector = try allocator.create(models.BufferSelector);
+    errdefer allocator.destroy(buffer_selector);
+    buffer_selector.* = try models.BufferSelector.init(allocator, model_event_publisher);
+    errdefer buffer_selector.deinit();
 
     const buffer_view = try allocator.create(view.BufferView);
     errdefer allocator.destroy(buffer_view);
-    buffer_view.* = view.BufferView.init(allocator, buffer, view_event_publisher);
+    buffer_view.* = view.BufferView.init(allocator, buffer_selector.file_buffer, view_event_publisher);
     errdefer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
-    const command_buffer = try allocator.create(models.Buffer);
-    errdefer allocator.destroy(command_buffer);
-    command_buffer.* = try models.Buffer.init(allocator, model_event_publisher, .command);
-    errdefer command_buffer.deinit();
-    try command_buffer.addCursor();
-
     const command_buffer_view = try allocator.create(view.BufferView);
     errdefer allocator.destroy(command_buffer_view);
-    command_buffer_view.* = view.BufferView.init(allocator, command_buffer, view_event_publisher);
+    command_buffer_view.* = view.BufferView.init(allocator, buffer_selector.command_buffer, view_event_publisher);
     errdefer command_buffer_view.deinit();
     try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
-
-    const buffer_selector = try allocator.create(models.BufferSelector);
-    errdefer allocator.destroy(buffer_selector);
-    buffer_selector.* = models.BufferSelector.init(buffer, command_buffer, model_event_publisher);
-    errdefer buffer_selector.deinit();
 
     const debug_handler = try allocator.create(models.debug.Handler);
     errdefer allocator.destroy(debug_handler);
@@ -129,9 +115,7 @@ pub fn init(allocator: std.mem.Allocator) !Editor {
         .allocator = allocator,
         .model_event_publisher = model_event_publisher,
         .view_event_publisher = view_event_publisher,
-        .buffer = buffer,
         .buffer_view = buffer_view,
-        .command_buffer = command_buffer,
         .command_buffer_view = command_buffer_view,
         .buffer_selector = buffer_selector,
         .debug_handler = debug_handler,
@@ -147,17 +131,11 @@ pub fn init(allocator: std.mem.Allocator) !Editor {
 }
 
 pub fn deinit(self: *const Editor) void {
-    self.buffer.deinit();
-    self.allocator.destroy(self.buffer);
-
     self.buffer_view.deinit();
     self.allocator.destroy(self.buffer_view);
 
     self.command_buffer_view.deinit();
     self.allocator.destroy(self.command_buffer_view);
-
-    self.command_buffer.deinit();
-    self.allocator.destroy(self.command_buffer);
 
     self.buffer_selector.deinit();
     self.allocator.destroy(self.buffer_selector);
