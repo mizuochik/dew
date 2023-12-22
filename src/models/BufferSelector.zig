@@ -23,6 +23,7 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
     command_buffer.* = try Buffer.init(allocator, event_publisher, .command);
     errdefer command_buffer.deinit();
     try command_buffer.addCursor();
+
     return .{
         .allocator = allocator,
         .file_buffer = file_buffer,
