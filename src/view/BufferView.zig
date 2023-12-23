@@ -16,25 +16,27 @@ const empty: []const u8 = b: {
     break :b &s;
 };
 
-buffer: *models.Buffer,
+buffer_selector: *models.BufferSelector,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 view_event_publisher: *const event.Publisher(view.Event),
 is_active: bool,
 last_cursor_x: usize = 0,
+mode: models.Buffer.Mode,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, buffer: *models.Buffer, vevents: *const event.Publisher(view.Event)) BufferView {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *models.BufferSelector, mode: models.Buffer.Mode, vevents: *const event.Publisher(view.Event)) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
-        .buffer = buffer,
+        .buffer_selector = buffer_selector,
         .rows = rows,
         .width = 0,
         .height = 0,
         .view_event_publisher = vevents,
-        .is_active = buffer.mode != models.Buffer.Mode.command,
+        .is_active = mode != models.Buffer.Mode.command,
+        .mode = mode,
         .allocator = allocator,
     };
 }
@@ -44,12 +46,12 @@ pub fn deinit(self: *const BufferView) void {
 }
 
 pub fn viewRow(self: *const BufferView, y: usize) []const u8 {
-    const y_offset = y + self.buffer.y_scroll;
+    const y_offset = y + self.getBuffer().y_scroll;
     if (y_offset >= self.rows.items.len) {
         return empty;
     }
     const row = self.rows.items[y_offset];
-    return self.buffer.rows.items[row.buf_y].sliceAsRaw(row.buf_x_start, row.buf_x_end);
+    return self.getBuffer().rows.items[row.buf_y].sliceAsRaw(row.buf_x_start, row.buf_x_end);
 }
 
 pub fn viewCursor(self: *const BufferView) ?models.Position {
@@ -57,7 +59,7 @@ pub fn viewCursor(self: *const BufferView) ?models.Position {
         return null;
     }
     const cursor = self.getCursor();
-    const y_offset = if (cursor.y >= self.buffer.y_scroll) cursor.y - self.buffer.y_scroll else return null;
+    const y_offset = if (cursor.y >= self.getBuffer().y_scroll) cursor.y - self.getBuffer().y_scroll else return null;
     if (y_offset >= self.height) {
         return null;
     }
@@ -68,8 +70,8 @@ pub fn viewCursor(self: *const BufferView) ?models.Position {
 }
 
 pub fn getCursor(self: *const BufferView) models.Position {
-    const c_y = self.buffer.cursors.items[0].y;
-    const c_x = self.buffer.cursors.items[0].x;
+    const c_y = self.getBuffer().cursors.items[0].y;
+    const c_x = self.getBuffer().cursors.items[0].x;
     if (self.rows.items.len <= 0) {
         return .{
             .x = 0,
@@ -85,7 +87,7 @@ pub fn getCursor(self: *const BufferView) models.Position {
     const row_slice = self.rows.items[y];
     const x = for (row_slice.buf_x_start..row_slice.buf_x_end + 1) |i| {
         if (i == c_x) {
-            const buf_row = self.buffer.rows.items[row_slice.buf_y];
+            const buf_row = self.getBuffer().rows.items[row_slice.buf_y];
             break buf_row.width_index.items[i] - buf_row.width_index.items[row_slice.buf_x_start];
         }
     } else 0;
@@ -101,7 +103,7 @@ pub fn getNumberOfLines(self: *const BufferView) usize {
 
 pub fn getBufferPopsition(self: *const BufferView, view_position: models.Position) models.Position {
     const row_slice = self.rows.items[view_position.y];
-    const buffer_row = self.buffer.rows.items[row_slice.buf_y];
+    const buffer_row = self.getBuffer().rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
     const buf_x = for (row_slice.buf_x_start..row_slice.buf_x_end) |bx| {
         const view_x_left = buffer_row.width_index.items[bx] - start_width;
@@ -117,7 +119,7 @@ pub fn getBufferPopsition(self: *const BufferView, view_position: models.Positio
 }
 
 pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
-    self.buffer.y_scroll = if (self.rows.items.len < y_scroll)
+    self.getBuffer().y_scroll = if (self.rows.items.len < y_scroll)
         self.rows.items.len
     else
         y_scroll;
@@ -125,19 +127,19 @@ pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
 
 pub fn normalizeScroll(self: *BufferView) void {
     const cursor = self.getCursor();
-    const upper_limit = self.buffer.y_scroll;
-    const bottom_limit = self.buffer.y_scroll + self.height;
+    const upper_limit = self.getBuffer().y_scroll;
+    const bottom_limit = self.getBuffer().y_scroll + self.height;
     if (cursor.y < upper_limit) {
-        self.buffer.y_scroll = cursor.y;
+        self.getBuffer().y_scroll = cursor.y;
     }
     if (cursor.y >= bottom_limit) {
-        self.buffer.y_scroll = cursor.y - self.height + 1;
+        self.getBuffer().y_scroll = cursor.y - self.height + 1;
     }
 }
 
 pub fn getNormalizedCursor(self: *BufferView) models.Position {
-    const upper_limit = self.buffer.y_scroll;
-    const bottom_limit = self.buffer.y_scroll + self.height;
+    const upper_limit = self.getBuffer().y_scroll;
+    const bottom_limit = self.getBuffer().y_scroll + self.height;
     const cursor = self.getCursor();
     if (cursor.y < upper_limit) {
         return .{ .x = cursor.x, .y = upper_limit };
@@ -166,13 +168,13 @@ fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
     switch (event_) {
         .cursor_moved => {
             self.normalizeScroll();
-            try self.view_event_publisher.publish(switch (self.buffer.mode) {
+            try self.view_event_publisher.publish(switch (self.mode) {
                 .file => .buffer_view_updated,
                 .command => .command_buffer_view_updated,
             });
         },
         .file_buffer_changed => {
-            switch (self.buffer.mode) {
+            switch (self.mode) {
                 .file => {
                     try self.update();
                     try self.view_event_publisher.publish(.buffer_view_updated);
@@ -182,21 +184,28 @@ fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
         },
         .buffer_updated => |_| {
             try self.update();
-            try self.view_event_publisher.publish(switch (self.buffer.mode) {
+            try self.view_event_publisher.publish(switch (self.mode) {
                 .file => .buffer_view_updated,
                 .command => .command_buffer_view_updated,
             });
         },
         .command_buffer_opened => {
-            self.is_active = self.buffer.mode == models.Buffer.Mode.command;
+            self.is_active = self.mode == models.Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         .command_buffer_closed => {
-            self.is_active = self.buffer.mode != models.Buffer.Mode.command;
+            self.is_active = self.mode != models.Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},
     }
+}
+
+fn getBuffer(self: *const BufferView) *models.Buffer {
+    return switch (self.mode) {
+        .file => self.buffer_selector.getCurrentFileBuffer(),
+        .command => self.buffer_selector.command_buffer,
+    };
 }
 
 pub fn setSize(self: *BufferView, width: usize, height: usize) !void {
@@ -209,7 +218,7 @@ pub fn setSize(self: *BufferView, width: usize, height: usize) !void {
 fn update(self: *BufferView) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
-    for (self.buffer.rows.items, 0..) |row, y| {
+    for (self.getBuffer().rows.items, 0..) |row, y| {
         var x_start: usize = 0;
         for (0..row.getLen()) |x| {
             if (row.width_index.items[x + 1] - row.width_index.items[x_start] > self.width) {
@@ -234,16 +243,16 @@ fn update(self: *BufferView) !void {
 }
 
 pub fn scrollUp(self: *BufferView, diff: usize) void {
-    if (self.buffer.y_scroll < diff)
-        self.buffer.y_scroll = 0
+    if (self.getBuffer().y_scroll < diff)
+        self.getBuffer().y_scroll = 0
     else
-        self.buffer.y_scroll -= diff;
+        self.getBuffer().y_scroll -= diff;
 }
 
 pub fn scrollDown(self: *BufferView, diff: usize) void {
     const max_scroll = self.rows.items.len - self.height;
-    if (self.buffer.y_scroll + diff > max_scroll)
-        self.buffer.y_scroll = max_scroll
+    if (self.getBuffer().y_scroll + diff > max_scroll)
+        self.getBuffer().y_scroll = max_scroll
     else
-        self.buffer.y_scroll += diff;
+        self.getBuffer().y_scroll += diff;
 }

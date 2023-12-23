@@ -33,6 +33,7 @@ pub const Event = union(enum) {
         to: Position,
     },
     status_message_updated,
+    file_buffer_changed,
     command_buffer_opened,
     command_buffer_closed,
     command_executed: UnicodeString,

@@ -43,13 +43,13 @@ pub fn init(allocator: std.mem.Allocator) !Editor {
 
     const buffer_view = try allocator.create(view.BufferView);
     errdefer allocator.destroy(buffer_view);
-    buffer_view.* = view.BufferView.init(allocator, buffer_selector.getCurrentFileBuffer(), view_event_publisher);
+    buffer_view.* = view.BufferView.init(allocator, buffer_selector, .file, view_event_publisher);
     errdefer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
     const command_buffer_view = try allocator.create(view.BufferView);
     errdefer allocator.destroy(command_buffer_view);
-    command_buffer_view.* = view.BufferView.init(allocator, buffer_selector.command_buffer, view_event_publisher);
+    command_buffer_view.* = view.BufferView.init(allocator, buffer_selector, .command, view_event_publisher);
     errdefer command_buffer_view.deinit();
     try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
 
