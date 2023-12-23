@@ -61,7 +61,7 @@ pub fn toggleCommandBuffer(self: *BufferSelector) !void {
     }
 }
 
-pub fn getFileBuffer(self: *const BufferSelector) *Buffer {
+pub fn getCurrentFileBuffer(self: *const BufferSelector) *Buffer {
     return self.file_buffers.get(self.current_file_buffer).?;
 }
 
@@ -69,7 +69,7 @@ pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
     if (self.is_command_buffer_active) {
         return self.command_buffer;
     }
-    return self.getFileBuffer();
+    return self.getCurrentFileBuffer();
 }
 
 test {

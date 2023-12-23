@@ -6,7 +6,7 @@ test "scroll down/up" {
     const editor = try Editor.init(std.testing.allocator);
     defer editor.deinit();
     try editor.controller.changeDisplaySize(10, 11); // 11 lines = 10 lines (file content) + one line (status bar)
-    try editor.buffer_selector.getFileBuffer().openFile("src/e2e/line-numbers.txt");
+    try editor.buffer_selector.getCurrentFileBuffer().openFile("src/e2e/line-numbers.txt");
 
     try editor.controller.processKeypress(.{ .ctrl = 'V' });
     try std.testing.expectEqualStrings("11", editor.display.buffer[0][0..2]);
