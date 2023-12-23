@@ -10,7 +10,7 @@ command_buffer: *Buffer,
 is_command_buffer_active: bool,
 current_file_buffer: []const u8,
 file_buffers: std.StringHashMap(*Buffer),
-event_publisher: *const event.Publisher(models.Event),
+event_publisher: *event.Publisher(models.Event),
 
 pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event)) !BufferSelector {
     var file_buffer = try allocator.create(Buffer);
@@ -27,12 +27,15 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
 
     var file_buffers = std.StringHashMap(*Buffer).init(allocator);
     errdefer file_buffers.deinit();
-    try file_buffers.put("default", file_buffer);
+
+    const default_key = try std.fmt.allocPrint(allocator, "default", .{});
+    errdefer allocator.free(default_key);
+    try file_buffers.put(default_key, file_buffer);
 
     return .{
         .allocator = allocator,
         .command_buffer = command_buffer,
-        .current_file_buffer = "default",
+        .current_file_buffer = default_key,
         .is_command_buffer_active = false,
         .file_buffers = file_buffers,
         .event_publisher = event_publisher,
@@ -42,10 +45,11 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
 pub fn deinit(self: *BufferSelector) void {
     self.command_buffer.deinit();
     self.allocator.destroy(self.command_buffer);
-    var it = self.file_buffers.valueIterator();
-    while (it.next()) |buf| {
-        buf.*.deinit();
-        self.allocator.destroy(buf.*);
+    var it = self.file_buffers.iterator();
+    while (it.next()) |entry| {
+        self.allocator.free(entry.key_ptr.*);
+        entry.value_ptr.*.deinit();
+        self.allocator.destroy(entry.value_ptr.*);
     }
     self.file_buffers.deinit();
 }
