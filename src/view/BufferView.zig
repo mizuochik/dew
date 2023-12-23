@@ -16,17 +16,16 @@ const empty: []const u8 = b: {
     break :b &s;
 };
 
-buffer: *const models.Buffer,
+buffer: *models.Buffer,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
-y_scroll: usize = 0,
 view_event_publisher: *const event.Publisher(view.Event),
 is_active: bool,
 last_cursor_x: usize = 0,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, buffer: *const models.Buffer, vevents: *const event.Publisher(view.Event)) BufferView {
+pub fn init(allocator: std.mem.Allocator, buffer: *models.Buffer, vevents: *const event.Publisher(view.Event)) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -45,7 +44,7 @@ pub fn deinit(self: *const BufferView) void {
 }
 
 pub fn viewRow(self: *const BufferView, y: usize) []const u8 {
-    const y_offset = y + self.y_scroll;
+    const y_offset = y + self.buffer.y_scroll;
     if (y_offset >= self.rows.items.len) {
         return empty;
     }
@@ -58,7 +57,7 @@ pub fn viewCursor(self: *const BufferView) ?models.Position {
         return null;
     }
     const cursor = self.getCursor();
-    const y_offset = if (cursor.y >= self.y_scroll) cursor.y - self.y_scroll else return null;
+    const y_offset = if (cursor.y >= self.buffer.y_scroll) cursor.y - self.buffer.y_scroll else return null;
     if (y_offset >= self.height) {
         return null;
     }
@@ -118,7 +117,7 @@ pub fn getBufferPopsition(self: *const BufferView, view_position: models.Positio
 }
 
 pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
-    self.y_scroll = if (self.rows.items.len < y_scroll)
+    self.buffer.y_scroll = if (self.rows.items.len < y_scroll)
         self.rows.items.len
     else
         y_scroll;
@@ -126,19 +125,19 @@ pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
 
 pub fn normalizeScroll(self: *BufferView) void {
     const cursor = self.getCursor();
-    const upper_limit = self.y_scroll;
-    const bottom_limit = self.y_scroll + self.height;
+    const upper_limit = self.buffer.y_scroll;
+    const bottom_limit = self.buffer.y_scroll + self.height;
     if (cursor.y < upper_limit) {
-        self.y_scroll = cursor.y;
+        self.buffer.y_scroll = cursor.y;
     }
     if (cursor.y >= bottom_limit) {
-        self.y_scroll = cursor.y - self.height + 1;
+        self.buffer.y_scroll = cursor.y - self.height + 1;
     }
 }
 
 pub fn getNormalizedCursor(self: *BufferView) models.Position {
-    const upper_limit = self.y_scroll;
-    const bottom_limit = self.y_scroll + self.height;
+    const upper_limit = self.buffer.y_scroll;
+    const bottom_limit = self.buffer.y_scroll + self.height;
     const cursor = self.getCursor();
     if (cursor.y < upper_limit) {
         return .{ .x = cursor.x, .y = upper_limit };
@@ -171,6 +170,15 @@ fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
                 .file => .buffer_view_updated,
                 .command => .command_buffer_view_updated,
             });
+        },
+        .file_buffer_changed => {
+            switch (self.buffer.mode) {
+                .file => {
+                    try self.update();
+                    try self.view_event_publisher.publish(.buffer_view_updated);
+                },
+                else => {},
+            }
         },
         .buffer_updated => |_| {
             try self.update();
@@ -226,16 +234,16 @@ fn update(self: *BufferView) !void {
 }
 
 pub fn scrollUp(self: *BufferView, diff: usize) void {
-    if (self.y_scroll < diff)
-        self.y_scroll = 0
+    if (self.buffer.y_scroll < diff)
+        self.buffer.y_scroll = 0
     else
-        self.y_scroll -= diff;
+        self.buffer.y_scroll -= diff;
 }
 
 pub fn scrollDown(self: *BufferView, diff: usize) void {
     const max_scroll = self.rows.items.len - self.height;
-    if (self.y_scroll + diff > max_scroll)
-        self.y_scroll = max_scroll
+    if (self.buffer.y_scroll + diff > max_scroll)
+        self.buffer.y_scroll = max_scroll
     else
-        self.y_scroll += diff;
+        self.buffer.y_scroll += diff;
 }

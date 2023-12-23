@@ -16,6 +16,7 @@ c_y: usize = 0,
 event_publisher: *event.Publisher(models.Event),
 mode: Mode,
 cursors: std.ArrayList(models.Cursor),
+y_scroll: usize,
 allocator: std.mem.Allocator,
 
 pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event), mode: Mode) !Buffer {
@@ -32,6 +33,7 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
         .event_publisher = event_publisher,
         .mode = mode,
         .cursors = std.ArrayList(models.Cursor).init(allocator),
+        .y_scroll = 0,
         .allocator = allocator,
     };
 }
