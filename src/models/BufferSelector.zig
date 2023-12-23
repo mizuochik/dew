@@ -76,6 +76,21 @@ pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
     return self.getCurrentFileBuffer();
 }
 
+pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
+    if (self.file_buffers.getKey(name)) |name_| {
+        self.allocator.free(name);
+        self.current_file_buffer = name_;
+    }
+    var buffer = try self.allocator.create(Buffer);
+    errdefer self.allocator.destroy(buffer);
+    buffer.* = try Buffer.init(self.allocator, self.event_publisher, .file);
+    errdefer buffer.deinit();
+    try buffer.addCursor();
+    try self.file_buffers.put(name, buffer);
+    self.current_file_buffer = name;
+    try self.event_publisher.publish(.file_buffer_changed);
+}
+
 test {
     std.testing.refAllDecls(@This());
 }
