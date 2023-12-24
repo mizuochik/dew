@@ -1,4 +1,5 @@
 const std = @import("std");
+const clap = @import("clap");
 const Editor = @import("Editor.zig");
 
 pub fn main() !void {
@@ -7,13 +8,24 @@ pub fn main() !void {
     }){};
     defer std.debug.assert(gpa.deinit() == .ok);
 
-    if (std.os.argv.len < 2) {
-        try std.io.getStdErr().writer().print("Specify file\n", .{});
-        std.os.exit(1);
-    }
-    const path: []const u8 = std.mem.span(std.os.argv[1]);
+    var diagnostic = clap.Diagnostic{};
+    const params = comptime clap.parseParamsComptime(
+        \\--debug Enable debug mode
+        \\<str>
+        \\
+    );
+    const res = clap.parse(clap.Help, &params, clap.parsers.default, .{
+        .allocator = gpa.allocator(),
+        .diagnostic = &diagnostic,
+    }) catch |err| {
+        try diagnostic.report(std.io.getStdErr().writer(), err);
+        return;
+    };
+    defer res.deinit();
 
-    var editor = try Editor.init(gpa.allocator());
+    var editor = try Editor.init(gpa.allocator(), .{
+        .is_debug = res.args.debug > 0,
+    });
     defer editor.deinit();
 
     try editor.terminal.enableRawMode();
@@ -21,7 +33,7 @@ pub fn main() !void {
 
     const win_size = try editor.terminal.getWindowSize();
     try editor.controller.changeDisplaySize(win_size.cols, win_size.rows);
-    try editor.controller.openFile(path);
+    try editor.controller.openFile(res.positionals[0]);
 
     {
         const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});
