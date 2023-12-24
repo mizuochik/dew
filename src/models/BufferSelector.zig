@@ -80,6 +80,7 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     if (self.file_buffers.getKey(name)) |name_| {
         self.allocator.free(name);
         self.current_file_buffer = name_;
+        try self.event_publisher.publish(.file_buffer_changed);
     }
     var buffer = try self.allocator.create(Buffer);
     errdefer self.allocator.destroy(buffer);
