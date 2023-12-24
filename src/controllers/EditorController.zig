@@ -178,7 +178,7 @@ fn getCurrentView(self: *const EditorController) *view.BufferView {
 }
 
 pub fn openFile(self: *EditorController, path: []const u8) !void {
-    try self.buffer_selector.getCurrentBuffer().openFile(path);
+    try self.buffer_selector.openFileBuffer(path);
     const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);
     try self.status_message.setMessage(new_message);
