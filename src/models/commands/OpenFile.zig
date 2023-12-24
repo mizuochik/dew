@@ -1,4 +1,5 @@
 const std = @import("std");
+const Buffer = @import("../Buffer.zig");
 const BufferSelector = @import("../BufferSelector.zig");
 const StatusMessage = @import("../StatusMessage.zig");
 const Command = @import("../Command.zig");
@@ -41,14 +42,5 @@ fn run(ptr: *anyopaque, allocator: std.mem.Allocator, arguments: [][]const u8) a
         return;
     }
     const file_path = arguments[0];
-    self.buffer_selector.getCurrentFileBuffer().openFile(file_path) catch |err| {
-        switch (err) {
-            error.FileNotFound => {
-                const message = try std.fmt.allocPrint(allocator, "file not found: {s}", .{file_path});
-                errdefer allocator.free(message);
-                try self.status_message.setMessage(message);
-            },
-            else => return err,
-        }
-    };
+    try self.buffer_selector.openFileBuffer(file_path);
 }

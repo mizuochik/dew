@@ -139,11 +139,11 @@ pub fn notifyUpdate(self: *Buffer) !void {
 }
 
 pub fn openFile(self: *Buffer, path: []const u8) !void {
-    try self.resetCursors();
-
     var f = try std.fs.cwd().openFile(path, .{});
     defer f.close();
     var reader = f.reader();
+
+    try self.resetCursors();
 
     var new_rows = std.ArrayList(models.UnicodeString).init(self.allocator);
     errdefer {

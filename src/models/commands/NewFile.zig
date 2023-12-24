@@ -41,6 +41,6 @@ fn run(ptr: *anyopaque, allocator: std.mem.Allocator, arguments: [][]const u8) a
         return;
     }
     const untitled_name = try std.fmt.allocPrint(self.allocator, "Untitled", .{});
-    errdefer self.allocator.free(untitled_name);
+    defer self.allocator.free(untitled_name);
     try self.buffer_selector.openFileBuffer(untitled_name);
 }

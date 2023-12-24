@@ -76,19 +76,36 @@ pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
     return self.getCurrentFileBuffer();
 }
 
+pub fn openFileBuffer_(self: *BufferSelector, name: []const u8) !void {
+    const entry = self.file_buffers.getEntry(name) orelse return error.FileNotFound;
+    self.current_file_buffer = entry.key_ptr.*;
+    try self.event_publisher.publish(.file_buffer_changed);
+}
+
+pub fn addFileBuffer(self: *BufferSelector, file_path: []const u8, buffer: *Buffer) !void {
+    try self.file_buffers.put(file_path, buffer);
+}
+
 pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
-    if (self.file_buffers.getKey(name)) |name_| {
-        self.allocator.free(name);
-        self.current_file_buffer = name_;
+    if (self.file_buffers.getKey(name)) |key| {
+        self.current_file_buffer = key;
         try self.event_publisher.publish(.file_buffer_changed);
+        return;
     }
     var buffer = try self.allocator.create(Buffer);
     errdefer self.allocator.destroy(buffer);
     buffer.* = try Buffer.init(self.allocator, self.event_publisher, .file);
     errdefer buffer.deinit();
     try buffer.addCursor();
-    try self.file_buffers.put(name, buffer);
-    self.current_file_buffer = name;
+    buffer.openFile(name) catch |err| switch (err) {
+        std.fs.File.OpenError.FileNotFound => {}, // Open as an empty file
+        else => return err,
+    };
+    const key = try self.allocator.dupe(u8, name);
+    errdefer self.allocator.free(key);
+    try self.file_buffers.put(key, buffer);
+    errdefer _ = self.file_buffers.remove(key);
+    self.current_file_buffer = key;
     try self.event_publisher.publish(.file_buffer_changed);
 }
 
