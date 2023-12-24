@@ -3,7 +3,7 @@ const Editor = @import("../Editor.zig");
 const models = @import("../models.zig");
 
 test "move cursor to any directions" {
-    const editor = try Editor.init(std.testing.allocator);
+    const editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
     const cursor = &editor.controller.buffer_selector.getCurrentFileBuffer().cursors.items[0];
@@ -25,7 +25,7 @@ test "move cursor to any directions" {
 }
 
 test "move to the beginning or end of line" {
-    const editor = try Editor.init(std.testing.allocator);
+    const editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
     const cursor = &editor.controller.buffer_selector.getCurrentFileBuffer().cursors.items[0];
@@ -44,7 +44,7 @@ test "move to the beginning or end of line" {
 
 test "move vertically considering double bytes" {
     {
-        const editor = try Editor.init(std.testing.allocator);
+        const editor = try Editor.init(std.testing.allocator, .{});
         defer editor.deinit();
         try editor.controller.changeDisplaySize(100, 100);
         const cursor = &editor.controller.buffer_selector.getCurrentFileBuffer().cursors.items[0];
@@ -59,7 +59,7 @@ test "move vertically considering double bytes" {
         try std.testing.expectEqual(models.Position{ .x = 4, .y = 0 }, cursor.getPosition());
     }
     {
-        const editor = try Editor.init(std.testing.allocator);
+        const editor = try Editor.init(std.testing.allocator, .{});
         defer editor.deinit();
         try editor.controller.changeDisplaySize(100, 100);
         const cursor = &editor.controller.buffer_selector.getCurrentFileBuffer().cursors.items[0];

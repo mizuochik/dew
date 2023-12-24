@@ -2,7 +2,7 @@ const std = @import("std");
 const Editor = @import("../Editor.zig");
 
 test "no opened files" {
-    var editor = try Editor.init(std.testing.allocator);
+    var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.controller.changeDisplaySize(10, 10);
     const area = try editor.display.getArea(0, 10, 0, 10);
@@ -12,7 +12,7 @@ test "no opened files" {
 }
 
 test "show the opened file" {
-    var editor = try Editor.init(std.testing.allocator);
+    var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
     try editor.controller.openFile("src/e2e/hello-world.txt");
@@ -22,7 +22,7 @@ test "show the opened file" {
 }
 
 test "open file via command" {
-    var editor = try Editor.init(std.testing.allocator);
+    var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
 

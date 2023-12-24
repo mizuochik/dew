@@ -9,13 +9,17 @@ const Display = @import("Display.zig");
 
 const Editor = @This();
 
+pub const Options = struct {
+    is_debug: bool = false,
+};
+
 allocator: std.mem.Allocator,
 model_event_publisher: *event.Publisher(models.Event),
 view_event_publisher: *event.Publisher(view.Event),
 buffer_view: *view.BufferView,
 command_buffer_view: *view.BufferView,
 buffer_selector: *models.BufferSelector,
-debug_handler: *models.debug.Handler,
+debug_handler: ?*models.debug.Handler,
 status_message: *models.StatusMessage,
 status_bar_view: *view.StatusBarView,
 display_size: *view.DisplaySize,
@@ -25,7 +29,7 @@ keyboard: *Keyboard,
 terminal: *Terminal,
 display: *Display,
 
-pub fn init(allocator: std.mem.Allocator) !Editor {
+pub fn init(allocator: std.mem.Allocator, options: Options) !Editor {
     const model_event_publisher = try allocator.create(event.Publisher(models.Event));
     errdefer allocator.destroy(model_event_publisher);
     model_event_publisher.* = event.Publisher(models.Event).init(allocator);
@@ -53,13 +57,17 @@ pub fn init(allocator: std.mem.Allocator) !Editor {
     errdefer command_buffer_view.deinit();
     try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
 
-    const debug_handler = try allocator.create(models.debug.Handler);
-    errdefer allocator.destroy(debug_handler);
-    debug_handler.* = models.debug.Handler{
-        .buffer_selector = buffer_selector,
-        .allocator = allocator,
-    };
-    try model_event_publisher.addSubscriber(debug_handler.eventSubscriber());
+    const debug_handler: ?*models.debug.Handler = if (options.is_debug) b: {
+        const debug_handler = try allocator.create(models.debug.Handler);
+        errdefer allocator.destroy(debug_handler);
+        debug_handler.* = models.debug.Handler{
+            .buffer_selector = buffer_selector,
+            .allocator = allocator,
+        };
+        try model_event_publisher.addSubscriber(debug_handler.eventSubscriber());
+        break :b debug_handler;
+    } else null;
+    errdefer if (debug_handler) |handler| allocator.destroy(handler);
 
     const status_message = try allocator.create(models.StatusMessage);
     errdefer allocator.destroy(status_message);
@@ -151,7 +159,9 @@ pub fn deinit(self: *const Editor) void {
 
     self.allocator.destroy(self.command_executor);
 
-    self.allocator.destroy(self.debug_handler);
+    if (self.debug_handler) |handler| {
+        self.allocator.destroy(handler);
+    }
 
     self.controller.deinit();
     self.allocator.destroy(self.controller);
