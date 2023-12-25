@@ -13,15 +13,11 @@ file_buffers: std.StringHashMap(*Buffer),
 event_publisher: *event.Publisher(models.Event),
 
 pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event)) !BufferSelector {
-    var file_buffer = try allocator.create(Buffer);
-    errdefer allocator.destroy(file_buffer);
-    file_buffer.* = try Buffer.init(allocator, event_publisher, .file);
+    var file_buffer = try Buffer.init(allocator, event_publisher, .file);
     errdefer file_buffer.deinit();
     try file_buffer.addCursor();
 
-    var command_buffer = try allocator.create(Buffer);
-    errdefer allocator.destroy(command_buffer);
-    command_buffer.* = try Buffer.init(allocator, event_publisher, .command);
+    var command_buffer = try Buffer.init(allocator, event_publisher, .command);
     errdefer command_buffer.deinit();
     try command_buffer.addCursor();
 
@@ -44,12 +40,10 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
 
 pub fn deinit(self: *BufferSelector) void {
     self.command_buffer.deinit();
-    self.allocator.destroy(self.command_buffer);
     var it = self.file_buffers.iterator();
     while (it.next()) |entry| {
         self.allocator.free(entry.key_ptr.*);
         entry.value_ptr.*.deinit();
-        self.allocator.destroy(entry.value_ptr.*);
     }
     self.file_buffers.deinit();
 }
@@ -92,9 +86,7 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
         try self.event_publisher.publish(.file_buffer_changed);
         return;
     }
-    var buffer = try self.allocator.create(Buffer);
-    errdefer self.allocator.destroy(buffer);
-    buffer.* = try Buffer.init(self.allocator, self.event_publisher, .file);
+    var buffer = try Buffer.init(self.allocator, self.event_publisher, .file);
     errdefer buffer.deinit();
     try buffer.addCursor();
     buffer.openFile(name) catch |err| switch (err) {

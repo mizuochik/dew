@@ -19,7 +19,9 @@ cursors: std.ArrayList(models.Cursor),
 y_scroll: usize,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event), mode: Mode) !Buffer {
+pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event), mode: Mode) !*Buffer {
+    const buffer = try allocator.create(Buffer);
+    errdefer allocator.destroy(buffer);
     var rows = std.ArrayList(models.UnicodeString).init(allocator);
     errdefer rows.deinit();
     errdefer for (rows.items) |row| row.deinit();
@@ -28,7 +30,7 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
         errdefer l.deinit();
         try rows.append(l);
     }
-    return .{
+    buffer.* = .{
         .rows = rows,
         .event_publisher = event_publisher,
         .mode = mode,
@@ -36,12 +38,14 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
         .y_scroll = 0,
         .allocator = allocator,
     };
+    return buffer;
 }
 
 pub fn deinit(self: *const Buffer) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
     self.cursors.deinit();
+    self.allocator.destroy(self);
 }
 
 pub fn addCursor(self: *Buffer) !void {
