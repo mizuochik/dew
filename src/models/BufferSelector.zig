@@ -109,6 +109,11 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     try self.event_publisher.publish(.file_buffer_changed);
 }
 
+pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
+    const buffer = self.file_buffers.get(name) orelse return error.FileNotFound;
+    try buffer.saveFile(name);
+}
+
 test {
     std.testing.refAllDecls(@This());
 }

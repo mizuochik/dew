@@ -35,7 +35,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
         },
         .ctrl => |k| switch (k) {
             'Q' => return error.Quit,
-            'S' => try self.saveFile(),
+            'S' => try self.buffer_selector.saveFileBuffer(self.buffer_selector.current_file_buffer),
             'K' => try self.killLine(),
             'D' => {
                 for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
@@ -182,17 +182,4 @@ pub fn openFile(self: *EditorController, path: []const u8) !void {
     const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);
     try self.status_message.setMessage(new_message);
-}
-
-fn saveFile(self: *EditorController) !void {
-    var f = try std.fs.cwd().createFile(self.file_path.?, .{});
-    defer f.close();
-    for (self.buffer_selector.getCurrentBuffer().rows.items, 0..) |row, i| {
-        if (i > 0)
-            _ = try f.write("\n");
-        _ = try f.write(row.buffer.items);
-    }
-    const new_status = try std.fmt.allocPrint(self.allocator, "Saved: {s}", .{self.file_path.?});
-    errdefer self.allocator.free(new_status);
-    try self.status_message.setMessage(new_status);
 }

@@ -172,3 +172,13 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
 
     try self.notifyUpdate();
 }
+
+pub fn saveFile(self: *const Buffer, path: []const u8) !void {
+    var f = try std.fs.cwd().createFile(path, .{});
+    defer f.close();
+    for (self.rows.items, 0..) |row, i| {
+        if (i > 0)
+            _ = try f.write("\n");
+        _ = try f.write(row.buffer.items);
+    }
+}
