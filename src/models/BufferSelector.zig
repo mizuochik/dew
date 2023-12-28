@@ -104,16 +104,18 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
 pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
     const buffer = try self.getCurrentFileBuffer().clone();
     errdefer buffer.deinit();
-    if (self.file_buffers.getEntry(name)) |buffer_entry| {
-        buffer_entry.value_ptr.*.deinit();
-        buffer_entry.value_ptr.* = buffer;
-        try buffer.saveFile(name);
-        return;
-    }
     const key = try self.allocator.dupe(u8, name);
     errdefer self.allocator.free(key);
-    try self.file_buffers.put(key, buffer);
+    const result = try self.file_buffers.getOrPut(key);
+    errdefer if (!result.found_existing) {
+        _ = self.file_buffers.remove(key);
+    };
     try buffer.saveFile(name);
+    if (result.found_existing) {
+        self.allocator.free(key);
+        result.value_ptr.*.deinit();
+    }
+    result.value_ptr.* = buffer;
 }
 
 test {
