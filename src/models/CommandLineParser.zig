@@ -119,6 +119,11 @@ fn parseCommand(self: *CommandLineParser) !Command {
         errdefer command.deinit();
         return command;
     }
+    if (std.mem.eql(u8, "save-file", command_name_al.items)) {
+        const command = try commands.SaveFile.init(self.allocator, self.buffer_selector, self.status_message);
+        errdefer command.deinit();
+        return command;
+    }
     return error.CommandNotFound;
 }
 

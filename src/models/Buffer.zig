@@ -48,6 +48,32 @@ pub fn deinit(self: *const Buffer) void {
     self.allocator.destroy(self);
 }
 
+pub fn clone(self: *const Buffer) !*Buffer {
+    var buffer = try self.allocator.create(Buffer);
+    errdefer self.allocator.destroy(buffer);
+    buffer.* = self.*;
+    buffer.rows = std.ArrayList(UnicodeString).init(self.allocator);
+    errdefer {
+        for (buffer.rows.items) |row| {
+            row.deinit();
+        }
+        buffer.rows.deinit();
+    }
+    for (self.rows.items) |row| {
+        const cloned = try row.clone();
+        errdefer cloned.deinit();
+        try buffer.rows.append(cloned);
+    }
+    buffer.cursors = std.ArrayList(models.Cursor).init(self.allocator);
+    errdefer buffer.cursors.deinit();
+    for (self.cursors.items) |cursor| {
+        var cloned_cursor = cursor;
+        cloned_cursor.buffer = buffer;
+        try buffer.cursors.append(cursor);
+    }
+    return buffer;
+}
+
 pub fn addCursor(self: *Buffer) !void {
     try self.cursors.append(models.Cursor{
         .buffer = self,

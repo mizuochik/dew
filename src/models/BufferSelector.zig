@@ -42,7 +42,7 @@ pub fn deinit(self: *BufferSelector) void {
     self.command_buffer.deinit();
     var it = self.file_buffers.iterator();
     while (it.next()) |entry| {
-        self.allocator.free(entry.key_ptr.*);
+        self.allocator.free(entry.key_ptr.*); // second
         entry.value_ptr.*.deinit();
     }
     self.file_buffers.deinit();
@@ -102,7 +102,17 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
 }
 
 pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
-    const buffer = self.file_buffers.get(name) orelse return error.FileNotFound;
+    const buffer = try self.getCurrentFileBuffer().clone();
+    errdefer buffer.deinit();
+    if (self.file_buffers.getEntry(name)) |buffer_entry| {
+        buffer_entry.value_ptr.*.deinit();
+        buffer_entry.value_ptr.* = buffer;
+        try buffer.saveFile(name);
+        return;
+    }
+    const key = try self.allocator.dupe(u8, name);
+    errdefer self.allocator.free(key);
+    try self.file_buffers.put(key, buffer);
     try buffer.saveFile(name);
 }
 
