@@ -28,9 +28,7 @@ test "save existing buffer" {
 test "save file as a new buffer" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(10, 10);
-    const area = try editor.display.getArea(0, 10, 0, 10);
-    defer area.deinit();
+    try editor.controller.changeDisplaySize(100, 100);
     try std.fs.cwd().copyFile("src/e2e/hello-world.txt", std.fs.cwd(), "src/e2e/hello-world.tmp.txt", .{});
     defer std.fs.cwd().deleteFile("src/e2e/hello-world.tmp.txt") catch {};
     try editor.controller.processKeypress(.{ .ctrl = 'X' });
@@ -58,4 +56,5 @@ test "save file as a new buffer" {
         const actual = try std.fs.cwd().readFile("src/e2e/hello-world.tmp.txt", &buf);
         try std.testing.expectEqualStrings("Hello World\n", actual);
     }
+    try std.testing.expectEqualStrings("src/e2e/hello-world-renamed.tmp.txt", editor.buffer_selector.current_file_buffer);
 }

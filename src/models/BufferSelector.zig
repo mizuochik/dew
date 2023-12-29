@@ -116,6 +116,8 @@ pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
         result.value_ptr.*.deinit();
     }
     result.value_ptr.* = buffer;
+    self.current_file_buffer = result.key_ptr.*;
+    try self.event_publisher.publish(.file_buffer_changed);
 }
 
 test {
