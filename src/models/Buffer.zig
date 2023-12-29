@@ -69,7 +69,7 @@ pub fn clone(self: *const Buffer) !*Buffer {
     for (self.cursors.items) |cursor| {
         var cloned_cursor = cursor;
         cloned_cursor.buffer = buffer;
-        try buffer.cursors.append(cursor);
+        try buffer.cursors.append(cloned_cursor);
     }
     return buffer;
 }
