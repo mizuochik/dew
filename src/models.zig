@@ -10,7 +10,7 @@ pub const BufferSelector = @import("models/BufferSelector.zig");
 pub const Cursor = @import("models/Cursor.zig");
 pub const Command = @import("models/Command.zig");
 pub const CommandEvaluator = @import("models/CommandEvaluator.zig");
-pub const CommandLineParser = @import("models/CommandLineParser.zig");
+pub const CommandParser = @import("models/CommandParser.zig");
 
 pub const Key = union(enum) {
     plain: u21,
