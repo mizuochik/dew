@@ -9,7 +9,7 @@ pub const StatusMessage = @import("models/StatusMessage.zig");
 pub const BufferSelector = @import("models/BufferSelector.zig");
 pub const Cursor = @import("models/Cursor.zig");
 pub const Command = @import("models/Command.zig");
-pub const CommandExecutor = @import("models/CommandExecutor.zig");
+pub const CommandEvaluator = @import("models/CommandEvaluator.zig");
 pub const CommandLineParser = @import("models/CommandLineParser.zig");
 
 pub const Key = union(enum) {

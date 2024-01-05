@@ -24,7 +24,7 @@ status_message: *models.StatusMessage,
 status_bar_view: *view.StatusBarView,
 display_size: *view.DisplaySize,
 controller: *controllers.EditorController,
-command_executor: *models.CommandExecutor,
+command_evaluator: *models.CommandEvaluator,
 keyboard: *Keyboard,
 terminal: *Terminal,
 display: *Display,
@@ -96,14 +96,14 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !Editor {
     );
     errdefer editor_controller.deinit();
 
-    const command_executor = try allocator.create(models.CommandExecutor);
-    errdefer allocator.destroy(command_executor);
-    command_executor.* = models.CommandExecutor{
+    const command_evaluator = try allocator.create(models.CommandEvaluator);
+    errdefer allocator.destroy(command_evaluator);
+    command_evaluator.* = models.CommandEvaluator{
         .buffer_selector = buffer_selector,
         .status_message = status_message,
         .allocator = allocator,
     };
-    try model_event_publisher.addSubscriber(command_executor.eventSubscriber());
+    try model_event_publisher.addSubscriber(command_evaluator.eventSubscriber());
 
     const keyboard = try allocator.create(Keyboard);
     errdefer allocator.destroy(keyboard);
@@ -131,7 +131,7 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !Editor {
         .status_bar_view = status_bar_view,
         .display_size = display_size,
         .controller = editor_controller,
-        .command_executor = command_executor,
+        .command_evaluator = command_evaluator,
         .keyboard = keyboard,
         .terminal = terminal,
         .display = display,
@@ -157,7 +157,7 @@ pub fn deinit(self: *const Editor) void {
     self.display.deinit();
     self.allocator.destroy(self.display);
 
-    self.allocator.destroy(self.command_executor);
+    self.allocator.destroy(self.command_evaluator);
 
     if (self.debug_handler) |handler| {
         self.allocator.destroy(handler);
