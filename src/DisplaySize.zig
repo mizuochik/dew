@@ -1,6 +1,6 @@
 const std = @import("std");
-const event = @import("../event.zig");
-const view = @import("../view.zig");
+const event = @import("event.zig");
+const view = @import("view.zig");
 
 const DisplaySize = @This();
 

@@ -1,7 +1,8 @@
 const std = @import("std");
 const BufferSelector = @import("BufferSelector.zig");
-const event = @import("../event.zig");
-const models = @import("../models.zig");
+const event = @import("event.zig");
+const models = @import("models.zig");
+const Position = @import("Position.zig");
 
 pub const Handler = struct {
     buffer_selector: *const BufferSelector,
@@ -18,7 +19,7 @@ pub const Handler = struct {
 
     fn handleEvent(ptr: *anyopaque, event_: models.Event) anyerror!void {
         const self: *Handler = @ptrCast(@alignCast(ptr));
-        var cursor_positions = std.ArrayList(models.Position).init(self.allocator);
+        var cursor_positions = std.ArrayList(Position).init(self.allocator);
         defer cursor_positions.deinit();
         for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
             try cursor_positions.append(cursor.getPosition());

@@ -1,7 +1,10 @@
 const std = @import("std");
-const models = @import("../models.zig");
-const event = @import("../event.zig");
-const view = @import("../view.zig");
+const models = @import("models.zig");
+const event = @import("event.zig");
+const view = @import("view.zig");
+const Buffer = @import("Buffer.zig");
+const BufferSelector = @import("BufferSelector.zig");
+const Position = @import("Position.zig");
 
 const BufferView = @This();
 
@@ -16,17 +19,17 @@ const empty: []const u8 = b: {
     break :b &s;
 };
 
-buffer_selector: *models.BufferSelector,
+buffer_selector: *BufferSelector,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 view_event_publisher: *const event.Publisher(view.Event),
 is_active: bool,
 last_cursor_x: usize = 0,
-mode: models.Buffer.Mode,
+mode: Buffer.Mode,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, buffer_selector: *models.BufferSelector, mode: models.Buffer.Mode, vevents: *const event.Publisher(view.Event)) BufferView {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, mode: Buffer.Mode, vevents: *const event.Publisher(view.Event)) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -35,7 +38,7 @@ pub fn init(allocator: std.mem.Allocator, buffer_selector: *models.BufferSelecto
         .width = 0,
         .height = 0,
         .view_event_publisher = vevents,
-        .is_active = mode != models.Buffer.Mode.command,
+        .is_active = mode != Buffer.Mode.command,
         .mode = mode,
         .allocator = allocator,
     };
@@ -54,7 +57,7 @@ pub fn viewRow(self: *const BufferView, y: usize) []const u8 {
     return self.getBuffer().rows.items[row.buf_y].sliceAsRaw(row.buf_x_start, row.buf_x_end);
 }
 
-pub fn viewCursor(self: *const BufferView) ?models.Position {
+pub fn viewCursor(self: *const BufferView) ?Position {
     if (!self.is_active) {
         return null;
     }
@@ -69,7 +72,7 @@ pub fn viewCursor(self: *const BufferView) ?models.Position {
     };
 }
 
-pub fn getCursor(self: *const BufferView) models.Position {
+pub fn getCursor(self: *const BufferView) Position {
     const c_y = self.getBuffer().cursors.items[0].y;
     const c_x = self.getBuffer().cursors.items[0].x;
     if (self.rows.items.len <= 0) {
@@ -101,7 +104,7 @@ pub fn getNumberOfLines(self: *const BufferView) usize {
     return self.rows.items.len;
 }
 
-pub fn getBufferPopsition(self: *const BufferView, view_position: models.Position) models.Position {
+pub fn getBufferPopsition(self: *const BufferView, view_position: Position) Position {
     const row_slice = self.rows.items[view_position.y];
     const buffer_row = self.getBuffer().rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
@@ -137,7 +140,7 @@ pub fn normalizeScroll(self: *BufferView) void {
     }
 }
 
-pub fn getNormalizedCursor(self: *BufferView) models.Position {
+pub fn getNormalizedCursor(self: *BufferView) Position {
     const upper_limit = self.getBuffer().y_scroll;
     const bottom_limit = self.getBuffer().y_scroll + self.height;
     const cursor = self.getCursor();
@@ -190,18 +193,18 @@ fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
             });
         },
         .command_buffer_opened => {
-            self.is_active = self.mode == models.Buffer.Mode.command;
+            self.is_active = self.mode == Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         .command_buffer_closed => {
-            self.is_active = self.mode != models.Buffer.Mode.command;
+            self.is_active = self.mode != Buffer.Mode.command;
             try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},
     }
 }
 
-fn getBuffer(self: *const BufferView) *models.Buffer {
+fn getBuffer(self: *const BufferView) *Buffer {
     return switch (self.mode) {
         .file => self.buffer_selector.getCurrentFileBuffer(),
         .command => self.buffer_selector.command_buffer,

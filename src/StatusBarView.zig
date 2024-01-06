@@ -1,15 +1,16 @@
 const std = @import("std");
-const models = @import("../models.zig");
-const view = @import("../view.zig");
-const event = @import("../event.zig");
+const models = @import("models.zig");
+const view = @import("view.zig");
+const event = @import("event.zig");
+const StatusMessage = @import("StatusMessage.zig");
 
 const StatusBarView = @This();
 
-status_message: *const models.StatusMessage,
+status_message: *const StatusMessage,
 width: usize,
 view_event_publisher: *const event.Publisher(view.Event),
 
-pub fn init(status_message: *models.StatusMessage, view_event_publisher: *const event.Publisher(view.Event)) StatusBarView {
+pub fn init(status_message: *StatusMessage, view_event_publisher: *const event.Publisher(view.Event)) StatusBarView {
     return .{
         .status_message = status_message,
         .width = 0,

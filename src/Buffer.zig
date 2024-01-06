@@ -1,7 +1,9 @@
 const std = @import("std");
 const UnicodeString = @import("UnicodeString.zig");
-const event = @import("../event.zig");
-const models = @import("../models.zig");
+const event = @import("event.zig");
+const models = @import("models.zig");
+const Cursor = @import("Cursor.zig");
+const Position = @import("Position.zig");
 
 const Buffer = @This();
 
@@ -15,18 +17,18 @@ c_x: usize = 0,
 c_y: usize = 0,
 event_publisher: *event.Publisher(models.Event),
 mode: Mode,
-cursors: std.ArrayList(models.Cursor),
+cursors: std.ArrayList(Cursor),
 y_scroll: usize,
 allocator: std.mem.Allocator,
 
 pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event), mode: Mode) !*Buffer {
     const buffer = try allocator.create(Buffer);
     errdefer allocator.destroy(buffer);
-    var rows = std.ArrayList(models.UnicodeString).init(allocator);
+    var rows = std.ArrayList(UnicodeString).init(allocator);
     errdefer rows.deinit();
     errdefer for (rows.items) |row| row.deinit();
     {
-        var l = try models.UnicodeString.init(allocator);
+        var l = try UnicodeString.init(allocator);
         errdefer l.deinit();
         try rows.append(l);
     }
@@ -34,7 +36,7 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
         .rows = rows,
         .event_publisher = event_publisher,
         .mode = mode,
-        .cursors = std.ArrayList(models.Cursor).init(allocator),
+        .cursors = std.ArrayList(Cursor).init(allocator),
         .y_scroll = 0,
         .allocator = allocator,
     };
@@ -64,7 +66,7 @@ pub fn clone(self: *const Buffer) !*Buffer {
         errdefer cloned.deinit();
         try buffer.rows.append(cloned);
     }
-    buffer.cursors = std.ArrayList(models.Cursor).init(self.allocator);
+    buffer.cursors = std.ArrayList(Cursor).init(self.allocator);
     errdefer buffer.cursors.deinit();
     for (self.cursors.items) |cursor| {
         var cloned_cursor = cursor;
@@ -75,7 +77,7 @@ pub fn clone(self: *const Buffer) !*Buffer {
 }
 
 pub fn addCursor(self: *Buffer) !void {
-    try self.cursors.append(models.Cursor{
+    try self.cursors.append(Cursor{
         .buffer = self,
         .event_publisher = self.event_publisher,
     });
@@ -90,12 +92,12 @@ pub fn resetCursors(self: *Buffer) !void {
     }
 }
 
-pub fn insertChar(self: *Buffer, pos: models.Position, c: u21) !void {
+pub fn insertChar(self: *Buffer, pos: Position, c: u21) !void {
     try self.rows.items[pos.y].insert(pos.x, c);
     try self.notifyUpdate();
 }
 
-pub fn deleteChar(self: *Buffer, pos: models.Position) !void {
+pub fn deleteChar(self: *Buffer, pos: Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
         try self.joinLine(pos);
@@ -111,7 +113,7 @@ pub fn deleteBackwardChar(self: *Buffer) !void {
     try self.notifyUpdate();
 }
 
-pub fn joinLine(self: *Buffer, pos: models.Position) !void {
+pub fn joinLine(self: *Buffer, pos: Position) !void {
     if (pos.y >= self.rows.items.len - 1) {
         return;
     }
@@ -123,7 +125,7 @@ pub fn joinLine(self: *Buffer, pos: models.Position) !void {
     try self.notifyUpdate();
 }
 
-pub fn killLine(self: *Buffer, pos: models.Position) !void {
+pub fn killLine(self: *Buffer, pos: Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
         try self.deleteChar(pos);
@@ -135,8 +137,8 @@ pub fn killLine(self: *Buffer, pos: models.Position) !void {
     try self.notifyUpdate();
 }
 
-pub fn breakLine(self: *Buffer, pos: models.Position) !void {
-    var new_row = try models.UnicodeString.init(self.allocator);
+pub fn breakLine(self: *Buffer, pos: Position) !void {
+    var new_row = try UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
     const row = &self.rows.items[pos.y];
     if (pos.x < row.getLen()) {
@@ -175,7 +177,7 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
 
     try self.resetCursors();
 
-    var new_rows = std.ArrayList(models.UnicodeString).init(self.allocator);
+    var new_rows = std.ArrayList(UnicodeString).init(self.allocator);
     errdefer {
         for (new_rows.items) |row| row.deinit();
         new_rows.deinit();
@@ -187,12 +189,12 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
             error.EndOfStream => break,
             else => return err,
         };
-        var new_row = try models.UnicodeString.init(self.allocator);
+        var new_row = try UnicodeString.init(self.allocator);
         errdefer new_row.deinit();
         try new_row.appendSlice(buf.items);
         try new_rows.append(new_row);
     }
-    var last_row = try models.UnicodeString.init(self.allocator);
+    var last_row = try UnicodeString.init(self.allocator);
     errdefer last_row.deinit();
     try new_rows.append(last_row);
 

@@ -57,7 +57,6 @@ test {
     _ = @import("event.zig");
     _ = @import("keyboard.zig");
     _ = @import("view.zig");
-    _ = @import("controllers.zig");
     _ = @import("models.zig");
     _ = @import("e2e.zig");
 }

@@ -1,6 +1,6 @@
 const std = @import("std");
-const event = @import("../event.zig");
-const models = @import("../models.zig");
+const event = @import("event.zig");
+const models = @import("models.zig");
 
 const StatusMessage = @This();
 

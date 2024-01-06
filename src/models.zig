@@ -1,16 +1,6 @@
 const std = @import("std");
-
-pub const debug = @import("models/debug.zig");
-pub const commands = @import("models/commands.zig");
-pub const Buffer = @import("models/Buffer.zig");
-pub const Position = @import("models/Position.zig");
-pub const UnicodeString = @import("models/UnicodeString.zig");
-pub const StatusMessage = @import("models/StatusMessage.zig");
-pub const BufferSelector = @import("models/BufferSelector.zig");
-pub const Cursor = @import("models/Cursor.zig");
-pub const Command = @import("models/Command.zig");
-pub const CommandEvaluator = @import("models/CommandEvaluator.zig");
-pub const CommandParser = @import("models/CommandParser.zig");
+const Position = @import("Position.zig");
+const UnicodeString = @import("UnicodeString.zig");
 
 pub const Key = union(enum) {
     plain: u21,
@@ -48,7 +38,3 @@ pub const Event = union(enum) {
         }
     }
 };
-
-test {
-    std.testing.refAllDecls(@This());
-}

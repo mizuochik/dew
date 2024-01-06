@@ -1,7 +1,9 @@
 const std = @import("std");
-const event = @import("../event.zig");
-const models = @import("../models.zig");
+const event = @import("event.zig");
+const models = @import("models.zig");
 const Buffer = @import("Buffer.zig");
+const Position = @import("Position.zig");
+const UnicodeString = @import("UnicodeString.zig");
 
 buffer: *const Buffer,
 x: usize = 0,
@@ -41,19 +43,19 @@ pub fn moveToEndOfLine(self: *Cursor) !void {
     try self.event_publisher.publish(.cursor_moved);
 }
 
-pub fn getPosition(self: *const Cursor) models.Position {
+pub fn getPosition(self: *const Cursor) Position {
     return .{
         .x = self.x,
         .y = self.y,
     };
 }
 
-pub fn setPosition(self: *Cursor, pos: models.Position) !void {
+pub fn setPosition(self: *Cursor, pos: Position) !void {
     self.x = pos.x;
     self.y = pos.y;
     try self.event_publisher.publish(.cursor_moved);
 }
 
-fn getCurrentRow(self: *const Cursor) models.UnicodeString {
+fn getCurrentRow(self: *const Cursor) UnicodeString {
     return self.buffer.rows.items[self.y];
 }

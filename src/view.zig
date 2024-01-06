@@ -1,9 +1,5 @@
 const std = @import("std");
 
-pub const BufferView = @import("view/BufferView.zig");
-pub const StatusBarView = @import("view/StatusBarView.zig");
-pub const DisplaySize = @import("view/DisplaySize.zig");
-
 pub const Event = union(enum) {
     buffer_view_updated,
     command_buffer_view_updated,
@@ -17,7 +13,3 @@ pub const ScreenSize = struct {
     width: usize,
     height: usize,
 };
-
-test {
-    std.testing.refAllDecls(@This());
-}

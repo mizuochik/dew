@@ -1,18 +1,23 @@
 const std = @import("std");
-const view = @import("../view.zig");
-const models = @import("../models.zig");
+const view = @import("view.zig");
+const models = @import("models.zig");
+const Buffer = @import("Buffer.zig");
+const BufferView = @import("BufferView.zig");
+const DisplaySize = @import("DisplaySize.zig");
+const StatusMessage = @import("StatusMessage.zig");
+const BufferSelector = @import("BufferSelector.zig");
 
-file_buffer_view: *view.BufferView,
-command_buffer_view: *view.BufferView,
-status_message: *models.StatusMessage,
+file_buffer_view: *BufferView,
+command_buffer_view: *BufferView,
+status_message: *StatusMessage,
 file_path: ?[]const u8 = null,
-buffer_selector: *models.BufferSelector,
-display_size: *view.DisplaySize,
+buffer_selector: *BufferSelector,
+display_size: *DisplaySize,
 allocator: std.mem.Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *view.BufferView, command_buffer_view: *view.BufferView, status_message: *models.StatusMessage, buffer_selector: *models.BufferSelector, display_size: *view.DisplaySize) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command_buffer_view: *BufferView, status_message: *StatusMessage, buffer_selector: *BufferSelector, display_size: *DisplaySize) !EditorController {
     return EditorController{
         .allocator = allocator,
         .file_buffer_view = file_buffer_view,
@@ -170,10 +175,10 @@ fn insertChar(self: *EditorController, char: u21) !void {
     self.getCurrentView().updateLastCursorX();
 }
 
-fn getCurrentView(self: *const EditorController) *view.BufferView {
+fn getCurrentView(self: *const EditorController) *BufferView {
     return switch (self.buffer_selector.getCurrentBuffer().mode) {
-        models.Buffer.Mode.file => self.file_buffer_view,
-        models.Buffer.Mode.command => self.command_buffer_view,
+        Buffer.Mode.file => self.file_buffer_view,
+        Buffer.Mode.command => self.command_buffer_view,
     };
 }
 

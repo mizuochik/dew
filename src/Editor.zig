@@ -2,10 +2,17 @@ const std = @import("std");
 const event = @import("event.zig");
 const models = @import("models.zig");
 const view = @import("view.zig");
-const controllers = @import("controllers.zig");
+const debug = @import("debug.zig");
 const Keyboard = @import("Keyboard.zig");
 const Terminal = @import("Terminal.zig");
 const Display = @import("Display.zig");
+const CommandEvaluator = @import("CommandEvaluator.zig");
+const BufferSelector = @import("BufferSelector.zig");
+const StatusMessage = @import("StatusMessage.zig");
+const BufferView = @import("BufferView.zig");
+const StatusBarView = @import("StatusBarView.zig");
+const DisplaySize = @import("DisplaySize.zig");
+const EditorController = @import("EditorController.zig");
 
 const Editor = @This();
 
@@ -16,15 +23,15 @@ pub const Options = struct {
 allocator: std.mem.Allocator,
 model_event_publisher: *event.Publisher(models.Event),
 view_event_publisher: *event.Publisher(view.Event),
-buffer_view: *view.BufferView,
-command_buffer_view: *view.BufferView,
-buffer_selector: *models.BufferSelector,
-debug_handler: ?*models.debug.Handler,
-status_message: *models.StatusMessage,
-status_bar_view: *view.StatusBarView,
-display_size: *view.DisplaySize,
-controller: *controllers.EditorController,
-command_evaluator: *models.CommandEvaluator,
+buffer_view: *BufferView,
+command_buffer_view: *BufferView,
+buffer_selector: *BufferSelector,
+debug_handler: ?*debug.Handler,
+status_message: *StatusMessage,
+status_bar_view: *StatusBarView,
+display_size: *DisplaySize,
+controller: *EditorController,
+command_evaluator: *CommandEvaluator,
 keyboard: *Keyboard,
 terminal: *Terminal,
 display: *Display,
@@ -40,27 +47,27 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     view_event_publisher.* = event.Publisher(view.Event).init(allocator);
     errdefer view_event_publisher.deinit();
 
-    const buffer_selector = try allocator.create(models.BufferSelector);
+    const buffer_selector = try allocator.create(BufferSelector);
     errdefer allocator.destroy(buffer_selector);
-    buffer_selector.* = try models.BufferSelector.init(allocator, model_event_publisher);
+    buffer_selector.* = try BufferSelector.init(allocator, model_event_publisher);
     errdefer buffer_selector.deinit();
 
-    const buffer_view = try allocator.create(view.BufferView);
+    const buffer_view = try allocator.create(BufferView);
     errdefer allocator.destroy(buffer_view);
-    buffer_view.* = view.BufferView.init(allocator, buffer_selector, .file, view_event_publisher);
+    buffer_view.* = BufferView.init(allocator, buffer_selector, .file, view_event_publisher);
     errdefer buffer_view.deinit();
     try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
 
-    const command_buffer_view = try allocator.create(view.BufferView);
+    const command_buffer_view = try allocator.create(BufferView);
     errdefer allocator.destroy(command_buffer_view);
-    command_buffer_view.* = view.BufferView.init(allocator, buffer_selector, .command, view_event_publisher);
+    command_buffer_view.* = BufferView.init(allocator, buffer_selector, .command, view_event_publisher);
     errdefer command_buffer_view.deinit();
     try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
 
-    const debug_handler: ?*models.debug.Handler = if (options.is_debug) b: {
-        const debug_handler = try allocator.create(models.debug.Handler);
+    const debug_handler: ?*debug.Handler = if (options.is_debug) b: {
+        const debug_handler = try allocator.create(debug.Handler);
         errdefer allocator.destroy(debug_handler);
-        debug_handler.* = models.debug.Handler{
+        debug_handler.* = debug.Handler{
             .buffer_selector = buffer_selector,
             .allocator = allocator,
         };
@@ -69,24 +76,24 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     } else null;
     errdefer if (debug_handler) |handler| allocator.destroy(handler);
 
-    const status_message = try allocator.create(models.StatusMessage);
+    const status_message = try allocator.create(StatusMessage);
     errdefer allocator.destroy(status_message);
-    status_message.* = try models.StatusMessage.init(allocator, model_event_publisher);
+    status_message.* = try StatusMessage.init(allocator, model_event_publisher);
     errdefer status_message.deinit();
 
-    const status_bar_view = try allocator.create(view.StatusBarView);
+    const status_bar_view = try allocator.create(StatusBarView);
     errdefer allocator.destroy(status_bar_view);
-    status_bar_view.* = view.StatusBarView.init(status_message, view_event_publisher);
+    status_bar_view.* = StatusBarView.init(status_message, view_event_publisher);
     errdefer status_bar_view.deinit();
     try model_event_publisher.addSubscriber(status_bar_view.eventSubscriber());
 
-    const display_size = try allocator.create(view.DisplaySize);
+    const display_size = try allocator.create(DisplaySize);
     errdefer allocator.destroy(display_size);
-    display_size.* = view.DisplaySize.init(view_event_publisher);
+    display_size.* = DisplaySize.init(view_event_publisher);
 
-    const editor_controller = try allocator.create(controllers.EditorController);
+    const editor_controller = try allocator.create(EditorController);
     errdefer allocator.destroy(editor_controller);
-    editor_controller.* = try controllers.EditorController.init(
+    editor_controller.* = try EditorController.init(
         allocator,
         buffer_view,
         command_buffer_view,
@@ -96,9 +103,9 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     );
     errdefer editor_controller.deinit();
 
-    const command_evaluator = try allocator.create(models.CommandEvaluator);
+    const command_evaluator = try allocator.create(CommandEvaluator);
     errdefer allocator.destroy(command_evaluator);
-    command_evaluator.* = models.CommandEvaluator{
+    command_evaluator.* = CommandEvaluator{
         .buffer_selector = buffer_selector,
         .status_message = status_message,
         .allocator = allocator,

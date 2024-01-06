@@ -2,13 +2,16 @@ const std = @import("std");
 const builtin = @import("builtin");
 const view = @import("view.zig");
 const event = @import("event.zig");
+const BufferView = @import("BufferView.zig");
+const StatusBarView = @import("StatusBarView.zig");
+const DisplaySize = @import("DisplaySize.zig");
 
 buffer: [][]u8,
-file_buffer_view: *view.BufferView,
-status_bar_view: *view.StatusBarView,
-command_buffer_view: *view.BufferView,
+file_buffer_view: *BufferView,
+status_bar_view: *StatusBarView,
+command_buffer_view: *BufferView,
 allocator: std.mem.Allocator,
-size: *view.DisplaySize,
+size: *DisplaySize,
 
 const Display = @This();
 
@@ -40,7 +43,7 @@ pub const Area = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *view.BufferView, status_bar_view: *view.StatusBarView, command_buffer_view: *view.BufferView, size: *view.DisplaySize) !Display {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, status_bar_view: *StatusBarView, command_buffer_view: *BufferView, size: *DisplaySize) !Display {
     const buffer = try initBuffer(allocator, size);
     errdefer {
         for (0..buffer.len) |i| allocator.free(buffer[i]);
@@ -81,7 +84,7 @@ pub fn getArea(self: *const Display, top: usize, bottom: usize, left: usize, rig
     return area;
 }
 
-fn initBuffer(allocator: std.mem.Allocator, display_size: *view.DisplaySize) ![][]u8 {
+fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 {
     var new_buffer = try allocator.alloc([]u8, display_size.rows);
     var i: usize = 0;
     errdefer {
