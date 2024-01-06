@@ -28,7 +28,8 @@ pub fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
             defer parser.deinit();
             var command_line = try parser.parse(command_line_s.buffer.items);
             defer command_line.deinit();
-            try command_line.command.run(self.editor, command_line.arguments);
+            var command = try self.editor.command_registry.get(command_line.command_name);
+            try command.run(self.editor, command_line.arguments);
             try self.editor.buffer_selector.toggleCommandBuffer();
         },
         else => {},

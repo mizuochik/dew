@@ -12,6 +12,7 @@ const StatusMessage = @import("StatusMessage.zig");
 const BufferView = @import("BufferView.zig");
 const StatusBarView = @import("StatusBarView.zig");
 const DisplaySize = @import("DisplaySize.zig");
+const CommandRegistry = @import("CommandRegistry.zig");
 const EditorController = @import("EditorController.zig");
 
 const Editor = @This();
@@ -32,6 +33,7 @@ status_bar_view: *StatusBarView,
 display_size: *DisplaySize,
 controller: *EditorController,
 command_evaluator: *CommandEvaluator,
+command_registry: CommandRegistry,
 keyboard: *Keyboard,
 terminal: *Terminal,
 display: *Display,
@@ -113,6 +115,10 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     };
     try model_event_publisher.addSubscriber(command_evaluator.eventSubscriber());
 
+    var command_registry = CommandRegistry.init(allocator);
+    errdefer command_registry.deinit();
+    try command_registry.registerBuiltinCommands();
+
     const keyboard = try allocator.create(Keyboard);
     errdefer allocator.destroy(keyboard);
     keyboard.* = Keyboard{};
@@ -140,6 +146,7 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
         .display_size = display_size,
         .controller = editor_controller,
         .command_evaluator = command_evaluator,
+        .command_registry = command_registry,
         .keyboard = keyboard,
         .terminal = terminal,
         .display = display,
@@ -147,7 +154,7 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     return editor;
 }
 
-pub fn deinit(self: *const Editor) void {
+pub fn deinit(self: *Editor) void {
     self.buffer_view.deinit();
     self.allocator.destroy(self.buffer_view);
 
@@ -167,6 +174,8 @@ pub fn deinit(self: *const Editor) void {
     self.allocator.destroy(self.display);
 
     self.allocator.destroy(self.command_evaluator);
+
+    self.command_registry.deinit();
 
     if (self.debug_handler) |handler| {
         self.allocator.destroy(handler);

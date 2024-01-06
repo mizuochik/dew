@@ -15,10 +15,10 @@ const CommandParser = @This();
 pub const CommandLine = struct {
     allocator: std.mem.Allocator,
     arguments: [][]const u8,
-    command: Command,
+    command_name: []const u8,
 
     pub fn deinit(self: *const CommandLine) void {
-        self.command.deinit();
+        self.allocator.free(self.command_name);
         for (self.arguments) |argument| {
             self.allocator.free(argument);
         }
@@ -52,8 +52,8 @@ pub fn deinit(self: *const CommandParser) void {
 
 pub fn parse(self: *CommandParser, input: []const u8) !CommandLine {
     try self.setInput(input);
-    const cmd = try self.parseCommand();
-    errdefer cmd.deinit();
+    const command_name = try self.parseCommandName();
+    errdefer self.allocator.free(command_name);
     var arg_list = std.ArrayList([]const u8).init(self.allocator);
     errdefer {
         for (arg_list.items) |arg| self.allocator.free(arg);
@@ -69,7 +69,7 @@ pub fn parse(self: *CommandParser, input: []const u8) !CommandLine {
     errdefer self.allocator.free(args);
     return .{
         .allocator = self.allocator,
-        .command = cmd,
+        .command_name = command_name,
         .arguments = args,
     };
 }
@@ -98,29 +98,14 @@ fn setInput(self: *CommandParser, input: []const u8) !void {
     self.input = in;
 }
 
-fn parseCommand(self: *CommandParser) !Command {
+fn parseCommandName(self: *CommandParser) ![]const u8 {
     var command_name_al = std.ArrayList(u8).init(self.allocator);
     defer command_name_al.deinit();
     try command_name_al.appendSlice(try self.parseAnyLetter());
     while (self.parseAnyLetter()) |letter| {
         try command_name_al.appendSlice(letter);
     } else |_| {}
-    if (std.mem.eql(u8, "open-file", command_name_al.items)) {
-        const command = try commands.OpenFile.init(self.allocator);
-        errdefer command.deinit();
-        return command;
-    }
-    if (std.mem.eql(u8, "new-file", command_name_al.items)) {
-        const command = try commands.NewFile.init(self.allocator);
-        errdefer command.deinit();
-        return command;
-    }
-    if (std.mem.eql(u8, "save-file", command_name_al.items)) {
-        const command = try commands.SaveFile.init(self.allocator);
-        errdefer command.deinit();
-        return command;
-    }
-    return error.CommandNotFound;
+    return try command_name_al.toOwnedSlice();
 }
 
 fn parseAnyLetter(self: *CommandParser) ![]const u8 {
