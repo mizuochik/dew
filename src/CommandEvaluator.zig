@@ -5,9 +5,11 @@ const StatusMessage = @import("StatusMessage.zig");
 const Event = @import("Event.zig");
 const models = @import("models.zig");
 const CommandParser = @import("CommandParser.zig");
+const Editor = @import("Editor.zig");
 
 const CommandEvaluator = @This();
 
+editor: *Editor,
 buffer_selector: *BufferSelector,
 status_message: *StatusMessage,
 allocator: std.mem.Allocator,
@@ -29,7 +31,7 @@ pub fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
             defer parser.deinit();
             var command_line = try parser.parse(command_line_s.buffer.items);
             defer command_line.deinit();
-            try command_line.evaluate();
+            try command_line.command.run(self.editor, command_line.arguments);
             try self.buffer_selector.toggleCommandBuffer();
         },
         else => {},

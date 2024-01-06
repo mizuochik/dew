@@ -37,6 +37,9 @@ terminal: *Terminal,
 display: *Display,
 
 pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
+    const editor = try allocator.create(Editor);
+    errdefer allocator.destroy(editor);
+
     const model_event_publisher = try allocator.create(event.Publisher(models.Event));
     errdefer allocator.destroy(model_event_publisher);
     model_event_publisher.* = event.Publisher(models.Event).init(allocator);
@@ -106,6 +109,7 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     const command_evaluator = try allocator.create(CommandEvaluator);
     errdefer allocator.destroy(command_evaluator);
     command_evaluator.* = CommandEvaluator{
+        .editor = editor,
         .buffer_selector = buffer_selector,
         .status_message = status_message,
         .allocator = allocator,
@@ -126,8 +130,6 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     errdefer display.deinit();
     try view_event_publisher.addSubscriber(display.eventSubscriber());
 
-    const editor = try allocator.create(Editor);
-    errdefer allocator.destroy(editor);
     editor.* = Editor{
         .allocator = allocator,
         .model_event_publisher = model_event_publisher,

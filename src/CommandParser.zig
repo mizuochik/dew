@@ -24,10 +24,6 @@ pub const CommandLine = struct {
         }
         self.allocator.free(self.arguments);
     }
-
-    pub fn evaluate(self: *CommandLine) !void {
-        try self.command.run(self.allocator, self.arguments);
-    }
 };
 
 const Error = error{
@@ -110,17 +106,17 @@ fn parseCommand(self: *CommandParser) !Command {
         try command_name_al.appendSlice(letter);
     } else |_| {}
     if (std.mem.eql(u8, "open-file", command_name_al.items)) {
-        const command = try commands.OpenFile.init(self.allocator, self.buffer_selector, self.status_message);
+        const command = try commands.OpenFile.init(self.allocator);
         errdefer command.deinit();
         return command;
     }
     if (std.mem.eql(u8, "new-file", command_name_al.items)) {
-        const command = try commands.NewFile.init(self.allocator, self.buffer_selector, self.status_message);
+        const command = try commands.NewFile.init(self.allocator);
         errdefer command.deinit();
         return command;
     }
     if (std.mem.eql(u8, "save-file", command_name_al.items)) {
-        const command = try commands.SaveFile.init(self.allocator, self.buffer_selector, self.status_message);
+        const command = try commands.SaveFile.init(self.allocator);
         errdefer command.deinit();
         return command;
     }
