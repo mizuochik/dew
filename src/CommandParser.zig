@@ -1,8 +1,6 @@
 const std = @import("std");
 const BufferSelector = @import("BufferSelector.zig");
 const StatusMessage = @import("StatusMessage.zig");
-const Command = @import("Command.zig");
-const commands = @import("commands.zig");
 
 allocator: std.mem.Allocator,
 input: [][]const u8,
@@ -14,8 +12,8 @@ const CommandParser = @This();
 
 pub const CommandLine = struct {
     allocator: std.mem.Allocator,
-    arguments: [][]const u8,
     command_name: []const u8,
+    arguments: [][]const u8,
 
     pub fn deinit(self: *const CommandLine) void {
         self.allocator.free(self.command_name);
