@@ -29,7 +29,7 @@ keyboard: *Keyboard,
 terminal: *Terminal,
 display: *Display,
 
-pub fn init(allocator: std.mem.Allocator, options: Options) !Editor {
+pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     const model_event_publisher = try allocator.create(event.Publisher(models.Event));
     errdefer allocator.destroy(model_event_publisher);
     model_event_publisher.* = event.Publisher(models.Event).init(allocator);
@@ -119,7 +119,9 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !Editor {
     errdefer display.deinit();
     try view_event_publisher.addSubscriber(display.eventSubscriber());
 
-    return Editor{
+    const editor = try allocator.create(Editor);
+    errdefer allocator.destroy(editor);
+    editor.* = Editor{
         .allocator = allocator,
         .model_event_publisher = model_event_publisher,
         .view_event_publisher = view_event_publisher,
@@ -136,6 +138,7 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !Editor {
         .terminal = terminal,
         .display = display,
     };
+    return editor;
 }
 
 pub fn deinit(self: *const Editor) void {
@@ -175,4 +178,6 @@ pub fn deinit(self: *const Editor) void {
 
     self.model_event_publisher.deinit();
     self.allocator.destroy(self.model_event_publisher);
+
+    self.allocator.destroy(self);
 }
