@@ -110,9 +110,6 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     errdefer allocator.destroy(command_evaluator);
     command_evaluator.* = CommandEvaluator{
         .editor = editor,
-        .buffer_selector = buffer_selector,
-        .status_message = status_message,
-        .allocator = allocator,
     };
     try model_event_publisher.addSubscriber(command_evaluator.eventSubscriber());
 
