@@ -23,7 +23,6 @@ pub const Options = struct {
 
 allocator: std.mem.Allocator,
 model_event_publisher: event.Publisher(models.Event),
-view_event_publisher: event.Publisher(view.Event),
 buffer_view: BufferView,
 command_buffer_view: BufferView,
 buffer_selector: BufferSelector,
@@ -47,17 +46,14 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     editor.model_event_publisher = event.Publisher(models.Event).init(allocator);
     errdefer editor.model_event_publisher.deinit();
 
-    editor.view_event_publisher = event.Publisher(view.Event).init(allocator);
-    errdefer editor.view_event_publisher.deinit();
-
     editor.buffer_selector = try BufferSelector.init(allocator, &editor.model_event_publisher);
     errdefer editor.buffer_selector.deinit();
 
-    editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file, &editor.view_event_publisher);
+    editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file);
     errdefer editor.buffer_view.deinit();
     try editor.model_event_publisher.addSubscriber(editor.buffer_view.eventSubscriber());
 
-    editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command, &editor.view_event_publisher);
+    editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command);
     errdefer editor.command_buffer_view.deinit();
     try editor.model_event_publisher.addSubscriber(editor.command_buffer_view.eventSubscriber());
 
@@ -73,11 +69,13 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     editor.status_message = try StatusMessage.init(allocator, &editor.model_event_publisher);
     errdefer editor.status_message.deinit();
 
-    editor.status_bar_view = StatusBarView.init(&editor.status_message, &editor.view_event_publisher);
+    editor.status_bar_view = StatusBarView.init(&editor.status_message);
     errdefer editor.status_bar_view.deinit();
     try editor.model_event_publisher.addSubscriber(editor.status_bar_view.eventSubscriber());
 
-    editor.display_size = DisplaySize.init(&editor.view_event_publisher);
+    editor.display_size = DisplaySize.init();
+    editor.display = try Display.init(allocator, &editor.buffer_view, &editor.status_bar_view, &editor.command_buffer_view, &editor.display_size);
+    errdefer editor.display.deinit();
 
     editor.controller = try EditorController.init(
         allocator,
@@ -85,6 +83,7 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
         &editor.command_buffer_view,
         &editor.status_message,
         &editor.buffer_selector,
+        &editor.display,
         &editor.display_size,
     );
     errdefer editor.controller.deinit();
@@ -101,10 +100,6 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     editor.keyboard = .{};
     editor.terminal = .{};
 
-    editor.display = try Display.init(allocator, &editor.buffer_view, &editor.status_bar_view, &editor.command_buffer_view, &editor.display_size);
-    errdefer editor.display.deinit();
-    try editor.view_event_publisher.addSubscriber(editor.display.eventSubscriber());
-
     return editor;
 }
 
@@ -117,7 +112,6 @@ pub fn deinit(self: *Editor) void {
     self.display.deinit();
     self.command_registry.deinit();
     self.controller.deinit();
-    self.view_event_publisher.deinit();
     self.model_event_publisher.deinit();
     self.allocator.destroy(self);
 }

@@ -34,12 +34,12 @@ pub fn main() !void {
     const win_size = try editor.terminal.getWindowSize();
     try editor.controller.changeDisplaySize(win_size.cols, win_size.rows);
     try editor.controller.openFile(res.positionals[0]);
-
     {
         const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});
         errdefer gpa.allocator().free(msg);
         try editor.status_message.setMessage(msg);
     }
+    try editor.display.render();
 
     while (true) {
         const key = try editor.keyboard.inputKey();
@@ -47,6 +47,7 @@ pub fn main() !void {
             error.Quit => return,
             else => return err,
         };
+        try editor.display.render();
     }
 }
 

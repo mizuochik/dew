@@ -6,6 +6,7 @@ const BufferView = @import("BufferView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const StatusMessage = @import("StatusMessage.zig");
 const BufferSelector = @import("BufferSelector.zig");
+const Display = @import("Display.zig");
 
 file_buffer_view: *BufferView,
 command_buffer_view: *BufferView,
@@ -13,17 +14,19 @@ status_message: *StatusMessage,
 file_path: ?[]const u8 = null,
 buffer_selector: *BufferSelector,
 display_size: *DisplaySize,
+display: *Display,
 allocator: std.mem.Allocator,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command_buffer_view: *BufferView, status_message: *StatusMessage, buffer_selector: *BufferSelector, display_size: *DisplaySize) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command_buffer_view: *BufferView, status_message: *StatusMessage, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize) !EditorController {
     return EditorController{
         .allocator = allocator,
         .file_buffer_view = file_buffer_view,
         .command_buffer_view = command_buffer_view,
         .status_message = status_message,
         .buffer_selector = buffer_selector,
+        .display = display,
         .display_size = display_size,
     };
 }
@@ -117,7 +120,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
 }
 
 pub fn changeDisplaySize(self: *const EditorController, cols: usize, rows: usize) !void {
-    try self.display_size.set(cols, rows);
+    try self.display.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
 }
 
 fn moveCursor(self: *EditorController, k: models.Arrow) !void {

@@ -11,6 +11,7 @@ test "input characters" {
     try editor.controller.processKeypress(.{ .plain = 'b' });
     try editor.controller.processKeypress(.{ .plain = 'c' });
 
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 10);
     defer area.deinit();
     try std.testing.expectEqualStrings("abc       ", area.rows[0]);
@@ -29,6 +30,7 @@ test "insert characters" {
         try editor.controller.processKeypress(.{ .plain = c });
     }
 
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
     defer area.deinit();
     try std.testing.expectEqualStrings("Hello Bye World     ", area.rows[0]);
@@ -47,6 +49,7 @@ test "delete characters" {
         try editor.controller.processKeypress(.{ .ctrl = 'D' });
     }
 
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
     defer area.deinit();
     try std.testing.expectEqualStrings("Hellod              ", area.rows[0]);
@@ -65,6 +68,7 @@ test "delete backward characters" {
         try editor.controller.processKeypress(.{ .ctrl = 'H' });
     }
 
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
     defer area.deinit();
     try std.testing.expectEqualStrings("Hellod              ", area.rows[0]);
@@ -81,6 +85,7 @@ test "break lines" {
     }
     try editor.controller.processKeypress(.{ .ctrl = 'M' });
 
+    try editor.display.render();
     const area = try editor.display.getArea(0, 2, 0, 20);
     defer area.deinit();
     try std.testing.expectEqualStrings("Hello               ", area.rows[0]);
@@ -98,6 +103,7 @@ test "join lines" {
     }
     try editor.controller.processKeypress(.{ .ctrl = 'J' });
 
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
     defer area.deinit();
     try std.testing.expectEqualStrings("HelloWorld          ", area.rows[0]);
@@ -112,6 +118,7 @@ test "kill lines" {
     try editor.controller.processKeypress(.{ .arrow = .right });
     try editor.controller.processKeypress(.{ .ctrl = 'K' });
     {
+        try editor.display.render();
         const area = try editor.display.getArea(0, 2, 0, 20);
         defer area.deinit();
         try std.testing.expectEqualStrings("H                   ", area.rows[0]);
@@ -120,6 +127,7 @@ test "kill lines" {
 
     try editor.controller.processKeypress(.{ .ctrl = 'K' });
     {
+        try editor.display.render();
         const area = try editor.display.getArea(0, 2, 0, 20);
         defer area.deinit();
         try std.testing.expectEqualStrings("HWorld              ", area.rows[0]);

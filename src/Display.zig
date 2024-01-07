@@ -5,6 +5,7 @@ const event = @import("event.zig");
 const BufferView = @import("BufferView.zig");
 const StatusBarView = @import("StatusBarView.zig");
 const DisplaySize = @import("DisplaySize.zig");
+const Terminal = @import("Terminal.zig");
 
 buffer: [][]u8,
 file_buffer_view: *BufferView,
@@ -82,6 +83,30 @@ pub fn getArea(self: *const Display, top: usize, bottom: usize, left: usize, rig
         std.mem.copy(u8, area.rows[i], self.buffer[top + i][left..right]);
     }
     return area;
+}
+
+pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
+    self.size.cols = @intCast(size.cols);
+    self.size.rows = @intCast(size.rows);
+    const new_buffer = try initBuffer(self.allocator, self.size);
+    errdefer {
+        for (0..new_buffer.len) |i| self.allocator.free(new_buffer[i]);
+        self.allocator.free(new_buffer);
+    }
+    for (0..self.buffer.len) |i| self.allocator.free(self.buffer[i]);
+    self.allocator.free(self.buffer);
+
+    self.buffer = new_buffer;
+
+    try self.file_buffer_view.setSize(self.size.cols, self.size.rows - 1);
+    try self.command_buffer_view.setSize(self.size.cols, 1);
+    try self.status_bar_view.setSize(self.size.cols);
+}
+
+pub fn render(self: *Display) !void {
+    try self.synchronizeBufferView();
+    try self.updateBottomLine();
+    try self.writeUpdates();
 }
 
 fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 {

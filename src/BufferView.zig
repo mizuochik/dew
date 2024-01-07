@@ -23,13 +23,12 @@ buffer_selector: *BufferSelector,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
-view_event_publisher: *const event.Publisher(view.Event),
 is_active: bool,
 last_cursor_x: usize = 0,
 mode: Buffer.Mode,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, mode: Buffer.Mode, vevents: *const event.Publisher(view.Event)) BufferView {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, mode: Buffer.Mode) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -37,7 +36,6 @@ pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, mode
         .rows = rows,
         .width = 0,
         .height = 0,
-        .view_event_publisher = vevents,
         .is_active = mode != Buffer.Mode.command,
         .mode = mode,
         .allocator = allocator,
@@ -171,34 +169,23 @@ fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
     switch (event_) {
         .cursor_moved => {
             self.normalizeScroll();
-            try self.view_event_publisher.publish(switch (self.mode) {
-                .file => .buffer_view_updated,
-                .command => .command_buffer_view_updated,
-            });
         },
         .file_buffer_changed => {
             switch (self.mode) {
                 .file => {
                     try self.update();
-                    try self.view_event_publisher.publish(.buffer_view_updated);
                 },
                 else => {},
             }
         },
         .buffer_updated => |_| {
             try self.update();
-            try self.view_event_publisher.publish(switch (self.mode) {
-                .file => .buffer_view_updated,
-                .command => .command_buffer_view_updated,
-            });
         },
         .command_buffer_opened => {
             self.is_active = self.mode == Buffer.Mode.command;
-            try self.view_event_publisher.publish(.buffer_view_updated);
         },
         .command_buffer_closed => {
             self.is_active = self.mode != Buffer.Mode.command;
-            try self.view_event_publisher.publish(.buffer_view_updated);
         },
         else => {},
     }
@@ -215,7 +202,6 @@ pub fn setSize(self: *BufferView, width: usize, height: usize) !void {
     self.width = width;
     self.height = height;
     try self.update();
-    try self.view_event_publisher.publish(.status_bar_view_updated);
 }
 
 fn update(self: *BufferView) !void {
@@ -253,7 +239,7 @@ pub fn scrollUp(self: *BufferView, diff: usize) void {
 }
 
 pub fn scrollDown(self: *BufferView, diff: usize) void {
-    const max_scroll = self.rows.items.len - self.height;
+    const max_scroll = if (self.rows.items.len > self.height) self.rows.items.len - self.height else 0;
     if (self.getBuffer().y_scroll + diff > max_scroll)
         self.getBuffer().y_scroll = max_scroll
     else

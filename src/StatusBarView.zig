@@ -8,13 +8,11 @@ const StatusBarView = @This();
 
 status_message: *const StatusMessage,
 width: usize,
-view_event_publisher: *const event.Publisher(view.Event),
 
-pub fn init(status_message: *StatusMessage, view_event_publisher: *const event.Publisher(view.Event)) StatusBarView {
+pub fn init(status_message: *StatusMessage) StatusBarView {
     return .{
         .status_message = status_message,
         .width = 0,
-        .view_event_publisher = view_event_publisher,
     };
 }
 
@@ -36,17 +34,13 @@ pub fn eventSubscriber(self: *StatusBarView) event.Subscriber(models.Event) {
     };
 }
 
-fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
-    var self: *StatusBarView = @ptrCast(@alignCast(ctx));
+fn handleEvent(_: *anyopaque, event_: models.Event) anyerror!void {
     switch (event_) {
-        .status_message_updated => {
-            try self.view_event_publisher.publish(.status_bar_view_updated);
-        },
+        .status_message_updated => {},
         else => {},
     }
 }
 
 pub fn setSize(self: *StatusBarView, width: usize) !void {
     self.width = width;
-    try self.view_event_publisher.publish(.status_bar_view_updated);
 }
