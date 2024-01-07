@@ -1,8 +1,6 @@
 const std = @import("std");
-const event = @import("event.zig");
 const models = @import("models.zig");
 const view = @import("view.zig");
-const debug = @import("debug.zig");
 const Keyboard = @import("Keyboard.zig");
 const Terminal = @import("Terminal.zig");
 const Display = @import("Display.zig");
@@ -22,11 +20,9 @@ pub const Options = struct {
 };
 
 allocator: std.mem.Allocator,
-model_event_publisher: event.Publisher(models.Event),
 buffer_view: BufferView,
 command_buffer_view: BufferView,
 buffer_selector: BufferSelector,
-debug_handler: ?debug.Handler,
 status_message: StatusMessage,
 status_bar_view: StatusBarView,
 display_size: DisplaySize,
@@ -37,16 +33,13 @@ keyboard: Keyboard,
 terminal: Terminal,
 display: Display,
 
-pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
+pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
     const editor = try allocator.create(Editor);
     errdefer allocator.destroy(editor);
 
     editor.allocator = allocator;
 
-    editor.model_event_publisher = event.Publisher(models.Event).init(allocator);
-    errdefer editor.model_event_publisher.deinit();
-
-    editor.buffer_selector = try BufferSelector.init(allocator, &editor.model_event_publisher);
+    editor.buffer_selector = try BufferSelector.init(allocator);
     errdefer editor.buffer_selector.deinit();
 
     editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file);
@@ -55,16 +48,7 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command);
     errdefer editor.command_buffer_view.deinit();
 
-    editor.debug_handler = null;
-    if (options.is_debug) {
-        editor.debug_handler = debug.Handler{
-            .buffer_selector = &editor.buffer_selector,
-            .allocator = allocator,
-        };
-        try editor.model_event_publisher.addSubscriber(editor.debug_handler.?.eventSubscriber());
-    }
-
-    editor.status_message = try StatusMessage.init(allocator, &editor.model_event_publisher);
+    editor.status_message = try StatusMessage.init(allocator);
     errdefer editor.status_message.deinit();
 
     editor.status_bar_view = StatusBarView.init(&editor.status_message);
@@ -82,13 +66,13 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
         &editor.buffer_selector,
         &editor.display,
         &editor.display_size,
+        editor,
     );
     errdefer editor.controller.deinit();
 
     editor.command_evaluator = .{
         .editor = editor,
     };
-    try editor.model_event_publisher.addSubscriber(editor.command_evaluator.eventSubscriber());
 
     editor.command_registry = CommandRegistry.init(allocator);
     errdefer editor.command_registry.deinit();
@@ -109,6 +93,5 @@ pub fn deinit(self: *Editor) void {
     self.display.deinit();
     self.command_registry.deinit();
     self.controller.deinit();
-    self.model_event_publisher.deinit();
     self.allocator.destroy(self);
 }

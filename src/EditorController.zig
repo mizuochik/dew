@@ -7,6 +7,7 @@ const DisplaySize = @import("DisplaySize.zig");
 const StatusMessage = @import("StatusMessage.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Display = @import("Display.zig");
+const Editor = @import("Editor.zig");
 
 file_buffer_view: *BufferView,
 command_buffer_view: *BufferView,
@@ -16,10 +17,11 @@ buffer_selector: *BufferSelector,
 display_size: *DisplaySize,
 display: *Display,
 allocator: std.mem.Allocator,
+editor: *Editor,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command_buffer_view: *BufferView, status_message: *StatusMessage, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command_buffer_view: *BufferView, status_message: *StatusMessage, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !EditorController {
     return EditorController{
         .allocator = allocator,
         .file_buffer_view = file_buffer_view,
@@ -28,6 +30,7 @@ pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command
         .buffer_selector = buffer_selector,
         .display = display,
         .display_size = display_size,
+        .editor = editor,
     };
 }
 
@@ -59,7 +62,8 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'M' => {
                 switch (self.buffer_selector.getCurrentBuffer().mode) {
                     .command => {
-                        try self.buffer_selector.command_buffer.evaluateCommand();
+                        const command = self.editor.buffer_selector.command_buffer.rows.items[0];
+                        try self.editor.command_evaluator.evaluate(command);
                     },
                     else => {
                         try self.breakLine();

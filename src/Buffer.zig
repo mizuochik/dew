@@ -1,6 +1,5 @@
 const std = @import("std");
 const UnicodeString = @import("UnicodeString.zig");
-const event = @import("event.zig");
 const models = @import("models.zig");
 const Cursor = @import("Cursor.zig");
 const Position = @import("Position.zig");
@@ -15,13 +14,12 @@ pub const Mode = enum {
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-event_publisher: *event.Publisher(models.Event),
 mode: Mode,
 cursors: std.ArrayList(Cursor),
 y_scroll: usize,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event), mode: Mode) !*Buffer {
+pub fn init(allocator: std.mem.Allocator, mode: Mode) !*Buffer {
     const buffer = try allocator.create(Buffer);
     errdefer allocator.destroy(buffer);
     var rows = std.ArrayList(UnicodeString).init(allocator);
@@ -34,7 +32,6 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
     }
     buffer.* = .{
         .rows = rows,
-        .event_publisher = event_publisher,
         .mode = mode,
         .cursors = std.ArrayList(Cursor).init(allocator),
         .y_scroll = 0,
@@ -79,7 +76,6 @@ pub fn clone(self: *const Buffer) !*Buffer {
 pub fn addCursor(self: *Buffer) !void {
     try self.cursors.append(Cursor{
         .buffer = self,
-        .event_publisher = self.event_publisher,
     });
 }
 
@@ -94,7 +90,6 @@ pub fn resetCursors(self: *Buffer) !void {
 
 pub fn insertChar(self: *Buffer, pos: Position, c: u21) !void {
     try self.rows.items[pos.y].insert(pos.x, c);
-    try self.notifyUpdate();
 }
 
 pub fn deleteChar(self: *Buffer, pos: Position) !void {
@@ -104,13 +99,11 @@ pub fn deleteChar(self: *Buffer, pos: Position) !void {
         return;
     }
     try row.remove(pos.x);
-    try self.notifyUpdate();
 }
 
 pub fn deleteBackwardChar(self: *Buffer) !void {
     try self.moveBackward();
     try self.deleteChar();
-    try self.notifyUpdate();
 }
 
 pub fn joinLine(self: *Buffer, pos: Position) !void {
@@ -122,7 +115,6 @@ pub fn joinLine(self: *Buffer, pos: Position) !void {
     try row.appendSlice(next_row.buffer.items);
     next_row.deinit();
     _ = self.rows.orderedRemove(pos.y + 1);
-    try self.notifyUpdate();
 }
 
 pub fn killLine(self: *Buffer, pos: Position) !void {
@@ -134,7 +126,6 @@ pub fn killLine(self: *Buffer, pos: Position) !void {
     for (0..row.getLen() - pos.x) |_| {
         try self.deleteChar(pos);
     }
-    try self.notifyUpdate();
 }
 
 pub fn breakLine(self: *Buffer, pos: Position) !void {
@@ -148,7 +139,6 @@ pub fn breakLine(self: *Buffer, pos: Position) !void {
         }
     }
     try self.rows.insert(pos.y + 1, new_row);
-    try self.notifyUpdate();
 }
 
 pub fn evaluateCommand(self: *Buffer) !void {
@@ -156,18 +146,12 @@ pub fn evaluateCommand(self: *Buffer) !void {
     const command_line = try self.rows.items[0].clone();
     errdefer command_line.deinit();
     try self.clear();
-    try self.event_publisher.publish(.{ .command_executed = command_line });
 }
 
 pub fn clear(self: *Buffer) !void {
     std.debug.assert(self.rows.items.len == 1);
     try self.resetCursors();
     try self.rows.items[0].clear();
-    try self.event_publisher.publish(models.Event{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
-}
-
-pub fn notifyUpdate(self: *Buffer) !void {
-    try self.event_publisher.publish(.{ .buffer_updated = .{ .from = .{ .x = 0, .y = 0 }, .to = .{ .x = 0, .y = 0 } } });
 }
 
 pub fn openFile(self: *Buffer, path: []const u8) !void {
@@ -201,8 +185,6 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
     self.rows = new_rows;
-
-    try self.notifyUpdate();
 }
 
 pub fn saveFile(self: *const Buffer, path: []const u8) !void {

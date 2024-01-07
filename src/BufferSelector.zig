@@ -1,5 +1,4 @@
 const std = @import("std");
-const event = @import("event.zig");
 const models = @import("models.zig");
 const Buffer = @import("Buffer.zig");
 
@@ -10,14 +9,13 @@ command_buffer: *Buffer,
 is_command_buffer_active: bool,
 current_file_buffer: []const u8,
 file_buffers: std.StringHashMap(*Buffer),
-event_publisher: *event.Publisher(models.Event),
 
-pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(models.Event)) !BufferSelector {
-    var file_buffer = try Buffer.init(allocator, event_publisher, .file);
+pub fn init(allocator: std.mem.Allocator) !BufferSelector {
+    var file_buffer = try Buffer.init(allocator, .file);
     errdefer file_buffer.deinit();
     try file_buffer.addCursor();
 
-    var command_buffer = try Buffer.init(allocator, event_publisher, .command);
+    var command_buffer = try Buffer.init(allocator, .command);
     errdefer command_buffer.deinit();
     try command_buffer.addCursor();
 
@@ -34,7 +32,6 @@ pub fn init(allocator: std.mem.Allocator, event_publisher: *event.Publisher(mode
         .current_file_buffer = default_key,
         .is_command_buffer_active = false,
         .file_buffers = file_buffers,
-        .event_publisher = event_publisher,
     };
 }
 
@@ -52,10 +49,8 @@ pub fn toggleCommandBuffer(self: *BufferSelector) !void {
     if (self.is_command_buffer_active) {
         try self.command_buffer.clear();
         self.is_command_buffer_active = false;
-        try self.event_publisher.publish(.command_buffer_closed);
     } else {
         self.is_command_buffer_active = true;
-        try self.event_publisher.publish(.command_buffer_opened);
     }
 }
 
@@ -73,7 +68,6 @@ pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
 pub fn openFileBuffer_(self: *BufferSelector, name: []const u8) !void {
     const entry = self.file_buffers.getEntry(name) orelse return error.FileNotFound;
     self.current_file_buffer = entry.key_ptr.*;
-    try self.event_publisher.publish(.file_buffer_changed);
 }
 
 pub fn addFileBuffer(self: *BufferSelector, file_path: []const u8, buffer: *Buffer) !void {
@@ -83,10 +77,9 @@ pub fn addFileBuffer(self: *BufferSelector, file_path: []const u8, buffer: *Buff
 pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     if (self.file_buffers.getKey(name)) |key| {
         self.current_file_buffer = key;
-        try self.event_publisher.publish(.file_buffer_changed);
         return;
     }
-    var buffer = try Buffer.init(self.allocator, self.event_publisher, .file);
+    var buffer = try Buffer.init(self.allocator, .file);
     errdefer buffer.deinit();
     try buffer.addCursor();
     buffer.openFile(name) catch |err| switch (err) {
@@ -98,7 +91,6 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     try self.file_buffers.put(key, buffer);
     errdefer _ = self.file_buffers.remove(key);
     self.current_file_buffer = key;
-    try self.event_publisher.publish(.file_buffer_changed);
 }
 
 pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
@@ -117,7 +109,6 @@ pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
     }
     result.value_ptr.* = buffer;
     self.current_file_buffer = result.key_ptr.*;
-    try self.event_publisher.publish(.file_buffer_changed);
 }
 
 test {

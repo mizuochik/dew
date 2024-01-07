@@ -1,7 +1,6 @@
 const std = @import("std");
 const models = @import("models.zig");
 const view = @import("view.zig");
-const event = @import("event.zig");
 const StatusMessage = @import("StatusMessage.zig");
 
 const StatusBarView = @This();

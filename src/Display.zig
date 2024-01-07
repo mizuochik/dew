@@ -1,7 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const view = @import("view.zig");
-const event = @import("event.zig");
 const BufferView = @import("BufferView.zig");
 const StatusBarView = @import("StatusBarView.zig");
 const DisplaySize = @import("DisplaySize.zig");
@@ -65,15 +64,6 @@ pub fn deinit(self: *const Display) void {
         self.allocator.free(row);
     }
     self.allocator.free(self.buffer);
-}
-
-pub fn eventSubscriber(self: *Display) event.Subscriber(view.Event) {
-    return .{
-        .ptr = self,
-        .vtable = &.{
-            .handle = handleEvent,
-        },
-    };
 }
 
 pub fn getArea(self: *const Display, top: usize, bottom: usize, left: usize, right: usize) !Area {
