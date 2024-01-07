@@ -105,7 +105,17 @@ pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
 
 pub fn render(self: *Display) !void {
     try self.synchronizeBufferView();
-    try self.updateBottomLine();
+    var bottom_line = self.buffer[self.buffer.len - 1];
+    for (0..bottom_line.len) |i| {
+        bottom_line[i] = ' ';
+    }
+    self.command_buffer_view.render(bottom_line);
+    var rest: usize = 0;
+    var i = @as(i32, @intCast(bottom_line.len)) - 1;
+    while (i >= 0 and bottom_line[@intCast(i)] == ' ') : (i -= 1) {
+        rest += 1;
+    }
+    self.status_bar_view.render(bottom_line[bottom_line.len - rest ..]);
     try self.writeUpdates();
 }
 

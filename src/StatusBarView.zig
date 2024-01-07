@@ -25,13 +25,13 @@ pub fn viewContent(self: *const StatusBarView) ![]const u8 {
         self.status_message.message[0..self.width];
 }
 
-pub fn eventSubscriber(self: *StatusBarView) event.Subscriber(models.Event) {
-    return .{
-        .ptr = self,
-        .vtable = &.{
-            .handle = handleEvent,
-        },
-    };
+pub fn render(self: *const StatusBarView, buffer: []u8) void {
+    const blank_size = if (buffer.len > self.status_message.message.len) buffer.len - self.status_message.message.len else 0;
+    for (0..blank_size) |i| {
+        buffer[i] = ' ';
+    }
+    const non_blank_size = if (buffer.len < self.status_message.message.len) buffer.len else self.status_message.message.len;
+    std.mem.copy(u8, buffer[blank_size..], self.status_message.message[0..non_blank_size]);
 }
 
 fn handleEvent(_: *anyopaque, event_: models.Event) anyerror!void {

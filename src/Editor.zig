@@ -55,7 +55,6 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
 
     editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command);
     errdefer editor.command_buffer_view.deinit();
-    try editor.model_event_publisher.addSubscriber(editor.command_buffer_view.eventSubscriber());
 
     editor.debug_handler = null;
     if (options.is_debug) {
@@ -71,7 +70,6 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
 
     editor.status_bar_view = StatusBarView.init(&editor.status_message);
     errdefer editor.status_bar_view.deinit();
-    try editor.model_event_publisher.addSubscriber(editor.status_bar_view.eventSubscriber());
 
     editor.display_size = DisplaySize.init();
     editor.display = try Display.init(allocator, &editor.buffer_view, &editor.status_bar_view, &editor.command_buffer_view, &editor.display_size);

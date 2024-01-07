@@ -245,3 +245,8 @@ pub fn scrollDown(self: *BufferView, diff: usize) void {
     else
         self.getBuffer().y_scroll += diff;
 }
+
+pub fn render(self: *const BufferView, buffer: []u8) void {
+    std.debug.assert(self.mode == .command);
+    std.mem.copy(u8, buffer, self.buffer_selector.command_buffer.rows.items[0].buffer.items);
+}
