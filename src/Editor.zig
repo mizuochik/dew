@@ -22,177 +22,102 @@ pub const Options = struct {
 };
 
 allocator: std.mem.Allocator,
-model_event_publisher: *event.Publisher(models.Event),
-view_event_publisher: *event.Publisher(view.Event),
-buffer_view: *BufferView,
-command_buffer_view: *BufferView,
-buffer_selector: *BufferSelector,
-debug_handler: ?*debug.Handler,
-status_message: *StatusMessage,
-status_bar_view: *StatusBarView,
-display_size: *DisplaySize,
-controller: *EditorController,
-command_evaluator: *CommandEvaluator,
+model_event_publisher: event.Publisher(models.Event),
+view_event_publisher: event.Publisher(view.Event),
+buffer_view: BufferView,
+command_buffer_view: BufferView,
+buffer_selector: BufferSelector,
+debug_handler: ?debug.Handler,
+status_message: StatusMessage,
+status_bar_view: StatusBarView,
+display_size: DisplaySize,
+controller: EditorController,
+command_evaluator: CommandEvaluator,
 command_registry: CommandRegistry,
-keyboard: *Keyboard,
-terminal: *Terminal,
-display: *Display,
+keyboard: Keyboard,
+terminal: Terminal,
+display: Display,
 
 pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
     const editor = try allocator.create(Editor);
     errdefer allocator.destroy(editor);
 
-    const model_event_publisher = try allocator.create(event.Publisher(models.Event));
-    errdefer allocator.destroy(model_event_publisher);
-    model_event_publisher.* = event.Publisher(models.Event).init(allocator);
-    errdefer model_event_publisher.deinit();
+    editor.allocator = allocator;
 
-    const view_event_publisher = try allocator.create(event.Publisher(view.Event));
-    errdefer allocator.destroy(view_event_publisher);
-    view_event_publisher.* = event.Publisher(view.Event).init(allocator);
-    errdefer view_event_publisher.deinit();
+    editor.model_event_publisher = event.Publisher(models.Event).init(allocator);
+    errdefer editor.model_event_publisher.deinit();
 
-    const buffer_selector = try allocator.create(BufferSelector);
-    errdefer allocator.destroy(buffer_selector);
-    buffer_selector.* = try BufferSelector.init(allocator, model_event_publisher);
-    errdefer buffer_selector.deinit();
+    editor.view_event_publisher = event.Publisher(view.Event).init(allocator);
+    errdefer editor.view_event_publisher.deinit();
 
-    const buffer_view = try allocator.create(BufferView);
-    errdefer allocator.destroy(buffer_view);
-    buffer_view.* = BufferView.init(allocator, buffer_selector, .file, view_event_publisher);
-    errdefer buffer_view.deinit();
-    try model_event_publisher.addSubscriber(buffer_view.eventSubscriber());
+    editor.buffer_selector = try BufferSelector.init(allocator, &editor.model_event_publisher);
+    errdefer editor.buffer_selector.deinit();
 
-    const command_buffer_view = try allocator.create(BufferView);
-    errdefer allocator.destroy(command_buffer_view);
-    command_buffer_view.* = BufferView.init(allocator, buffer_selector, .command, view_event_publisher);
-    errdefer command_buffer_view.deinit();
-    try model_event_publisher.addSubscriber(command_buffer_view.eventSubscriber());
+    editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file, &editor.view_event_publisher);
+    errdefer editor.buffer_view.deinit();
+    try editor.model_event_publisher.addSubscriber(editor.buffer_view.eventSubscriber());
 
-    const debug_handler: ?*debug.Handler = if (options.is_debug) b: {
-        const debug_handler = try allocator.create(debug.Handler);
-        errdefer allocator.destroy(debug_handler);
-        debug_handler.* = debug.Handler{
-            .buffer_selector = buffer_selector,
+    editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command, &editor.view_event_publisher);
+    errdefer editor.command_buffer_view.deinit();
+    try editor.model_event_publisher.addSubscriber(editor.command_buffer_view.eventSubscriber());
+
+    editor.debug_handler = null;
+    if (options.is_debug) {
+        editor.debug_handler = debug.Handler{
+            .buffer_selector = &editor.buffer_selector,
             .allocator = allocator,
         };
-        try model_event_publisher.addSubscriber(debug_handler.eventSubscriber());
-        break :b debug_handler;
-    } else null;
-    errdefer if (debug_handler) |handler| allocator.destroy(handler);
+        try editor.model_event_publisher.addSubscriber(editor.debug_handler.?.eventSubscriber());
+    }
 
-    const status_message = try allocator.create(StatusMessage);
-    errdefer allocator.destroy(status_message);
-    status_message.* = try StatusMessage.init(allocator, model_event_publisher);
-    errdefer status_message.deinit();
+    editor.status_message = try StatusMessage.init(allocator, &editor.model_event_publisher);
+    errdefer editor.status_message.deinit();
 
-    const status_bar_view = try allocator.create(StatusBarView);
-    errdefer allocator.destroy(status_bar_view);
-    status_bar_view.* = StatusBarView.init(status_message, view_event_publisher);
-    errdefer status_bar_view.deinit();
-    try model_event_publisher.addSubscriber(status_bar_view.eventSubscriber());
+    editor.status_bar_view = StatusBarView.init(&editor.status_message, &editor.view_event_publisher);
+    errdefer editor.status_bar_view.deinit();
+    try editor.model_event_publisher.addSubscriber(editor.status_bar_view.eventSubscriber());
 
-    const display_size = try allocator.create(DisplaySize);
-    errdefer allocator.destroy(display_size);
-    display_size.* = DisplaySize.init(view_event_publisher);
+    editor.display_size = DisplaySize.init(&editor.view_event_publisher);
 
-    const editor_controller = try allocator.create(EditorController);
-    errdefer allocator.destroy(editor_controller);
-    editor_controller.* = try EditorController.init(
+    editor.controller = try EditorController.init(
         allocator,
-        buffer_view,
-        command_buffer_view,
-        status_message,
-        buffer_selector,
-        display_size,
+        &editor.buffer_view,
+        &editor.command_buffer_view,
+        &editor.status_message,
+        &editor.buffer_selector,
+        &editor.display_size,
     );
-    errdefer editor_controller.deinit();
+    errdefer editor.controller.deinit();
 
-    const command_evaluator = try allocator.create(CommandEvaluator);
-    errdefer allocator.destroy(command_evaluator);
-    command_evaluator.* = CommandEvaluator{
+    editor.command_evaluator = .{
         .editor = editor,
     };
-    try model_event_publisher.addSubscriber(command_evaluator.eventSubscriber());
+    try editor.model_event_publisher.addSubscriber(editor.command_evaluator.eventSubscriber());
 
-    var command_registry = CommandRegistry.init(allocator);
-    errdefer command_registry.deinit();
-    try command_registry.registerBuiltinCommands();
+    editor.command_registry = CommandRegistry.init(allocator);
+    errdefer editor.command_registry.deinit();
+    try editor.command_registry.registerBuiltinCommands();
 
-    const keyboard = try allocator.create(Keyboard);
-    errdefer allocator.destroy(keyboard);
-    keyboard.* = Keyboard{};
+    editor.keyboard = .{};
+    editor.terminal = .{};
 
-    const terminal = try allocator.create(Terminal);
-    errdefer allocator.destroy(terminal);
-    terminal.* = .{};
+    editor.display = try Display.init(allocator, &editor.buffer_view, &editor.status_bar_view, &editor.command_buffer_view, &editor.display_size);
+    errdefer editor.display.deinit();
+    try editor.view_event_publisher.addSubscriber(editor.display.eventSubscriber());
 
-    const display = try allocator.create(Display);
-    errdefer allocator.destroy(display);
-    display.* = try Display.init(allocator, buffer_view, status_bar_view, command_buffer_view, display_size);
-    errdefer display.deinit();
-    try view_event_publisher.addSubscriber(display.eventSubscriber());
-
-    editor.* = Editor{
-        .allocator = allocator,
-        .model_event_publisher = model_event_publisher,
-        .view_event_publisher = view_event_publisher,
-        .buffer_view = buffer_view,
-        .command_buffer_view = command_buffer_view,
-        .buffer_selector = buffer_selector,
-        .debug_handler = debug_handler,
-        .status_message = status_message,
-        .status_bar_view = status_bar_view,
-        .display_size = display_size,
-        .controller = editor_controller,
-        .command_evaluator = command_evaluator,
-        .command_registry = command_registry,
-        .keyboard = keyboard,
-        .terminal = terminal,
-        .display = display,
-    };
     return editor;
 }
 
 pub fn deinit(self: *Editor) void {
     self.buffer_view.deinit();
-    self.allocator.destroy(self.buffer_view);
-
     self.command_buffer_view.deinit();
-    self.allocator.destroy(self.command_buffer_view);
-
     self.buffer_selector.deinit();
-    self.allocator.destroy(self.buffer_selector);
-
     self.status_message.deinit();
-    self.allocator.destroy(self.status_message);
-
     self.status_bar_view.deinit();
-    self.allocator.destroy(self.status_bar_view);
-
     self.display.deinit();
-    self.allocator.destroy(self.display);
-
-    self.allocator.destroy(self.command_evaluator);
-
     self.command_registry.deinit();
-
-    if (self.debug_handler) |handler| {
-        self.allocator.destroy(handler);
-    }
-
     self.controller.deinit();
-    self.allocator.destroy(self.controller);
-
-    self.allocator.destroy(self.display_size);
-    self.allocator.destroy(self.keyboard);
-    self.allocator.destroy(self.terminal);
-
     self.view_event_publisher.deinit();
-    self.allocator.destroy(self.view_event_publisher);
-
     self.model_event_publisher.deinit();
-    self.allocator.destroy(self.model_event_publisher);
-
     self.allocator.destroy(self);
 }

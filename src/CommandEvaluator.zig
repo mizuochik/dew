@@ -24,7 +24,7 @@ pub fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
     const self: *CommandEvaluator = @ptrCast(@alignCast(ctx));
     switch (event_) {
         .command_executed => |command_line_s| {
-            var parser = try CommandParser.init(self.editor.allocator, self.editor.buffer_selector, self.editor.status_message);
+            var parser = try CommandParser.init(self.editor.allocator, &self.editor.buffer_selector, &self.editor.status_message);
             defer parser.deinit();
             var command_line = try parser.parse(command_line_s.buffer.items);
             defer command_line.deinit();
