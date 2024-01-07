@@ -104,12 +104,17 @@ pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
 }
 
 pub fn render(self: *Display) !void {
-    try self.synchronizeBufferView();
+    for (0..self.buffer.len - 1) |i| {
+        for (0..self.buffer[i].len) |j| {
+            self.buffer[i][j] = ' ';
+        }
+    }
+    try self.file_buffer_view.renderFile(self.buffer[0 .. self.buffer.len - 1]);
     var bottom_line = self.buffer[self.buffer.len - 1];
     for (0..bottom_line.len) |i| {
         bottom_line[i] = ' ';
     }
-    self.command_buffer_view.render(bottom_line);
+    self.command_buffer_view.renderCommand(bottom_line);
     var rest: usize = 0;
     var i = @as(i32, @intCast(bottom_line.len)) - 1;
     while (i >= 0 and bottom_line[@intCast(i)] == ' ') : (i -= 1) {

@@ -51,7 +51,6 @@ pub fn init(allocator: std.mem.Allocator, options: Options) !*Editor {
 
     editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file);
     errdefer editor.buffer_view.deinit();
-    try editor.model_event_publisher.addSubscriber(editor.buffer_view.eventSubscriber());
 
     editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command);
     errdefer editor.command_buffer_view.deinit();

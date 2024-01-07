@@ -7,6 +7,7 @@ test "scroll down/up" {
     defer editor.deinit();
     try editor.controller.changeDisplaySize(10, 11); // 11 lines = 10 lines (file content) + one line (status bar)
     try editor.buffer_selector.getCurrentFileBuffer().openFile("src/e2e/line-numbers.txt");
+    try editor.display.render();
 
     try editor.controller.processKeypress(.{ .ctrl = 'V' });
     try editor.display.render();

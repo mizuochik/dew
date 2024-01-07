@@ -155,42 +155,6 @@ pub fn updateLastCursorX(self: *BufferView) void {
     self.last_cursor_x = self.getCursor().x;
 }
 
-pub fn eventSubscriber(self: *BufferView) event.Subscriber(models.Event) {
-    return event.Subscriber(models.Event){
-        .ptr = self,
-        .vtable = &.{
-            .handle = handleEvent,
-        },
-    };
-}
-
-fn handleEvent(ctx: *anyopaque, event_: models.Event) anyerror!void {
-    const self: *BufferView = @ptrCast(@alignCast(ctx));
-    switch (event_) {
-        .cursor_moved => {
-            self.normalizeScroll();
-        },
-        .file_buffer_changed => {
-            switch (self.mode) {
-                .file => {
-                    try self.update();
-                },
-                else => {},
-            }
-        },
-        .buffer_updated => |_| {
-            try self.update();
-        },
-        .command_buffer_opened => {
-            self.is_active = self.mode == Buffer.Mode.command;
-        },
-        .command_buffer_closed => {
-            self.is_active = self.mode != Buffer.Mode.command;
-        },
-        else => {},
-    }
-}
-
 fn getBuffer(self: *const BufferView) *Buffer {
     return switch (self.mode) {
         .file => self.buffer_selector.getCurrentFileBuffer(),
@@ -246,7 +210,42 @@ pub fn scrollDown(self: *BufferView, diff: usize) void {
         self.getBuffer().y_scroll += diff;
 }
 
-pub fn render(self: *const BufferView, buffer: []u8) void {
+pub fn renderCommand(self: *const BufferView, buffer: []u8) void {
     std.debug.assert(self.mode == .command);
     std.mem.copy(u8, buffer, self.buffer_selector.command_buffer.rows.items[0].buffer.items);
+}
+
+pub fn renderFile(self: *BufferView, buffer: [][]u8) !void {
+    std.debug.assert(self.mode == .file);
+    var new_rows = std.ArrayList(RowSlice).init(self.allocator);
+    errdefer new_rows.deinit();
+    const buffer_width = buffer[0].len;
+    for (self.getBuffer().rows.items, 0..) |row, y| {
+        var x_start: usize = 0;
+        for (0..row.getLen()) |x| {
+            if (row.width_index.items[x + 1] - row.width_index.items[x_start] > buffer_width) {
+                try new_rows.append(.{
+                    .buf_y = y,
+                    .buf_x_start = x_start,
+                    .buf_x_end = x,
+                });
+                x_start = x;
+            }
+        }
+        if (row.getLen() <= 0 or x_start < row.getLen()) {
+            try new_rows.append(RowSlice{
+                .buf_y = y,
+                .buf_x_start = x_start,
+                .buf_x_end = row.getLen(),
+            });
+        }
+    }
+    const file = self.getBuffer();
+    const draw_height = if (buffer.len < new_rows.items.len - file.y_scroll) buffer.len else new_rows.items.len - file.y_scroll;
+    for (0..draw_height) |i| {
+        const row_slice = new_rows.items[i + file.y_scroll];
+        std.mem.copy(u8, buffer[i], file.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
+    }
+    self.rows.deinit();
+    self.rows = new_rows;
 }
