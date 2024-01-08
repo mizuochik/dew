@@ -106,7 +106,7 @@ pub fn render(self: *Display) !void {
     }
     try self.command_buffer_view.render(bottom_line);
     var rest: usize = 0;
-    var i = @as(i32, @intCast(bottom_line.len)) - 1;
+    var i = @as(i32, @intCast(bottom_line[0].len)) - 1;
     while (i >= 0 and bottom_line[0][@intCast(i)] == ' ') : (i -= 1) {
         rest += 1;
     }
