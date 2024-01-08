@@ -14,7 +14,10 @@ editor: *Editor,
 pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
     var file_buffer = try Buffer.init(allocator, .file);
     errdefer file_buffer.deinit();
-    try file_buffer.addCursor();
+    if (!editor.client.hasCursor("default")) {
+        try editor.client.addCursor("default", file_buffer);
+    }
+    errdefer editor.client.removeCursor("default");
 
     var file_buffers = std.StringHashMap(*Buffer).init(allocator);
     errdefer file_buffers.deinit();
@@ -22,6 +25,8 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
     const default_key = try std.fmt.allocPrint(allocator, "default", .{});
     errdefer allocator.free(default_key);
     try file_buffers.put(default_key, file_buffer);
+
+    try editor.client.setCurrentFile("default");
 
     return .{
         .allocator = allocator,
@@ -44,6 +49,7 @@ pub fn deinit(self: *BufferSelector) void {
 pub fn toggleCommandBuffer(self: *BufferSelector) !void {
     if (self.is_command_buffer_active) {
         try self.editor.client.command_line.clear();
+        self.editor.client.command_cursor.x = 0;
         self.is_command_buffer_active = false;
     } else {
         self.is_command_buffer_active = true;
@@ -77,11 +83,13 @@ pub fn addFileBuffer(self: *BufferSelector, file_path: []const u8, buffer: *Buff
 pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     if (self.file_buffers.getKey(name)) |key| {
         self.current_file_buffer = key;
+        try self.editor.client.setCurrentFile(key);
         return;
     }
     var buffer = try Buffer.init(self.allocator, .file);
     errdefer buffer.deinit();
-    try buffer.addCursor();
+    try self.editor.client.addCursor(name, buffer);
+    errdefer self.editor.client.removeCursor(name);
 
     buffer.openFile(name) catch |err| switch (err) {
         std.fs.File.OpenError.FileNotFound => {}, // Open as an empty file
@@ -92,6 +100,7 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     try self.file_buffers.put(key, buffer);
     errdefer _ = self.file_buffers.remove(key);
     self.current_file_buffer = key;
+    try self.editor.client.setCurrentFile(key);
 }
 
 pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
@@ -110,6 +119,7 @@ pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
     }
     result.value_ptr.* = buffer;
     self.current_file_buffer = result.key_ptr.*;
+    try self.editor.client.setCurrentFile(name);
 }
 
 test {

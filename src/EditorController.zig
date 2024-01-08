@@ -8,6 +8,7 @@ const Status = @import("Status.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Display = @import("Display.zig");
 const Editor = @import("Editor.zig");
+const Cursor = @import("Cursor.zig");
 
 file_buffer_view: *BufferView,
 command_buffer_view: *BufferView,
@@ -18,6 +19,7 @@ display_size: *DisplaySize,
 display: *Display,
 allocator: std.mem.Allocator,
 editor: *Editor,
+cursors: [1]*Cursor,
 
 const EditorController = @This();
 
@@ -31,6 +33,7 @@ pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command
         .display = display,
         .display_size = display_size,
         .editor = editor,
+        .cursors = .{undefined},
     };
 }
 
@@ -39,7 +42,7 @@ pub fn deinit(_: *const EditorController) void {}
 pub fn processKeypress(self: *EditorController, key: models.Key) !void {
     switch (key) {
         .del => {
-            for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+            for (self.getCursors()) |cursor| {
                 try cursor.moveBackward();
                 try self.buffer_selector.getCurrentBuffer().deleteChar(cursor.getPosition());
             }
@@ -49,12 +52,12 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'S' => try self.buffer_selector.saveFileBuffer(self.buffer_selector.current_file_buffer),
             'K' => try self.killLine(),
             'D' => {
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try self.buffer_selector.getCurrentBuffer().deleteChar(cursor.getPosition());
                 }
             },
             'H' => {
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try cursor.moveBackward();
                     try self.buffer_selector.getCurrentBuffer().deleteChar(cursor.getPosition());
                 }
@@ -75,18 +78,18 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'F' => try self.moveCursor(.right),
             'B' => try self.moveCursor(.left),
             'J' => {
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try self.buffer_selector.getCurrentBuffer().joinLine(cursor.getPosition());
                 }
             },
             'A' => {
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try cursor.moveToBeginningOfLine();
                 }
                 self.getCurrentView().updateLastCursorX();
             },
             'E' => {
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try cursor.moveToEndOfLine();
                 }
                 self.getCurrentView().updateLastCursorX();
@@ -97,7 +100,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'V' => {
                 self.getCurrentView().scrollDown(self.getCurrentView().height);
                 const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try cursor.setPosition(buf_pos);
                 }
             },
@@ -107,14 +110,14 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'v' => {
                 self.getCurrentView().scrollUp(self.getCurrentView().height);
                 const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try cursor.setPosition(buf_pos);
                 }
             },
             else => {},
         },
         .plain => |k| {
-            for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+            for (self.getCursors()) |cursor| {
                 try self.buffer_selector.getCurrentBuffer().insertChar(cursor.getPosition(), k);
                 try cursor.moveForward();
             }
@@ -133,7 +136,7 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
             const y = self.getCurrentView().getCursor().y;
             if (y > 0) {
                 const pos = self.getCurrentView().getBufferPopsition(.{ .x = self.getCurrentView().last_cursor_x, .y = y - 1 });
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try cursor.setPosition(pos);
                 }
             }
@@ -142,19 +145,19 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
             const y = self.getCurrentView().getCursor().y;
             if (y < self.getCurrentView().getNumberOfLines() - 1) {
                 const pos = self.getCurrentView().getBufferPopsition(.{ .x = self.getCurrentView().last_cursor_x, .y = y + 1 });
-                for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+                for (self.getCursors()) |cursor| {
                     try cursor.setPosition(pos);
                 }
             }
         },
         .left => {
-            for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+            for (self.getCursors()) |cursor| {
                 try cursor.moveBackward();
             }
             self.getCurrentView().updateLastCursorX();
         },
         .right => {
-            for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+            for (self.getCursors()) |cursor| {
                 try cursor.moveForward();
             }
             self.getCurrentView().updateLastCursorX();
@@ -163,7 +166,7 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
 }
 
 fn breakLine(self: *EditorController) !void {
-    for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+    for (self.getCursors()) |cursor| {
         try self.buffer_selector.getCurrentBuffer().breakLine(cursor.getPosition());
         try cursor.moveForward();
     }
@@ -171,7 +174,7 @@ fn breakLine(self: *EditorController) !void {
 }
 
 fn killLine(self: *EditorController) !void {
-    for (self.buffer_selector.getCurrentBuffer().cursors.items) |*cursor| {
+    for (self.getCursors()) |cursor| {
         try self.buffer_selector.getCurrentBuffer().killLine(cursor.getPosition());
     }
     self.getCurrentView().updateLastCursorX();
@@ -194,4 +197,13 @@ pub fn openFile(self: *EditorController, path: []const u8) !void {
     const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);
     try self.status.setMessage(new_message);
+}
+
+fn getCursors(self: *EditorController) []*Cursor {
+    self.cursors[0] = if (self.buffer_selector.is_command_buffer_active)
+        &self.editor.client.command_cursor
+    else
+        self.editor.client.getActiveCursor();
+    // self.cursors[0] = &self.buffer_selector.getCurrentBuffer().cursors.items[0];
+    return &self.cursors;
 }

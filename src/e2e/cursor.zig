@@ -6,7 +6,7 @@ test "move cursor to any directions" {
     const editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
-    const cursor = &editor.controller.buffer_selector.getCurrentFileBuffer().cursors.items[0];
+    const cursor = editor.client.cursors.getPtr("default").?;
     try editor.buffer_selector.getCurrentFileBuffer().openFile("src/e2e/100x100.txt");
 
     try editor.display.render();
@@ -33,7 +33,7 @@ test "move to the beginning or end of line" {
     const editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
-    const cursor = &editor.controller.buffer_selector.getCurrentFileBuffer().cursors.items[0];
+    const cursor = editor.client.cursors.getPtr("default").?;
     try editor.buffer_selector.getCurrentFileBuffer().openFile("src/e2e/100x100.txt");
 
     for (0..10) |_| try cursor.moveForward();
@@ -56,7 +56,7 @@ test "move vertically considering double bytes" {
         const editor = try Editor.init(std.testing.allocator, .{});
         defer editor.deinit();
         try editor.controller.changeDisplaySize(100, 100);
-        const cursor = &editor.controller.buffer_selector.getCurrentFileBuffer().cursors.items[0];
+        const cursor = editor.client.cursors.getPtr("default").?;
         try editor.buffer_selector.getCurrentFileBuffer().openFile("src/e2e/mixed-byte-lines.txt");
         try editor.display.render();
 
@@ -75,7 +75,7 @@ test "move vertically considering double bytes" {
         const editor = try Editor.init(std.testing.allocator, .{});
         defer editor.deinit();
         try editor.controller.changeDisplaySize(100, 100);
-        const cursor = &editor.controller.buffer_selector.getCurrentFileBuffer().cursors.items[0];
+        const cursor = editor.client.cursors.getPtr("default").?;
         try editor.buffer_selector.getCurrentFileBuffer().openFile("src/e2e/mixed-byte-lines.txt");
         try editor.display.render();
 

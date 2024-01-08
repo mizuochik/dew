@@ -33,10 +33,31 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
 }
 
 pub fn deinit(self: *@This()) void {
+    var ki = self.cursors.keyIterator();
+    while (ki.next()) |key| self.allocator.free(key.*);
     self.cursors.deinit();
     self.command_line.deinit();
     self.status.deinit();
     self.scroll_positions.deinit();
+    if (self.current_file) |current_file| {
+        self.allocator.free(current_file);
+    }
+}
+
+pub fn setCurrentFile(self: *@This(), file_name: []const u8) !void {
+    if (self.current_file) |current_file| {
+        if (std.mem.eql(u8, file_name, current_file)) {
+            return;
+        }
+        const duped = try self.allocator.dupe(u8, file_name);
+        errdefer self.allocator.free(duped);
+        self.allocator.free(current_file);
+        self.current_file = duped;
+        return;
+    }
+    const duped = try self.allocator.dupe(u8, file_name);
+    errdefer self.allocator.free(duped);
+    self.current_file = duped;
 }
 
 pub fn hasCursor(self: *const @This(), file_name: []const u8) bool {
@@ -51,6 +72,16 @@ pub fn addCursor(self: *@This(), file_name: []const u8, buffer: *Buffer) !void {
         .x = 0,
         .y = 0,
     });
+}
+
+pub fn removeCursor(self: *@This(), file_name: []const u8) void {
+    if (self.cursors.fetchRemove(file_name)) |kv| {
+        self.allocator.free(kv.key);
+    }
+}
+
+pub fn getActiveCursor(self: *const @This()) *Cursor {
+    return self.cursors.getPtr(self.current_file.?) orelse unreachable;
 }
 
 test {

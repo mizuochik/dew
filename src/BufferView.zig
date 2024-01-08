@@ -4,6 +4,7 @@ const view = @import("view.zig");
 const Buffer = @import("Buffer.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Position = @import("Position.zig");
+const Editor = @import("Editor.zig");
 
 const BufferView = @This();
 
@@ -25,9 +26,10 @@ height: usize,
 is_active: bool,
 last_cursor_x: usize = 0,
 mode: Buffer.Mode,
+editor: *Editor,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, mode: Buffer.Mode) BufferView {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, mode: Buffer.Mode, editor: *Editor) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -37,6 +39,7 @@ pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, mode
         .height = 0,
         .is_active = mode != Buffer.Mode.command,
         .mode = mode,
+        .editor = editor,
         .allocator = allocator,
     };
 }
@@ -70,8 +73,12 @@ pub fn viewCursor(self: *const BufferView) ?Position {
 }
 
 pub fn getCursor(self: *const BufferView) Position {
-    const c_y = self.getBuffer().cursors.items[0].y;
-    const c_x = self.getBuffer().cursors.items[0].x;
+    const cursor = switch (self.mode) {
+        .command => self.editor.client.command_cursor,
+        else => self.editor.client.getActiveCursor().*,
+    };
+    const c_y = cursor.y;
+    const c_x = cursor.x;
     if (self.rows.items.len <= 0) {
         return .{
             .x = 0,

@@ -41,13 +41,17 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
 
     editor.allocator = allocator;
 
+    var client = try Client.init(allocator);
+    errdefer client.deinit();
+    editor.client = client;
+
     editor.buffer_selector = try BufferSelector.init(allocator, editor);
     errdefer editor.buffer_selector.deinit();
 
-    editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file);
+    editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file, editor);
     errdefer editor.buffer_view.deinit();
 
-    editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command);
+    editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command, editor);
     errdefer editor.command_buffer_view.deinit();
 
     editor.status = try Status.init(allocator);
@@ -82,10 +86,6 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
 
     editor.keyboard = .{};
     editor.terminal = .{};
-
-    var client = try Client.init(allocator);
-    errdefer client.deinit();
-    editor.client = client;
 
     return editor;
 }
