@@ -141,13 +141,6 @@ pub fn breakLine(self: *Buffer, pos: Position) !void {
     try self.rows.insert(pos.y + 1, new_row);
 }
 
-pub fn evaluateCommand(self: *Buffer) !void {
-    std.debug.assert(self.mode == .command);
-    const command_line = try self.rows.items[0].clone();
-    errdefer command_line.deinit();
-    try self.clear();
-}
-
 pub fn clear(self: *Buffer) !void {
     std.debug.assert(self.rows.items.len == 1);
     try self.resetCursors();
