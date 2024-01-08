@@ -2,13 +2,13 @@ const std = @import("std");
 const builtin = @import("builtin");
 const view = @import("view.zig");
 const BufferView = @import("BufferView.zig");
-const StatusBarView = @import("StatusBarView.zig");
+const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const Terminal = @import("Terminal.zig");
 
 buffer: [][]u8,
 file_buffer_view: *BufferView,
-status_bar_view: *StatusBarView,
+status_view: *StatusView,
 command_buffer_view: *BufferView,
 allocator: std.mem.Allocator,
 size: *DisplaySize,
@@ -43,7 +43,7 @@ pub const Area = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, status_bar_view: *StatusBarView, command_buffer_view: *BufferView, size: *DisplaySize) !Display {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, status_view: *StatusView, command_buffer_view: *BufferView, size: *DisplaySize) !Display {
     const buffer = try initBuffer(allocator, size);
     errdefer {
         for (0..buffer.len) |i| allocator.free(buffer[i]);
@@ -52,7 +52,7 @@ pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, status_
     return .{
         .buffer = buffer,
         .file_buffer_view = file_buffer_view,
-        .status_bar_view = status_bar_view,
+        .status_view = status_view,
         .command_buffer_view = command_buffer_view,
         .allocator = allocator,
         .size = size,
@@ -90,7 +90,7 @@ pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
 
     try self.file_buffer_view.setSize(self.size.cols, self.size.rows - 1);
     try self.command_buffer_view.setSize(self.size.cols, 1);
-    try self.status_bar_view.setSize(self.size.cols);
+    try self.status_view.setSize(self.size.cols);
 }
 
 pub fn render(self: *Display) !void {
@@ -110,7 +110,7 @@ pub fn render(self: *Display) !void {
     while (i >= 0 and bottom_line[0][@intCast(i)] == ' ') : (i -= 1) {
         rest += 1;
     }
-    self.status_bar_view.render(bottom_line[0][bottom_line[0].len - rest ..]);
+    self.status_view.render(bottom_line[0][bottom_line[0].len - rest ..]);
     try self.writeUpdates();
 }
 
@@ -139,7 +139,7 @@ fn handleEvent(ctx: *anyopaque, event_: view.Event) anyerror!void {
             try self.synchronizeBufferView();
             try self.writeUpdates();
         },
-        .command_buffer_view_updated, .status_bar_view_updated => {
+        .command_buffer_view_updated, .status_view_updated => {
             try self.updateBottomLine();
             try self.writeUpdates();
         },
@@ -156,7 +156,7 @@ fn handleEvent(ctx: *anyopaque, event_: view.Event) anyerror!void {
 
             try self.file_buffer_view.setSize(self.size.cols, self.size.rows - 1);
             try self.command_buffer_view.setSize(self.size.cols, 1);
-            try self.status_bar_view.setSize(self.size.cols);
+            try self.status_view.setSize(self.size.cols);
         },
     }
 }
@@ -191,7 +191,7 @@ fn synchronizeBufferView(self: *Display) !void {
 }
 
 fn updateBottomLine(self: *Display) !void {
-    const status_bar = try self.status_bar_view.viewContent();
+    const status_bar = try self.status_view.viewContent();
     const command_buffer = self.command_buffer_view.viewRow(0);
     const bottom = self.size.rows - 1;
     for (0..command_buffer.len) |x| {

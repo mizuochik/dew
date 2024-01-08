@@ -6,9 +6,9 @@ const Terminal = @import("Terminal.zig");
 const Display = @import("Display.zig");
 const CommandEvaluator = @import("CommandEvaluator.zig");
 const BufferSelector = @import("BufferSelector.zig");
-const StatusMessage = @import("StatusMessage.zig");
+const Status = @import("Status.zig");
 const BufferView = @import("BufferView.zig");
-const StatusBarView = @import("StatusBarView.zig");
+const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const CommandRegistry = @import("CommandRegistry.zig");
 const EditorController = @import("EditorController.zig");
@@ -23,8 +23,8 @@ allocator: std.mem.Allocator,
 buffer_view: BufferView,
 command_buffer_view: BufferView,
 buffer_selector: BufferSelector,
-status_message: StatusMessage,
-status_bar_view: StatusBarView,
+status: Status,
+status_view: StatusView,
 display_size: DisplaySize,
 controller: EditorController,
 command_evaluator: CommandEvaluator,
@@ -48,21 +48,21 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
     editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command);
     errdefer editor.command_buffer_view.deinit();
 
-    editor.status_message = try StatusMessage.init(allocator);
-    errdefer editor.status_message.deinit();
+    editor.status = try Status.init(allocator);
+    errdefer editor.status.deinit();
 
-    editor.status_bar_view = StatusBarView.init(&editor.status_message);
-    errdefer editor.status_bar_view.deinit();
+    editor.status_view = StatusView.init(&editor.status);
+    errdefer editor.status_view.deinit();
 
     editor.display_size = DisplaySize.init();
-    editor.display = try Display.init(allocator, &editor.buffer_view, &editor.status_bar_view, &editor.command_buffer_view, &editor.display_size);
+    editor.display = try Display.init(allocator, &editor.buffer_view, &editor.status_view, &editor.command_buffer_view, &editor.display_size);
     errdefer editor.display.deinit();
 
     editor.controller = try EditorController.init(
         allocator,
         &editor.buffer_view,
         &editor.command_buffer_view,
-        &editor.status_message,
+        &editor.status,
         &editor.buffer_selector,
         &editor.display,
         &editor.display_size,
@@ -88,8 +88,8 @@ pub fn deinit(self: *Editor) void {
     self.buffer_view.deinit();
     self.command_buffer_view.deinit();
     self.buffer_selector.deinit();
-    self.status_message.deinit();
-    self.status_bar_view.deinit();
+    self.status.deinit();
+    self.status_view.deinit();
     self.display.deinit();
     self.command_registry.deinit();
     self.controller.deinit();

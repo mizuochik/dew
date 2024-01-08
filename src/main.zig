@@ -37,7 +37,7 @@ pub fn main() !void {
     {
         const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});
         errdefer gpa.allocator().free(msg);
-        try editor.status_message.setMessage(msg);
+        try editor.status.setMessage(msg);
     }
     try editor.display.render();
 

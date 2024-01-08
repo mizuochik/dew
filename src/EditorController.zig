@@ -4,14 +4,14 @@ const models = @import("models.zig");
 const Buffer = @import("Buffer.zig");
 const BufferView = @import("BufferView.zig");
 const DisplaySize = @import("DisplaySize.zig");
-const StatusMessage = @import("StatusMessage.zig");
+const Status = @import("Status.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Display = @import("Display.zig");
 const Editor = @import("Editor.zig");
 
 file_buffer_view: *BufferView,
 command_buffer_view: *BufferView,
-status_message: *StatusMessage,
+status: *Status,
 file_path: ?[]const u8 = null,
 buffer_selector: *BufferSelector,
 display_size: *DisplaySize,
@@ -21,12 +21,12 @@ editor: *Editor,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command_buffer_view: *BufferView, status_message: *StatusMessage, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command_buffer_view: *BufferView, status: *Status, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !EditorController {
     return EditorController{
         .allocator = allocator,
         .file_buffer_view = file_buffer_view,
         .command_buffer_view = command_buffer_view,
-        .status_message = status_message,
+        .status = status,
         .buffer_selector = buffer_selector,
         .display = display,
         .display_size = display_size,
@@ -193,5 +193,5 @@ pub fn openFile(self: *EditorController, path: []const u8) !void {
     try self.buffer_selector.openFileBuffer(path);
     const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);
-    try self.status_message.setMessage(new_message);
+    try self.status.setMessage(new_message);
 }

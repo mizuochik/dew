@@ -1,12 +1,12 @@
 const std = @import("std");
 const BufferSelector = @import("BufferSelector.zig");
-const StatusMessage = @import("StatusMessage.zig");
+const Status = @import("Status.zig");
 
 allocator: std.mem.Allocator,
 input: [][]const u8,
 index: usize,
 buffer_selector: *BufferSelector,
-status_message: *StatusMessage,
+status: *Status,
 
 const CommandParser = @This();
 
@@ -29,7 +29,7 @@ const Error = error{
     Error,
 };
 
-pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status_message: *StatusMessage) !CommandParser {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status: *Status) !CommandParser {
     const in = try allocator.alloc([]u8, 0);
     errdefer allocator.free(in);
     return .{
@@ -37,7 +37,7 @@ pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, stat
         .input = in,
         .index = 0,
         .buffer_selector = buffer_selector,
-        .status_message = status_message,
+        .status = status,
     };
 }
 
