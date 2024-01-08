@@ -209,13 +209,7 @@ pub fn scrollDown(self: *BufferView, diff: usize) void {
         self.getBuffer().y_scroll += diff;
 }
 
-pub fn renderCommand(self: *const BufferView, buffer: []u8) void {
-    std.debug.assert(self.mode == .command);
-    std.mem.copy(u8, buffer, self.buffer_selector.command_buffer.rows.items[0].buffer.items);
-}
-
-pub fn renderFile(self: *BufferView, buffer: [][]u8) !void {
-    std.debug.assert(self.mode == .file);
+pub fn render(self: *BufferView, buffer: [][]u8) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     const buffer_width = buffer[0].len;

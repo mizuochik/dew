@@ -99,18 +99,18 @@ pub fn render(self: *Display) !void {
             self.buffer[i][j] = ' ';
         }
     }
-    try self.file_buffer_view.renderFile(self.buffer[0 .. self.buffer.len - 1]);
-    var bottom_line = self.buffer[self.buffer.len - 1];
-    for (0..bottom_line.len) |i| {
-        bottom_line[i] = ' ';
+    try self.file_buffer_view.render(self.buffer[0 .. self.buffer.len - 1]);
+    var bottom_line = self.buffer[self.buffer.len - 1 ..];
+    for (0..bottom_line[0].len) |i| {
+        bottom_line[0][i] = ' ';
     }
-    self.command_buffer_view.renderCommand(bottom_line);
+    try self.command_buffer_view.render(bottom_line);
     var rest: usize = 0;
     var i = @as(i32, @intCast(bottom_line.len)) - 1;
-    while (i >= 0 and bottom_line[@intCast(i)] == ' ') : (i -= 1) {
+    while (i >= 0 and bottom_line[0][@intCast(i)] == ' ') : (i -= 1) {
         rest += 1;
     }
-    self.status_bar_view.render(bottom_line[bottom_line.len - rest ..]);
+    self.status_bar_view.render(bottom_line[0][bottom_line[0].len - rest ..]);
     try self.writeUpdates();
 }
 
