@@ -62,7 +62,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'M' => {
                 switch (self.buffer_selector.getCurrentBuffer().mode) {
                     .command => {
-                        const command = self.editor.buffer_selector.command_buffer.rows.items[0];
+                        const command = self.editor.buffer_selector.getCommandLine().rows.items[0];
                         try self.editor.command_evaluator.evaluate(command);
                     },
                     else => {

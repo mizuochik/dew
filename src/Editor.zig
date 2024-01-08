@@ -7,6 +7,7 @@ const Display = @import("Display.zig");
 const CommandEvaluator = @import("CommandEvaluator.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
+const Client = @import("Client.zig");
 const BufferView = @import("BufferView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
@@ -31,6 +32,7 @@ command_evaluator: CommandEvaluator,
 command_registry: CommandRegistry,
 keyboard: Keyboard,
 terminal: Terminal,
+client: Client,
 display: Display,
 
 pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
@@ -39,7 +41,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
 
     editor.allocator = allocator;
 
-    editor.buffer_selector = try BufferSelector.init(allocator);
+    editor.buffer_selector = try BufferSelector.init(allocator, editor);
     errdefer editor.buffer_selector.deinit();
 
     editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file);
@@ -81,6 +83,10 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
     editor.keyboard = .{};
     editor.terminal = .{};
 
+    var client = try Client.init(allocator);
+    errdefer client.deinit();
+    editor.client = client;
+
     return editor;
 }
 
@@ -93,5 +99,6 @@ pub fn deinit(self: *Editor) void {
     self.display.deinit();
     self.command_registry.deinit();
     self.controller.deinit();
+    self.client.deinit();
     self.allocator.destroy(self);
 }

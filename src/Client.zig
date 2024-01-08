@@ -14,6 +14,7 @@ allocator: std.mem.Allocator,
 pub fn init(allocator: std.mem.Allocator) !@This() {
     var command_line = try Buffer.init(allocator, .command);
     errdefer command_line.deinit();
+    try command_line.addCursor();
     const command_cursor = .{
         .buffer = command_line,
         .x = 0,
@@ -33,6 +34,8 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
 
 pub fn deinit(self: *@This()) void {
     self.cursors.deinit();
+    self.command_line.deinit();
+    self.status.deinit();
     self.scroll_positions.deinit();
 }
 

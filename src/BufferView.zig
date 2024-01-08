@@ -157,7 +157,7 @@ pub fn updateLastCursorX(self: *BufferView) void {
 fn getBuffer(self: *const BufferView) *Buffer {
     return switch (self.mode) {
         .file => self.buffer_selector.getCurrentFileBuffer(),
-        .command => self.buffer_selector.command_buffer,
+        .command => self.buffer_selector.getCommandLine(),
     };
 }
 

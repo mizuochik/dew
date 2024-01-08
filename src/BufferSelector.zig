@@ -1,23 +1,20 @@
 const std = @import("std");
 const models = @import("models.zig");
 const Buffer = @import("Buffer.zig");
+const Editor = @import("Editor.zig");
 
 const BufferSelector = @This();
 
 allocator: std.mem.Allocator,
-command_buffer: *Buffer,
 is_command_buffer_active: bool,
 current_file_buffer: []const u8,
 file_buffers: std.StringHashMap(*Buffer),
+editor: *Editor,
 
-pub fn init(allocator: std.mem.Allocator) !BufferSelector {
+pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
     var file_buffer = try Buffer.init(allocator, .file);
     errdefer file_buffer.deinit();
     try file_buffer.addCursor();
-
-    var command_buffer = try Buffer.init(allocator, .command);
-    errdefer command_buffer.deinit();
-    try command_buffer.addCursor();
 
     var file_buffers = std.StringHashMap(*Buffer).init(allocator);
     errdefer file_buffers.deinit();
@@ -28,15 +25,14 @@ pub fn init(allocator: std.mem.Allocator) !BufferSelector {
 
     return .{
         .allocator = allocator,
-        .command_buffer = command_buffer,
         .current_file_buffer = default_key,
         .is_command_buffer_active = false,
         .file_buffers = file_buffers,
+        .editor = editor,
     };
 }
 
 pub fn deinit(self: *BufferSelector) void {
-    self.command_buffer.deinit();
     var it = self.file_buffers.iterator();
     while (it.next()) |entry| {
         self.allocator.free(entry.key_ptr.*); // second
@@ -47,11 +43,15 @@ pub fn deinit(self: *BufferSelector) void {
 
 pub fn toggleCommandBuffer(self: *BufferSelector) !void {
     if (self.is_command_buffer_active) {
-        try self.command_buffer.clear();
+        try self.editor.client.command_line.clear();
         self.is_command_buffer_active = false;
     } else {
         self.is_command_buffer_active = true;
     }
+}
+
+pub fn getCommandLine(self: *BufferSelector) *Buffer {
+    return self.editor.client.command_line;
 }
 
 pub fn getCurrentFileBuffer(self: *const BufferSelector) *Buffer {
@@ -60,7 +60,7 @@ pub fn getCurrentFileBuffer(self: *const BufferSelector) *Buffer {
 
 pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
     if (self.is_command_buffer_active) {
-        return self.command_buffer;
+        return self.editor.client.command_line;
     }
     return self.getCurrentFileBuffer();
 }
@@ -82,6 +82,7 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     var buffer = try Buffer.init(self.allocator, .file);
     errdefer buffer.deinit();
     try buffer.addCursor();
+
     buffer.openFile(name) catch |err| switch (err) {
         std.fs.File.OpenError.FileNotFound => {}, // Open as an empty file
         else => return err,
