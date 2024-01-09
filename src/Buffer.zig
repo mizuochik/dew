@@ -15,7 +15,6 @@ rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
 mode: Mode,
-cursors: std.ArrayList(Cursor),
 y_scroll: usize,
 allocator: std.mem.Allocator,
 
@@ -33,7 +32,6 @@ pub fn init(allocator: std.mem.Allocator, mode: Mode) !*Buffer {
     buffer.* = .{
         .rows = rows,
         .mode = mode,
-        .cursors = std.ArrayList(Cursor).init(allocator),
         .y_scroll = 0,
         .allocator = allocator,
     };
@@ -43,7 +41,6 @@ pub fn init(allocator: std.mem.Allocator, mode: Mode) !*Buffer {
 pub fn deinit(self: *const Buffer) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
-    self.cursors.deinit();
     self.allocator.destroy(self);
 }
 
@@ -63,29 +60,7 @@ pub fn clone(self: *const Buffer) !*Buffer {
         errdefer cloned.deinit();
         try buffer.rows.append(cloned);
     }
-    buffer.cursors = std.ArrayList(Cursor).init(self.allocator);
-    errdefer buffer.cursors.deinit();
-    for (self.cursors.items) |cursor| {
-        var cloned_cursor = cursor;
-        cloned_cursor.buffer = buffer;
-        try buffer.cursors.append(cloned_cursor);
-    }
     return buffer;
-}
-
-pub fn addCursor(self: *Buffer) !void {
-    try self.cursors.append(Cursor{
-        .buffer = self,
-    });
-}
-
-pub fn resetCursors(self: *Buffer) !void {
-    for (self.cursors.items) |*cursor| {
-        try cursor.setPosition(.{
-            .x = 0,
-            .y = 0,
-        });
-    }
 }
 
 pub fn insertChar(self: *Buffer, pos: Position, c: u21) !void {
@@ -143,7 +118,6 @@ pub fn breakLine(self: *Buffer, pos: Position) !void {
 
 pub fn clear(self: *Buffer) !void {
     std.debug.assert(self.rows.items.len == 1);
-    try self.resetCursors();
     try self.rows.items[0].clear();
 }
 
@@ -151,8 +125,6 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
     var f = try std.fs.cwd().openFile(path, .{});
     defer f.close();
     var reader = f.reader();
-
-    try self.resetCursors();
 
     var new_rows = std.ArrayList(UnicodeString).init(self.allocator);
     errdefer {

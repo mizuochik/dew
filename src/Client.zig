@@ -14,7 +14,6 @@ allocator: std.mem.Allocator,
 pub fn init(allocator: std.mem.Allocator) !@This() {
     var command_line = try Buffer.init(allocator, .command);
     errdefer command_line.deinit();
-    try command_line.addCursor();
     const command_cursor = .{
         .buffer = command_line,
         .x = 0,
