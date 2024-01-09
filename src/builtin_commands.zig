@@ -35,7 +35,7 @@ pub fn save_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
         return;
     }
     const file_name = switch (arguments.len) {
-        0 => editor.buffer_selector.current_file_buffer,
+        0 => editor.client.current_file.?,
         1 => arguments[0],
         else => {
             const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want <= 1 but {d}", .{arguments.len});

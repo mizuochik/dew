@@ -7,7 +7,6 @@ const BufferSelector = @This();
 
 allocator: std.mem.Allocator,
 is_command_buffer_active: bool,
-current_file_buffer: []const u8,
 file_buffers: std.StringHashMap(*Buffer),
 editor: *Editor,
 
@@ -30,7 +29,6 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
 
     return .{
         .allocator = allocator,
-        .current_file_buffer = default_key,
         .is_command_buffer_active = false,
         .file_buffers = file_buffers,
         .editor = editor,
@@ -61,7 +59,7 @@ pub fn getCommandLine(self: *BufferSelector) *Buffer {
 }
 
 pub fn getCurrentFileBuffer(self: *const BufferSelector) *Buffer {
-    return self.file_buffers.get(self.current_file_buffer).?;
+    return self.file_buffers.get(self.editor.client.current_file.?).?;
 }
 
 pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
@@ -77,7 +75,6 @@ pub fn addFileBuffer(self: *BufferSelector, file_path: []const u8, buffer: *Buff
 
 pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     if (self.file_buffers.getKey(name)) |key| {
-        self.current_file_buffer = key;
         try self.editor.client.setCurrentFile(key);
         return;
     }
@@ -94,7 +91,6 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     errdefer self.allocator.free(key);
     try self.file_buffers.put(key, buffer);
     errdefer _ = self.file_buffers.remove(key);
-    self.current_file_buffer = key;
     try self.editor.client.setCurrentFile(key);
 }
 
@@ -113,7 +109,6 @@ pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
         result.value_ptr.*.deinit();
     }
     result.value_ptr.* = buffer;
-    self.current_file_buffer = result.key_ptr.*;
     try self.editor.client.setCurrentFile(name);
 }
 

@@ -49,7 +49,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
         },
         .ctrl => |k| switch (k) {
             'Q' => return error.Quit,
-            'S' => try self.buffer_selector.saveFileBuffer(self.buffer_selector.current_file_buffer),
+            'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
             'K' => try self.killLine(),
             'D' => {
                 for (self.getCursors()) |cursor| {

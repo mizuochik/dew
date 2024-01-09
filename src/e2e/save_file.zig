@@ -54,5 +54,5 @@ test "save file as a new buffer" {
         const actual = try std.fs.cwd().readFile("src/e2e/hello-world.tmp.txt", &buf);
         try std.testing.expectEqualStrings("Hello World\n", actual);
     }
-    try std.testing.expectEqualStrings("src/e2e/hello-world-renamed.tmp.txt", editor.buffer_selector.current_file_buffer);
+    try std.testing.expectEqualStrings("src/e2e/hello-world-renamed.tmp.txt", editor.client.current_file.?);
 }
