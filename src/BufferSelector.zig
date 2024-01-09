@@ -11,7 +11,7 @@ file_buffers: std.StringHashMap(*Buffer),
 editor: *Editor,
 
 pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
-    var file_buffer = try Buffer.init(allocator, .file);
+    var file_buffer = try Buffer.init(allocator);
     errdefer file_buffer.deinit();
     if (!editor.client.hasCursor("default")) {
         try editor.client.addCursor("default", file_buffer);
@@ -78,7 +78,7 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
         try self.editor.client.setCurrentFile(key);
         return;
     }
-    var buffer = try Buffer.init(self.allocator, .file);
+    var buffer = try Buffer.init(self.allocator);
     errdefer buffer.deinit();
     try self.editor.client.addCursor(name, buffer);
     errdefer self.editor.client.removeCursor(name);

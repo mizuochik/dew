@@ -14,11 +14,10 @@ pub const Mode = enum {
 rows: std.ArrayList(UnicodeString),
 c_x: usize = 0,
 c_y: usize = 0,
-mode: Mode,
 y_scroll: usize,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, mode: Mode) !*Buffer {
+pub fn init(allocator: std.mem.Allocator) !*Buffer {
     const buffer = try allocator.create(Buffer);
     errdefer allocator.destroy(buffer);
     var rows = std.ArrayList(UnicodeString).init(allocator);
@@ -31,7 +30,6 @@ pub fn init(allocator: std.mem.Allocator, mode: Mode) !*Buffer {
     }
     buffer.* = .{
         .rows = rows,
-        .mode = mode,
         .y_scroll = 0,
         .allocator = allocator,
     };

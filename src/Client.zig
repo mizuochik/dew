@@ -12,7 +12,7 @@ status: Status,
 allocator: std.mem.Allocator,
 
 pub fn init(allocator: std.mem.Allocator) !@This() {
-    var command_line = try Buffer.init(allocator, .command);
+    var command_line = try Buffer.init(allocator);
     errdefer command_line.deinit();
     const command_cursor = .{
         .buffer = command_line,

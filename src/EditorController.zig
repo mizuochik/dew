@@ -62,16 +62,11 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
                     try self.buffer_selector.getCurrentBuffer().deleteChar(cursor.getPosition());
                 }
             },
-            'M' => {
-                switch (self.buffer_selector.getCurrentBuffer().mode) {
-                    .command => {
-                        const command = self.editor.buffer_selector.getCommandLine().rows.items[0];
-                        try self.editor.command_evaluator.evaluate(command);
-                    },
-                    else => {
-                        try self.breakLine();
-                    },
-                }
+            'M' => if (self.buffer_selector.is_command_buffer_active) {
+                const command = self.editor.buffer_selector.getCommandLine().rows.items[0];
+                try self.editor.command_evaluator.evaluate(command);
+            } else {
+                try self.breakLine();
             },
             'P' => try self.moveCursor(.up),
             'N' => try self.moveCursor(.down),
@@ -186,10 +181,10 @@ fn insertChar(self: *EditorController, char: u21) !void {
 }
 
 fn getCurrentView(self: *const EditorController) *BufferView {
-    return switch (self.buffer_selector.getCurrentBuffer().mode) {
-        Buffer.Mode.file => self.file_buffer_view,
-        Buffer.Mode.command => self.command_buffer_view,
-    };
+    return if (self.buffer_selector.is_command_buffer_active)
+        self.command_buffer_view
+    else
+        self.file_buffer_view;
 }
 
 pub fn openFile(self: *EditorController, path: []const u8) !void {
