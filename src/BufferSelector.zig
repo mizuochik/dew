@@ -71,11 +71,6 @@ pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
     return self.getCurrentFileBuffer();
 }
 
-pub fn openFileBuffer_(self: *BufferSelector, name: []const u8) !void {
-    const entry = self.file_buffers.getEntry(name) orelse return error.FileNotFound;
-    self.current_file_buffer = entry.key_ptr.*;
-}
-
 pub fn addFileBuffer(self: *BufferSelector, file_path: []const u8, buffer: *Buffer) !void {
     try self.file_buffers.put(file_path, buffer);
 }
