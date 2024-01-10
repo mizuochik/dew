@@ -15,7 +15,7 @@ scroll_positions: std.StringHashMap(usize),
 command_line: *Buffer,
 status: Status,
 editing_files: std.StringHashMap(EditingFile),
-active_cursor: *Cursor,
+active_cursor: ?*Cursor = null,
 allocator: std.mem.Allocator,
 is_command_line_active: bool = false,
 
@@ -38,7 +38,6 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
         .command_line = command_line,
         .editing_files = editing_files,
         .status = st,
-        .active_cursor = undefined,
         .allocator = allocator,
     };
 }
@@ -106,8 +105,18 @@ pub fn toggleCommandLine(self: *@This()) !void {
     }
 }
 
-pub fn getActiveText(self: *@This()) *Buffer {
-    return self.active_cursor.buffer;
+pub fn getActiveText(self: *@This()) ?*Buffer {
+    if (self.active_cursor) |cursor| {
+        return cursor.buffer;
+    }
+    return null;
+}
+
+pub fn getActiveFile(self: *@This()) ?EditingFile {
+    if (self.current_file) |current_file| {
+        return self.editing_files.get(current_file);
+    }
+    return null;
 }
 
 test {
