@@ -62,7 +62,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
                     try self.buffer_selector.getCurrentBuffer().deleteChar(cursor.getPosition());
                 }
             },
-            'M' => if (self.buffer_selector.is_command_buffer_active) {
+            'M' => if (self.editor.client.is_command_line_active) {
                 const command = self.editor.buffer_selector.getCommandLine().rows.items[0];
                 try self.editor.command_evaluator.evaluate(command);
             } else {
@@ -90,7 +90,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
                 self.getCurrentView().updateLastCursorX();
             },
             'X' => {
-                try self.buffer_selector.toggleCommandBuffer();
+                try self.editor.client.toggleCommandLine();
             },
             'V' => {
                 self.getCurrentView().scrollDown(self.getCurrentView().height);
@@ -181,7 +181,7 @@ fn insertChar(self: *EditorController, char: u21) !void {
 }
 
 fn getCurrentView(self: *const EditorController) *BufferView {
-    return if (self.buffer_selector.is_command_buffer_active)
+    return if (self.editor.client.is_command_line_active)
         self.command_buffer_view
     else
         self.file_buffer_view;
@@ -195,7 +195,7 @@ pub fn openFile(self: *EditorController, path: []const u8) !void {
 }
 
 fn getCursors(self: *EditorController) []*Cursor {
-    self.cursors[0] = if (self.buffer_selector.is_command_buffer_active)
+    self.cursors[0] = if (self.editor.client.is_command_line_active)
         &self.editor.client.command_cursor
     else
         self.editor.client.getActiveCursor();

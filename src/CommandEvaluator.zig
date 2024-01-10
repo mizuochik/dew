@@ -13,5 +13,5 @@ pub fn evaluate(self: *CommandEvaluator, raw_command_line: UnicodeString) !void 
     defer command_line.deinit();
     const command = try self.editor.command_registry.get(command_line.command_name);
     try command(self.editor, command_line.arguments);
-    try self.editor.buffer_selector.toggleCommandBuffer();
+    try self.editor.client.toggleCommandLine();
 }

@@ -10,6 +10,7 @@ scroll_positions: std.StringHashMap(usize),
 command_line: *Buffer,
 status: Status,
 allocator: std.mem.Allocator,
+is_command_line_active: bool = false,
 
 pub fn init(allocator: std.mem.Allocator) !@This() {
     var command_line = try Buffer.init(allocator);
@@ -81,6 +82,16 @@ pub fn removeCursor(self: *@This(), file_name: []const u8) void {
 
 pub fn getActiveCursor(self: *const @This()) *Cursor {
     return self.cursors.getPtr(self.current_file.?) orelse unreachable;
+}
+
+pub fn toggleCommandLine(self: *@This()) !void {
+    if (self.is_command_line_active) {
+        try self.command_line.clear();
+        self.command_cursor.x = 0;
+        self.is_command_line_active = false;
+    } else {
+        self.is_command_line_active = true;
+    }
 }
 
 test {

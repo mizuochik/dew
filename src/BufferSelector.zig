@@ -6,7 +6,6 @@ const Editor = @import("Editor.zig");
 const BufferSelector = @This();
 
 allocator: std.mem.Allocator,
-is_command_buffer_active: bool,
 file_buffers: std.StringHashMap(*Buffer),
 editor: *Editor,
 
@@ -29,7 +28,6 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
 
     return .{
         .allocator = allocator,
-        .is_command_buffer_active = false,
         .file_buffers = file_buffers,
         .editor = editor,
     };
@@ -44,16 +42,6 @@ pub fn deinit(self: *BufferSelector) void {
     self.file_buffers.deinit();
 }
 
-pub fn toggleCommandBuffer(self: *BufferSelector) !void {
-    if (self.is_command_buffer_active) {
-        try self.editor.client.command_line.clear();
-        self.editor.client.command_cursor.x = 0;
-        self.is_command_buffer_active = false;
-    } else {
-        self.is_command_buffer_active = true;
-    }
-}
-
 pub fn getCommandLine(self: *BufferSelector) *Buffer {
     return self.editor.client.command_line;
 }
@@ -63,7 +51,7 @@ pub fn getCurrentFileBuffer(self: *const BufferSelector) *Buffer {
 }
 
 pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
-    if (self.is_command_buffer_active) {
+    if (self.editor.client.is_command_line_active) {
         return self.editor.client.command_line;
     }
     return self.getCurrentFileBuffer();
