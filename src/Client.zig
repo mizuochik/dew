@@ -43,33 +43,15 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
 }
 
 pub fn deinit(self: *@This()) void {
-    var ki = self.cursors.keyIterator();
-    while (ki.next()) |key| self.allocator.free(key.*);
+    var cursors_keys = self.cursors.keyIterator();
+    while (cursors_keys.next()) |key| self.allocator.free(key.*);
     self.cursors.deinit();
     self.command_line.deinit();
     self.status.deinit();
     self.scroll_positions.deinit();
-    var editing_files_it = self.editing_files.iterator();
-    while (editing_files_it.next()) |it| {
-        self.allocator.free(it.key_ptr.*);
-    }
+    var editing_file_keys = self.editing_files.keyIterator();
+    while (editing_file_keys.next()) |key| self.allocator.free(key.*);
     self.editing_files.deinit();
-}
-
-pub fn setCurrentFile(self: *@This(), file_name: []const u8) !void {
-    if (self.current_file) |current_file| {
-        if (std.mem.eql(u8, file_name, current_file)) {
-            return;
-        }
-        const duped = try self.allocator.dupe(u8, file_name);
-        errdefer self.allocator.free(duped);
-        self.allocator.free(current_file);
-        self.current_file = duped;
-        return;
-    }
-    const duped = try self.allocator.dupe(u8, file_name);
-    errdefer self.allocator.free(duped);
-    self.current_file = duped;
 }
 
 pub fn hasCursor(self: *const @This(), file_name: []const u8) bool {

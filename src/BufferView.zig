@@ -163,8 +163,8 @@ pub fn updateLastCursorX(self: *BufferView) void {
 
 fn getBuffer(self: *const BufferView) *Buffer {
     return switch (self.mode) {
-        .file => self.buffer_selector.getCurrentFileBuffer(),
-        .command => self.buffer_selector.getCommandLine(),
+        .file => self.editor.client.getActiveFile().?.cursor.buffer,
+        .command => self.editor.client.command_line,
     };
 }
 

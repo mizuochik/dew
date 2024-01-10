@@ -24,7 +24,7 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
     errdefer allocator.free(default_key);
     try file_buffers.put(default_key, file_buffer);
 
-    try editor.client.setCurrentFile("default");
+    try editor.client.setEditingFile("default", file_buffer);
 
     return .{
         .allocator = allocator,
@@ -62,8 +62,8 @@ pub fn addFileBuffer(self: *BufferSelector, file_path: []const u8, buffer: *Buff
 }
 
 pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
-    if (self.file_buffers.getKey(name)) |key| {
-        try self.editor.client.setCurrentFile(key);
+    if (self.file_buffers.getEntry(name)) |entry| {
+        try self.editor.client.setEditingFile(entry.key_ptr.*, entry.value_ptr.*);
         return;
     }
     var buffer = try Buffer.init(self.allocator);
@@ -79,7 +79,7 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     errdefer self.allocator.free(key);
     try self.file_buffers.put(key, buffer);
     errdefer _ = self.file_buffers.remove(key);
-    try self.editor.client.setCurrentFile(key);
+    try self.editor.client.setEditingFile(key, buffer);
 }
 
 pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
@@ -97,7 +97,7 @@ pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
         result.value_ptr.*.deinit();
     }
     result.value_ptr.* = buffer;
-    try self.editor.client.setCurrentFile(name);
+    try self.editor.client.setEditingFile(name, buffer);
 }
 
 test {
