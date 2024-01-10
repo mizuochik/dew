@@ -4,7 +4,7 @@ const Cursor = @import("Cursor.zig");
 const Status = @import("Status.zig");
 
 pub const EditingFile = struct {
-    cursor: *Cursor,
+    cursor: Cursor,
     y_scroll: usize,
 };
 
@@ -49,8 +49,9 @@ pub fn deinit(self: *@This()) void {
     self.command_line.deinit();
     self.status.deinit();
     self.scroll_positions.deinit();
-    if (self.current_file) |current_file| {
-        self.allocator.free(current_file);
+    var editing_files_it = self.editing_files.iterator();
+    while (editing_files_it.next()) |it| {
+        self.allocator.free(it.key_ptr.*);
     }
     self.editing_files.deinit();
 }
@@ -117,6 +118,37 @@ pub fn getActiveFile(self: *@This()) ?EditingFile {
         return self.editing_files.get(current_file);
     }
     return null;
+}
+
+pub fn setEditingFile(self: *@This(), file_name: []const u8, text: *Buffer) !void {
+    if (!self.editing_files.contains(file_name)) {
+        const key = try self.allocator.dupe(u8, file_name);
+        errdefer self.allocator.free(key);
+        try self.editing_files.putNoClobber(key, .{
+            .cursor = .{
+                .buffer = text,
+                .x = 0,
+                .y = 0,
+            },
+            .y_scroll = 0,
+        });
+    }
+    errdefer self.deleteEditingFile(file_name);
+    const file = self.editing_files.getEntry(file_name).?;
+    self.current_file = file.key_ptr.*;
+    self.active_cursor = &file.value_ptr.cursor;
+}
+
+pub fn deleteEditingFile(self: *@This(), file_name: []const u8) void {
+    if (self.current_file) |current_file| {
+        if (std.mem.eql(u8, file_name, current_file)) {
+            self.current_file = null;
+            self.active_cursor = null;
+        }
+    }
+    if (self.editing_files.fetchRemove(file_name)) |file| {
+        self.allocator.free(file.key);
+    }
 }
 
 test {
