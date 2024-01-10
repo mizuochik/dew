@@ -3,12 +3,19 @@ const Buffer = @import("Buffer.zig");
 const Cursor = @import("Cursor.zig");
 const Status = @import("Status.zig");
 
+pub const EditingFile = struct {
+    cursor: *Cursor,
+    y_scroll: usize,
+};
+
 current_file: ?[]const u8 = null,
 cursors: std.StringHashMap(Cursor),
 command_cursor: Cursor,
 scroll_positions: std.StringHashMap(usize),
 command_line: *Buffer,
 status: Status,
+editing_files: std.StringHashMap(EditingFile),
+active_cursor: *Cursor,
 allocator: std.mem.Allocator,
 is_command_line_active: bool = false,
 
@@ -22,12 +29,16 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
     };
     var st = try Status.init(allocator);
     errdefer st.deinit();
+    const editing_files = std.StringHashMap(EditingFile).init(allocator);
+    errdefer editing_files.deinit();
     return .{
         .cursors = std.StringHashMap(Cursor).init(allocator),
         .command_cursor = command_cursor,
         .scroll_positions = std.StringHashMap(usize).init(allocator),
         .command_line = command_line,
+        .editing_files = editing_files,
         .status = st,
+        .active_cursor = undefined,
         .allocator = allocator,
     };
 }
@@ -42,6 +53,7 @@ pub fn deinit(self: *@This()) void {
     if (self.current_file) |current_file| {
         self.allocator.free(current_file);
     }
+    self.editing_files.deinit();
 }
 
 pub fn setCurrentFile(self: *@This(), file_name: []const u8) !void {
@@ -92,6 +104,10 @@ pub fn toggleCommandLine(self: *@This()) !void {
     } else {
         self.is_command_line_active = true;
     }
+}
+
+pub fn getActiveText(self: *@This()) *Buffer {
+    return self.active_cursor.buffer;
 }
 
 test {
