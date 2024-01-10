@@ -74,7 +74,10 @@ pub fn removeCursor(self: *@This(), file_name: []const u8) void {
     }
 }
 
-pub fn getActiveCursor(self: *const @This()) *Cursor {
+pub fn getActiveCursor(self: *@This()) *Cursor {
+    if (self.is_command_line_active) {
+        return &self.command_cursor;
+    }
     return self.cursors.getPtr(self.current_file.?) orelse unreachable;
 }
 

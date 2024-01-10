@@ -42,28 +42,25 @@ pub fn deinit(_: *const EditorController) void {}
 pub fn processKeypress(self: *EditorController, key: models.Key) !void {
     switch (key) {
         .del => {
-            for (self.getCursors()) |cursor| {
-                try cursor.moveBackward();
-                try self.buffer_selector.getCurrentBuffer().deleteChar(cursor.getPosition());
-            }
+            const cursor = self.editor.client.getActiveCursor();
+            try cursor.moveBackward();
+            try cursor.buffer.deleteChar(cursor.getPosition());
         },
         .ctrl => |k| switch (k) {
             'Q' => return error.Quit,
             'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
             'K' => try self.killLine(),
             'D' => {
-                for (self.getCursors()) |cursor| {
-                    try self.buffer_selector.getCurrentBuffer().deleteChar(cursor.getPosition());
-                }
+                const cursor = self.editor.client.getActiveCursor();
+                try cursor.buffer.deleteChar(cursor.getPosition());
             },
             'H' => {
-                for (self.getCursors()) |cursor| {
-                    try cursor.moveBackward();
-                    try self.buffer_selector.getCurrentBuffer().deleteChar(cursor.getPosition());
-                }
+                const cursor = self.editor.client.getActiveCursor();
+                try cursor.moveBackward();
+                try cursor.buffer.deleteChar(cursor.getPosition());
             },
             'M' => if (self.editor.client.is_command_line_active) {
-                const command = self.editor.buffer_selector.getCommandLine().rows.items[0];
+                const command = self.editor.client.command_line.rows.items[0];
                 try self.editor.command_evaluator.evaluate(command);
             } else {
                 try self.breakLine();
@@ -73,20 +70,17 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'F' => try self.moveCursor(.right),
             'B' => try self.moveCursor(.left),
             'J' => {
-                for (self.getCursors()) |cursor| {
-                    try self.buffer_selector.getCurrentBuffer().joinLine(cursor.getPosition());
-                }
+                const cursor = self.editor.client.getActiveCursor();
+                try cursor.buffer.joinLine(cursor.getPosition());
             },
             'A' => {
-                for (self.getCursors()) |cursor| {
-                    try cursor.moveToBeginningOfLine();
-                }
+                const cursor = self.editor.client.getActiveCursor();
+                try cursor.moveToBeginningOfLine();
                 self.getCurrentView().updateLastCursorX();
             },
             'E' => {
-                for (self.getCursors()) |cursor| {
-                    try cursor.moveToEndOfLine();
-                }
+                const cursor = self.editor.client.getActiveCursor();
+                try cursor.moveToEndOfLine();
                 self.getCurrentView().updateLastCursorX();
             },
             'X' => {
@@ -95,9 +89,8 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'V' => {
                 self.getCurrentView().scrollDown(self.getCurrentView().height);
                 const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
-                for (self.getCursors()) |cursor| {
-                    try cursor.setPosition(buf_pos);
-                }
+                const cursor = self.editor.client.getActiveCursor();
+                try cursor.setPosition(buf_pos);
             },
             else => {},
         },
@@ -105,17 +98,15 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'v' => {
                 self.getCurrentView().scrollUp(self.getCurrentView().height);
                 const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
-                for (self.getCursors()) |cursor| {
-                    try cursor.setPosition(buf_pos);
-                }
+                const cursor = self.editor.client.getActiveCursor();
+                try cursor.setPosition(buf_pos);
             },
             else => {},
         },
         .plain => |k| {
-            for (self.getCursors()) |cursor| {
-                try self.buffer_selector.getCurrentBuffer().insertChar(cursor.getPosition(), k);
-                try cursor.moveForward();
-            }
+            const cursor = self.editor.client.getActiveCursor();
+            try cursor.buffer.insertChar(cursor.getPosition(), k);
+            try cursor.moveForward();
         },
         .arrow => |k| try self.moveCursor(k),
     }
@@ -161,22 +152,15 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
 }
 
 fn breakLine(self: *EditorController) !void {
-    for (self.getCursors()) |cursor| {
-        try self.buffer_selector.getCurrentBuffer().breakLine(cursor.getPosition());
-        try cursor.moveForward();
-    }
+    var cursor = self.editor.client.getActiveCursor();
+    try cursor.buffer.breakLine(cursor.getPosition());
+    try cursor.moveForward();
     self.getCurrentView().updateLastCursorX();
 }
 
 fn killLine(self: *EditorController) !void {
-    for (self.getCursors()) |cursor| {
-        try self.buffer_selector.getCurrentBuffer().killLine(cursor.getPosition());
-    }
-    self.getCurrentView().updateLastCursorX();
-}
-
-fn insertChar(self: *EditorController, char: u21) !void {
-    try self.buffer_selector.getCurrentBuffer().insertChar(char);
+    var cursor = self.editor.client.getActiveCursor();
+    try cursor.buffer.killLine(cursor.getPosition());
     self.getCurrentView().updateLastCursorX();
 }
 
@@ -199,6 +183,5 @@ fn getCursors(self: *EditorController) []*Cursor {
         &self.editor.client.command_cursor
     else
         self.editor.client.getActiveCursor();
-    // self.cursors[0] = &self.buffer_selector.getCurrentBuffer().cursors.items[0];
     return &self.cursors;
 }

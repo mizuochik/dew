@@ -42,25 +42,6 @@ pub fn deinit(self: *BufferSelector) void {
     self.file_buffers.deinit();
 }
 
-pub fn getCommandLine(self: *BufferSelector) *Buffer {
-    return self.editor.client.command_line;
-}
-
-pub fn getCurrentFileBuffer(self: *const BufferSelector) *Buffer {
-    return self.file_buffers.get(self.editor.client.current_file.?).?;
-}
-
-pub fn getCurrentBuffer(self: *const BufferSelector) *Buffer {
-    if (self.editor.client.is_command_line_active) {
-        return self.editor.client.command_line;
-    }
-    return self.getCurrentFileBuffer();
-}
-
-pub fn addFileBuffer(self: *BufferSelector, file_path: []const u8, buffer: *Buffer) !void {
-    try self.file_buffers.put(file_path, buffer);
-}
-
 pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     if (self.file_buffers.getEntry(name)) |entry| {
         try self.editor.client.setEditingFile(entry.key_ptr.*, entry.value_ptr.*);
@@ -83,7 +64,7 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
 }
 
 pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
-    const buffer = try self.getCurrentFileBuffer().clone();
+    const buffer = try self.editor.client.getActiveFile().?.cursor.buffer.clone();
     errdefer buffer.deinit();
     const key = try self.allocator.dupe(u8, name);
     errdefer self.allocator.free(key);
