@@ -4,7 +4,7 @@ const Buffer = @import("Buffer.zig");
 const Position = @import("Position.zig");
 const UnicodeString = @import("UnicodeString.zig");
 
-buffer: *const Buffer,
+buffer: *Buffer,
 x: usize = 0,
 y: usize = 0,
 
