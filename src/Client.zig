@@ -4,6 +4,7 @@ const Cursor = @import("Cursor.zig");
 const Status = @import("Status.zig");
 
 pub const EditingText = struct {
+    text: *Buffer,
     cursor: Cursor,
     y_scroll: usize,
 };
@@ -16,8 +17,10 @@ command_line: *Buffer,
 status: Status,
 editing_files: std.StringHashMap(EditingText),
 active_cursor: ?*Cursor = null,
+active_text: ?*EditingText = null,
 allocator: std.mem.Allocator,
 is_command_line_active: bool = false,
+command_line_: EditingText,
 
 pub fn init(allocator: std.mem.Allocator) !@This() {
     var command_line = try Buffer.init(allocator);
@@ -39,6 +42,15 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
         .editing_files = editing_files,
         .status = st,
         .allocator = allocator,
+        .command_line_ = .{
+            .text = command_line,
+            .cursor = .{
+                .buffer = command_line,
+                .x = 0,
+                .y = 0,
+            },
+            .y_scroll = 0,
+        },
     };
 }
 
@@ -86,8 +98,10 @@ pub fn toggleCommandLine(self: *@This()) !void {
         try self.command_line.clear();
         self.command_cursor.x = 0;
         self.is_command_line_active = false;
+        self.active_text = self.getActiveFile();
     } else {
         self.is_command_line_active = true;
+        self.active_text = &self.command_line_;
     }
 }
 
@@ -98,9 +112,9 @@ pub fn getActiveText(self: *@This()) ?*Buffer {
     return null;
 }
 
-pub fn getActiveFile(self: *@This()) ?EditingText {
+pub fn getActiveFile(self: *@This()) ?*EditingText {
     if (self.current_file) |current_file| {
-        return self.editing_files.get(current_file);
+        return self.editing_files.getPtr(current_file);
     }
     return null;
 }
@@ -110,6 +124,7 @@ pub fn setEditingFile(self: *@This(), file_name: []const u8, text: *Buffer) !voi
         const key = try self.allocator.dupe(u8, file_name);
         errdefer self.allocator.free(key);
         try self.editing_files.putNoClobber(key, .{
+            .text = text,
             .cursor = .{
                 .buffer = text,
                 .x = 0,
@@ -122,6 +137,7 @@ pub fn setEditingFile(self: *@This(), file_name: []const u8, text: *Buffer) !voi
     const file = self.editing_files.getEntry(file_name).?;
     self.current_file = file.key_ptr.*;
     self.active_cursor = &file.value_ptr.cursor;
+    self.active_text = file.value_ptr;
 }
 
 pub fn deleteEditingFile(self: *@This(), file_name: []const u8) void {
@@ -129,6 +145,7 @@ pub fn deleteEditingFile(self: *@This(), file_name: []const u8) void {
         if (std.mem.eql(u8, file_name, current_file)) {
             self.current_file = null;
             self.active_cursor = null;
+            self.active_text = null;
         }
     }
     if (self.editing_files.fetchRemove(file_name)) |file| {
