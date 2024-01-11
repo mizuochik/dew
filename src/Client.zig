@@ -3,7 +3,7 @@ const Buffer = @import("Buffer.zig");
 const Cursor = @import("Cursor.zig");
 const Status = @import("Status.zig");
 
-pub const EditingFile = struct {
+pub const EditingText = struct {
     cursor: Cursor,
     y_scroll: usize,
 };
@@ -14,7 +14,7 @@ command_cursor: Cursor,
 scroll_positions: std.StringHashMap(usize),
 command_line: *Buffer,
 status: Status,
-editing_files: std.StringHashMap(EditingFile),
+editing_files: std.StringHashMap(EditingText),
 active_cursor: ?*Cursor = null,
 allocator: std.mem.Allocator,
 is_command_line_active: bool = false,
@@ -29,7 +29,7 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
     };
     var st = try Status.init(allocator);
     errdefer st.deinit();
-    const editing_files = std.StringHashMap(EditingFile).init(allocator);
+    const editing_files = std.StringHashMap(EditingText).init(allocator);
     errdefer editing_files.deinit();
     return .{
         .cursors = std.StringHashMap(Cursor).init(allocator),
@@ -98,7 +98,7 @@ pub fn getActiveText(self: *@This()) ?*Buffer {
     return null;
 }
 
-pub fn getActiveFile(self: *@This()) ?EditingFile {
+pub fn getActiveFile(self: *@This()) ?EditingText {
     if (self.current_file) |current_file| {
         return self.editing_files.get(current_file);
     }
