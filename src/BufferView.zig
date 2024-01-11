@@ -72,8 +72,8 @@ pub fn viewCursor(self: *const BufferView) ?Position {
 
 pub fn getCursor(self: *const BufferView) Position {
     const cursor = switch (self.mode) {
-        .command => self.editor.client.command_cursor,
-        else => self.editor.client.getActiveCursor().*,
+        .command => self.editor.client.command_line_edit.cursor,
+        else => self.editor.client.getActiveFile().?.cursor,
     };
     const c_y = cursor.y;
     const c_x = cursor.x;

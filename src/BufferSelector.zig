@@ -12,10 +12,6 @@ editor: *Editor,
 pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
     var file_buffer = try Buffer.init(allocator);
     errdefer file_buffer.deinit();
-    if (!editor.client.hasCursor("default")) {
-        try editor.client.addCursor("default", file_buffer);
-    }
-    errdefer editor.client.removeCursor("default");
 
     var file_buffers = std.StringHashMap(*Buffer).init(allocator);
     errdefer file_buffers.deinit();
@@ -49,9 +45,6 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     }
     var buffer = try Buffer.init(self.allocator);
     errdefer buffer.deinit();
-    try self.editor.client.addCursor(name, buffer);
-    errdefer self.editor.client.removeCursor(name);
-
     buffer.openFile(name) catch |err| switch (err) {
         std.fs.File.OpenError.FileNotFound => {}, // Open as an empty file
         else => return err,

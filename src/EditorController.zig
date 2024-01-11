@@ -42,22 +42,22 @@ pub fn deinit(_: *const EditorController) void {}
 pub fn processKeypress(self: *EditorController, key: models.Key) !void {
     switch (key) {
         .del => {
-            const cursor = self.editor.client.getActiveCursor();
-            try cursor.moveBackward();
-            try cursor.buffer.deleteChar(cursor.getPosition());
+            const edit = self.editor.client.active_edit.?;
+            try edit.cursor.moveBackward();
+            try edit.text.deleteChar(edit.cursor.getPosition());
         },
         .ctrl => |k| switch (k) {
             'Q' => return error.Quit,
             'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
             'K' => try self.killLine(),
             'D' => {
-                const cursor = self.editor.client.getActiveCursor();
-                try cursor.buffer.deleteChar(cursor.getPosition());
+                const edit = self.editor.client.active_edit.?;
+                try edit.text.deleteChar(edit.cursor.getPosition());
             },
             'H' => {
-                const cursor = self.editor.client.getActiveCursor();
-                try cursor.moveBackward();
-                try cursor.buffer.deleteChar(cursor.getPosition());
+                const edit = self.editor.client.active_edit.?;
+                try edit.cursor.moveBackward();
+                try edit.text.deleteChar(edit.cursor.getPosition());
             },
             'M' => if (self.editor.client.is_command_line_active) {
                 const command = self.editor.client.command_line.rows.items[0];
@@ -70,17 +70,17 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'F' => try self.moveCursor(.right),
             'B' => try self.moveCursor(.left),
             'J' => {
-                const cursor = self.editor.client.getActiveCursor();
-                try cursor.buffer.joinLine(cursor.getPosition());
+                const edit = self.editor.client.active_edit.?;
+                try edit.text.joinLine(edit.cursor.getPosition());
             },
             'A' => {
-                const cursor = self.editor.client.getActiveCursor();
-                try cursor.moveToBeginningOfLine();
+                const edit = self.editor.client.active_edit.?;
+                try edit.cursor.moveToBeginningOfLine();
                 self.getCurrentView().updateLastCursorX();
             },
             'E' => {
-                const cursor = self.editor.client.getActiveCursor();
-                try cursor.moveToEndOfLine();
+                const edit = self.editor.client.active_edit.?;
+                try edit.cursor.moveToEndOfLine();
                 self.getCurrentView().updateLastCursorX();
             },
             'X' => {
@@ -89,8 +89,8 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'V' => {
                 self.getCurrentView().scrollDown(self.getCurrentView().height);
                 const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
-                const cursor = self.editor.client.getActiveCursor();
-                try cursor.setPosition(buf_pos);
+                const edit = self.editor.client.active_edit.?;
+                try edit.cursor.setPosition(buf_pos);
             },
             else => {},
         },
@@ -98,15 +98,15 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'v' => {
                 self.getCurrentView().scrollUp(self.getCurrentView().height);
                 const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
-                const cursor = self.editor.client.getActiveCursor();
-                try cursor.setPosition(buf_pos);
+                const edit = self.editor.client.active_edit.?;
+                try edit.cursor.setPosition(buf_pos);
             },
             else => {},
         },
         .plain => |k| {
-            const cursor = self.editor.client.getActiveCursor();
-            try cursor.buffer.insertChar(cursor.getPosition(), k);
-            try cursor.moveForward();
+            const edit = self.editor.client.active_edit.?;
+            try edit.text.insertChar(edit.cursor.getPosition(), k);
+            try edit.cursor.moveForward();
         },
         .arrow => |k| try self.moveCursor(k),
     }
@@ -122,45 +122,41 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
             const y = self.getCurrentView().getCursor().y;
             if (y > 0) {
                 const pos = self.getCurrentView().getBufferPopsition(.{ .x = self.getCurrentView().last_cursor_x, .y = y - 1 });
-                for (self.getCursors()) |cursor| {
-                    try cursor.setPosition(pos);
-                }
+                const edit = self.editor.client.active_edit.?;
+                try edit.cursor.setPosition(pos);
             }
         },
         .down => {
             const y = self.getCurrentView().getCursor().y;
             if (y < self.getCurrentView().getNumberOfLines() - 1) {
                 const pos = self.getCurrentView().getBufferPopsition(.{ .x = self.getCurrentView().last_cursor_x, .y = y + 1 });
-                for (self.getCursors()) |cursor| {
-                    try cursor.setPosition(pos);
-                }
+                const edit = self.editor.client.active_edit.?;
+                try edit.cursor.setPosition(pos);
             }
         },
         .left => {
-            for (self.getCursors()) |cursor| {
-                try cursor.moveBackward();
-            }
+            const edit = self.editor.client.active_edit.?;
+            try edit.cursor.moveBackward();
             self.getCurrentView().updateLastCursorX();
         },
         .right => {
-            for (self.getCursors()) |cursor| {
-                try cursor.moveForward();
-            }
+            const edit = self.editor.client.active_edit.?;
+            try edit.cursor.moveForward();
             self.getCurrentView().updateLastCursorX();
         },
     }
 }
 
 fn breakLine(self: *EditorController) !void {
-    var cursor = self.editor.client.getActiveCursor();
-    try cursor.buffer.breakLine(cursor.getPosition());
-    try cursor.moveForward();
+    const edit = self.editor.client.active_edit.?;
+    try edit.text.breakLine(edit.cursor.getPosition());
+    try edit.cursor.moveForward();
     self.getCurrentView().updateLastCursorX();
 }
 
 fn killLine(self: *EditorController) !void {
-    var cursor = self.editor.client.getActiveCursor();
-    try cursor.buffer.killLine(cursor.getPosition());
+    const edit = self.editor.client.active_edit.?;
+    try edit.text.killLine(edit.cursor.getPosition());
     self.getCurrentView().updateLastCursorX();
 }
 
@@ -176,12 +172,4 @@ pub fn openFile(self: *EditorController, path: []const u8) !void {
     const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);
     try self.status.setMessage(new_message);
-}
-
-fn getCursors(self: *EditorController) []*Cursor {
-    self.cursors[0] = if (self.editor.client.is_command_line_active)
-        &self.editor.client.command_cursor
-    else
-        self.editor.client.getActiveCursor();
-    return &self.cursors;
 }
