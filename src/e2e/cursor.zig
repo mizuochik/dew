@@ -9,23 +9,23 @@ test "move cursor to any directions" {
     const cursor = editor.client.cursors.getPtr("default").?;
     try editor.client.getActiveFile().?.cursor.buffer.openFile("src/e2e/100x100.txt");
 
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 0, .y = 0 }, cursor.getPosition());
 
     for (0..5) |_| try editor.controller.processKeypress(.{ .arrow = .right });
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 5, .y = 0 }, cursor.getPosition());
 
     for (0..5) |_| try editor.controller.processKeypress(.{ .arrow = .down });
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 5, .y = 5 }, cursor.getPosition());
 
     for (0..4) |_| try editor.controller.processKeypress(.{ .arrow = .left });
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 1, .y = 5 }, cursor.getPosition());
 
     for (0..4) |_| try editor.controller.processKeypress(.{ .arrow = .up });
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 1, .y = 1 }, cursor.getPosition());
 }
 
@@ -37,17 +37,17 @@ test "move to the beginning or end of line" {
     try editor.client.getActiveFile().?.cursor.buffer.openFile("src/e2e/100x100.txt");
 
     for (0..10) |_| try cursor.moveForward();
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 10, .y = 0 }, cursor.getPosition());
     try editor.controller.processKeypress(.{ .ctrl = 'A' });
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 0, .y = 0 }, cursor.getPosition());
 
     for (0..10) |_| try cursor.moveForward();
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 10, .y = 0 }, cursor.getPosition());
     try editor.controller.processKeypress(.{ .ctrl = 'E' });
-    try editor.display.render();
+    try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 100, .y = 0 }, cursor.getPosition());
 }
 
@@ -58,17 +58,17 @@ test "move vertically considering double bytes" {
         try editor.controller.changeDisplaySize(100, 100);
         const cursor = editor.client.cursors.getPtr("default").?;
         try editor.client.getActiveFile().?.cursor.buffer.openFile("src/e2e/mixed-byte-lines.txt");
-        try editor.display.render();
+        try editor.display.render(&editor.client);
 
         // Move to first half of double byte character
         for (0..4) |_| try editor.controller.processKeypress(.{ .arrow = .right });
-        try editor.display.render();
+        try editor.display.render(&editor.client);
         try std.testing.expectEqual(Position{ .x = 4, .y = 0 }, cursor.getPosition());
         try editor.controller.processKeypress(.{ .arrow = .down });
-        try editor.display.render();
+        try editor.display.render(&editor.client);
         try std.testing.expectEqual(Position{ .x = 2, .y = 1 }, cursor.getPosition());
         try editor.controller.processKeypress(.{ .arrow = .up });
-        try editor.display.render();
+        try editor.display.render(&editor.client);
         try std.testing.expectEqual(Position{ .x = 4, .y = 0 }, cursor.getPosition());
     }
     {
@@ -77,18 +77,18 @@ test "move vertically considering double bytes" {
         try editor.controller.changeDisplaySize(100, 100);
         const cursor = editor.client.cursors.getPtr("default").?;
         try editor.client.getActiveFile().?.cursor.buffer.openFile("src/e2e/mixed-byte-lines.txt");
-        try editor.display.render();
+        try editor.display.render(&editor.client);
 
         // Move to back half of double byte character
         for (0..5) |_| try editor.controller.processKeypress(.{ .arrow = .right });
-        try editor.display.render();
+        try editor.display.render(&editor.client);
         try std.testing.expectEqual(Position{ .x = 5, .y = 0 }, cursor.getPosition());
         try editor.controller.processKeypress(.{ .arrow = .down });
-        try editor.display.render();
+        try editor.display.render(&editor.client);
         try std.testing.expectFmt("(2, 1)", "{}", .{cursor.getPosition()});
         try std.testing.expectEqual(Position{ .x = 2, .y = 1 }, cursor.getPosition());
         try editor.controller.processKeypress(.{ .arrow = .up });
-        try editor.display.render();
+        try editor.display.render(&editor.client);
         try std.testing.expectEqual(Position{ .x = 5, .y = 0 }, cursor.getPosition());
     }
 }

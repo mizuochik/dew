@@ -19,7 +19,6 @@ const empty: []const u8 = b: {
     break :b &s;
 };
 
-buffer_selector: *BufferSelector,
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
@@ -29,11 +28,10 @@ mode: Buffer.Mode,
 editor: *Editor,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, mode: Buffer.Mode, editor: *Editor) BufferView {
+pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Buffer.Mode) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
-        .buffer_selector = buffer_selector,
         .rows = rows,
         .width = 0,
         .height = 0,
@@ -216,11 +214,11 @@ pub fn scrollDown(self: *BufferView, diff: usize) void {
         self.getBuffer().y_scroll += diff;
 }
 
-pub fn render(self: *BufferView, buffer: [][]u8) !void {
+pub fn render(self: *BufferView, text: *Buffer, buffer: [][]u8) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     const buffer_width = buffer[0].len;
-    for (self.getBuffer().rows.items, 0..) |row, y| {
+    for (text.rows.items, 0..) |row, y| {
         var x_start: usize = 0;
         for (0..row.getLen()) |x| {
             if (row.width_index.items[x + 1] - row.width_index.items[x_start] > buffer_width) {
@@ -240,11 +238,10 @@ pub fn render(self: *BufferView, buffer: [][]u8) !void {
             });
         }
     }
-    const file = self.getBuffer();
-    const draw_height = if (buffer.len < new_rows.items.len - file.y_scroll) buffer.len else new_rows.items.len - file.y_scroll;
+    const draw_height = if (buffer.len < new_rows.items.len - text.y_scroll) buffer.len else new_rows.items.len - text.y_scroll;
     for (0..draw_height) |i| {
-        const row_slice = new_rows.items[i + file.y_scroll];
-        std.mem.copy(u8, buffer[i], file.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
+        const row_slice = new_rows.items[i + text.y_scroll];
+        std.mem.copy(u8, buffer[i], text.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
     }
     self.rows.deinit();
     self.rows = new_rows;

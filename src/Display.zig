@@ -4,6 +4,7 @@ const view = @import("view.zig");
 const BufferView = @import("BufferView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
+const Client = @import("Client.zig");
 const Terminal = @import("Terminal.zig");
 
 buffer: [][]u8,
@@ -93,18 +94,18 @@ pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
     try self.status_view.setSize(self.size.cols);
 }
 
-pub fn render(self: *Display) !void {
+pub fn render(self: *Display, client: *Client) !void {
     for (0..self.buffer.len - 1) |i| {
         for (0..self.buffer[i].len) |j| {
             self.buffer[i][j] = ' ';
         }
     }
-    try self.file_buffer_view.render(self.buffer[0 .. self.buffer.len - 1]);
+    try self.file_buffer_view.render(client.getActiveFile().?.cursor.buffer, self.buffer[0 .. self.buffer.len - 1]);
     var bottom_line = self.buffer[self.buffer.len - 1 ..];
     for (0..bottom_line[0].len) |i| {
         bottom_line[0][i] = ' ';
     }
-    try self.command_buffer_view.render(bottom_line);
+    try self.command_buffer_view.render(client.command_line, bottom_line);
     var rest: usize = 0;
     var i = @as(i32, @intCast(bottom_line[0].len)) - 1;
     while (i >= 0 and bottom_line[0][@intCast(i)] == ' ') : (i -= 1) {

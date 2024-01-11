@@ -48,10 +48,10 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
     editor.buffer_selector = try BufferSelector.init(allocator, editor);
     errdefer editor.buffer_selector.deinit();
 
-    editor.buffer_view = BufferView.init(allocator, &editor.buffer_selector, .file, editor);
+    editor.buffer_view = BufferView.init(allocator, editor, .file);
     errdefer editor.buffer_view.deinit();
 
-    editor.command_buffer_view = BufferView.init(allocator, &editor.buffer_selector, .command, editor);
+    editor.command_buffer_view = BufferView.init(allocator, editor, .command);
     errdefer editor.command_buffer_view.deinit();
 
     editor.status = try Status.init(allocator);
