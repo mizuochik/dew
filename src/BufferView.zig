@@ -46,15 +46,6 @@ pub fn deinit(self: *const BufferView) void {
     self.rows.deinit();
 }
 
-pub fn viewRow(self: *const BufferView, y: usize) []const u8 {
-    const y_offset = y + self.getBuffer().y_scroll;
-    if (y_offset >= self.rows.items.len) {
-        return empty;
-    }
-    const row = self.rows.items[y_offset];
-    return self.getBuffer().rows.items[row.buf_y].sliceAsRaw(row.buf_x_start, row.buf_x_end);
-}
-
 pub fn viewCursor(self: *const BufferView) ?Position {
     if (!self.is_active) {
         return null;
