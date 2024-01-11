@@ -17,7 +17,6 @@ command_line: *Buffer,
 command_line_edit: Edit,
 status: Status,
 file_edits: std.StringHashMap(Edit),
-active_cursor: ?*Cursor = null,
 active_edit: ?*Edit = null,
 allocator: std.mem.Allocator,
 is_command_line_active: bool = false,
@@ -105,13 +104,6 @@ pub fn toggleCommandLine(self: *@This()) !void {
     }
 }
 
-pub fn getActiveText(self: *@This()) ?*Buffer {
-    if (self.active_cursor) |cursor| {
-        return cursor.buffer;
-    }
-    return null;
-}
-
 pub fn getActiveFile(self: *@This()) ?*Edit {
     if (self.current_file) |current_file| {
         return self.file_edits.getPtr(current_file);
@@ -136,7 +128,6 @@ pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Buffer) !void {
     errdefer self.removeFileEdit(file_name);
     const file = self.file_edits.getEntry(file_name).?;
     self.current_file = file.key_ptr.*;
-    self.active_cursor = &file.value_ptr.cursor;
     self.active_edit = file.value_ptr;
 }
 
@@ -144,7 +135,6 @@ pub fn removeFileEdit(self: *@This(), file_name: []const u8) void {
     if (self.current_file) |current_file| {
         if (std.mem.eql(u8, file_name, current_file)) {
             self.current_file = null;
-            self.active_cursor = null;
             self.active_edit = null;
         }
     }
