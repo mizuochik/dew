@@ -97,7 +97,7 @@ pub fn getNumberOfLines(self: *const BufferView) usize {
     return self.rows.items.len;
 }
 
-pub fn getBufferPopsition(self: *const BufferView, view_position: Position) Position {
+pub fn getBufferPosition(self: *const BufferView, view_position: Position) Position {
     const row_slice = self.rows.items[view_position.y];
     const buffer_row = self.getBuffer().rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];

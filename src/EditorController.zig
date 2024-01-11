@@ -88,7 +88,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             },
             'V' => {
                 self.getCurrentView().scrollDown(self.getCurrentView().height);
-                const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
+                const buf_pos = self.getCurrentView().getBufferPosition(self.getCurrentView().getNormalizedCursor());
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.setPosition(buf_pos);
             },
@@ -97,7 +97,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
         .meta => |k| switch (k) {
             'v' => {
                 self.getCurrentView().scrollUp(self.getCurrentView().height);
-                const buf_pos = self.getCurrentView().getBufferPopsition(self.getCurrentView().getNormalizedCursor());
+                const buf_pos = self.getCurrentView().getBufferPosition(self.getCurrentView().getNormalizedCursor());
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.setPosition(buf_pos);
             },
@@ -121,7 +121,7 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
         .up => {
             const y = self.getCurrentView().getCursor().y;
             if (y > 0) {
-                const pos = self.getCurrentView().getBufferPopsition(.{ .x = self.getCurrentView().last_cursor_x, .y = y - 1 });
+                const pos = self.getCurrentView().getBufferPosition(.{ .x = self.getCurrentView().last_cursor_x, .y = y - 1 });
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.setPosition(pos);
             }
@@ -129,7 +129,7 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
         .down => {
             const y = self.getCurrentView().getCursor().y;
             if (y < self.getCurrentView().getNumberOfLines() - 1) {
-                const pos = self.getCurrentView().getBufferPopsition(.{ .x = self.getCurrentView().last_cursor_x, .y = y + 1 });
+                const pos = self.getCurrentView().getBufferPosition(.{ .x = self.getCurrentView().last_cursor_x, .y = y + 1 });
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.setPosition(pos);
             }
