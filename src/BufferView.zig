@@ -47,12 +47,12 @@ pub fn deinit(self: *const BufferView) void {
     self.rows.deinit();
 }
 
-pub fn viewCursor(self: *const BufferView) ?Position {
+pub fn viewCursor(self: *const BufferView, edit: *Client.Edit) ?Position {
     if (!self.is_active) {
         return null;
     }
     const cursor = self.getCursor();
-    const y_offset = if (cursor.y >= self.getBuffer().y_scroll) cursor.y - self.getBuffer().y_scroll else return null;
+    const y_offset = if (cursor.y >= edit.text.y_scroll) cursor.y - edit.text.y_scroll else return null;
     if (y_offset >= self.height) {
         return null;
     }
@@ -144,19 +144,19 @@ pub fn setSize(self: *BufferView, width: usize, height: usize) !void {
     self.height = height;
 }
 
-pub fn scrollUp(self: *BufferView, diff: usize) void {
-    if (self.getBuffer().y_scroll < diff)
-        self.getBuffer().y_scroll = 0
+pub fn scrollUp(_: *BufferView, edit: *Client.Edit, diff: usize) void {
+    if (edit.text.y_scroll < diff)
+        edit.text.y_scroll = 0
     else
-        self.getBuffer().y_scroll -= diff;
+        edit.text.y_scroll -= diff;
 }
 
-pub fn scrollDown(self: *BufferView, diff: usize) void {
+pub fn scrollDown(self: *BufferView, edit: *Client.Edit, diff: usize) void {
     const max_scroll = if (self.rows.items.len > self.height) self.rows.items.len - self.height else 0;
-    if (self.getBuffer().y_scroll + diff > max_scroll)
-        self.getBuffer().y_scroll = max_scroll
+    if (edit.text.y_scroll + diff > max_scroll)
+        edit.text.y_scroll = max_scroll
     else
-        self.getBuffer().y_scroll += diff;
+        edit.text.y_scroll += diff;
 }
 
 pub fn render(self: *BufferView, text: *Buffer, buffer: [][]u8) !void {

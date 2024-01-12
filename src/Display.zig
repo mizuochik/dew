@@ -226,11 +226,11 @@ fn putCursor(_: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8
     try buf.appendSlice(try std.fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
 }
 
-fn putCurrentCursor(self: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    if (self.file_buffer_view.viewCursor()) |cursor| {
+fn putCurrentCursor(self: *const Display, client: *Client, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
+    if (self.file_buffer_view.viewCursor(client.getActiveFile().?)) |cursor| {
         try self.putCursor(arena, buf, cursor.x, cursor.y);
     }
-    if (self.command_buffer_view.viewCursor()) |cursor| {
+    if (self.command_buffer_view.viewCursor(&client.command_line_edit)) |cursor| {
         try self.putCursor(arena, buf, cursor.x, self.size.rows - 1);
     }
 }
