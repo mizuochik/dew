@@ -161,34 +161,6 @@ fn getBuffer(self: *const BufferView) *Buffer {
 pub fn setSize(self: *BufferView, width: usize, height: usize) !void {
     self.width = width;
     self.height = height;
-    try self.update();
-}
-
-fn update(self: *BufferView) !void {
-    var new_rows = std.ArrayList(RowSlice).init(self.allocator);
-    errdefer new_rows.deinit();
-    for (self.getBuffer().rows.items, 0..) |row, y| {
-        var x_start: usize = 0;
-        for (0..row.getLen()) |x| {
-            if (row.width_index.items[x + 1] - row.width_index.items[x_start] > self.width) {
-                try new_rows.append(RowSlice{
-                    .buf_y = y,
-                    .buf_x_start = x_start,
-                    .buf_x_end = x,
-                });
-                x_start = x;
-            }
-        }
-        if (row.getLen() <= 0 or x_start < row.getLen()) {
-            try new_rows.append(RowSlice{
-                .buf_y = y,
-                .buf_x_start = x_start,
-                .buf_x_end = row.getLen(),
-            });
-        }
-    }
-    self.rows.deinit();
-    self.rows = new_rows;
 }
 
 pub fn scrollUp(self: *BufferView, diff: usize) void {
