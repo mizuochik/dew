@@ -51,7 +51,7 @@ pub fn viewCursor(self: *const BufferView, edit: *Client.Edit) ?Position {
     if (!self.is_active) {
         return null;
     }
-    const cursor = self.getCursor();
+    const cursor = self.getCursor(edit);
     const y_offset = if (cursor.y >= edit.text.y_scroll) cursor.y - edit.text.y_scroll else return null;
     if (y_offset >= self.height) {
         return null;
@@ -62,7 +62,7 @@ pub fn viewCursor(self: *const BufferView, edit: *Client.Edit) ?Position {
     };
 }
 
-pub fn getCursor(self: *const BufferView) Position {
+pub fn getCursor(self: *const BufferView, edit: *Client.Edit) Position {
     const cursor = switch (self.mode) {
         .command => self.editor.client.command_line_edit.cursor,
         else => self.editor.client.getActiveFile().?.cursor,
@@ -84,7 +84,7 @@ pub fn getCursor(self: *const BufferView) Position {
     const row_slice = self.rows.items[y];
     const x = for (row_slice.buf_x_start..row_slice.buf_x_end + 1) |i| {
         if (i == c_x) {
-            const buf_row = self.getBuffer().rows.items[row_slice.buf_y];
+            const buf_row = edit.text.rows.items[row_slice.buf_y];
             break buf_row.width_index.items[i] - buf_row.width_index.items[row_slice.buf_x_start];
         }
     } else 0;
@@ -118,7 +118,7 @@ pub fn getBufferPosition(self: *const BufferView, edit: *Client.Edit, view_posit
 pub fn getNormalizedCursor(self: *BufferView, edit: *Client.Edit) Position {
     const upper_limit = edit.text.y_scroll;
     const bottom_limit = edit.text.y_scroll + self.height;
-    const cursor = self.getCursor();
+    const cursor = self.getCursor(edit);
     if (cursor.y < upper_limit) {
         return .{ .x = cursor.x, .y = upper_limit };
     }
@@ -128,15 +128,8 @@ pub fn getNormalizedCursor(self: *BufferView, edit: *Client.Edit) Position {
     return cursor;
 }
 
-pub fn updateLastCursorX(self: *BufferView) void {
-    self.last_cursor_x = self.getCursor().x;
-}
-
-fn getBuffer(self: *const BufferView) *Buffer {
-    return switch (self.mode) {
-        .file => self.editor.client.getActiveFile().?.cursor.buffer,
-        .command => self.editor.client.command_line,
-    };
+pub fn updateLastCursorX(self: *BufferView, edit: *Client.Edit) void {
+    self.last_cursor_x = self.getCursor(edit).x;
 }
 
 pub fn setSize(self: *BufferView, width: usize, height: usize) !void {

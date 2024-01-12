@@ -76,12 +76,12 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             'A' => {
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.moveToBeginningOfLine();
-                self.getCurrentView().updateLastCursorX();
+                self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
             },
             'E' => {
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.moveToEndOfLine();
-                self.getCurrentView().updateLastCursorX();
+                self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
             },
             'X' => {
                 try self.editor.client.toggleCommandLine();
@@ -119,7 +119,7 @@ pub fn changeDisplaySize(self: *const EditorController, cols: usize, rows: usize
 fn moveCursor(self: *EditorController, k: models.Arrow) !void {
     switch (k) {
         .up => {
-            const y = self.getCurrentView().getCursor().y;
+            const y = self.getCurrentView().getCursor(self.editor.client.getActiveEdit().?).y;
             if (y > 0) {
                 const pos = self.getCurrentView().getBufferPosition(self.editor.client.getActiveEdit().?, .{ .x = self.getCurrentView().last_cursor_x, .y = y - 1 });
                 const edit = self.editor.client.active_edit.?;
@@ -127,7 +127,7 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
             }
         },
         .down => {
-            const y = self.getCurrentView().getCursor().y;
+            const y = self.getCurrentView().getCursor(self.editor.client.getActiveEdit().?).y;
             if (y < self.getCurrentView().getNumberOfLines() - 1) {
                 const pos = self.getCurrentView().getBufferPosition(self.editor.client.getActiveEdit().?, .{ .x = self.getCurrentView().last_cursor_x, .y = y + 1 });
                 const edit = self.editor.client.active_edit.?;
@@ -137,12 +137,12 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
         .left => {
             const edit = self.editor.client.active_edit.?;
             try edit.cursor.moveBackward();
-            self.getCurrentView().updateLastCursorX();
+            self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
         },
         .right => {
             const edit = self.editor.client.active_edit.?;
             try edit.cursor.moveForward();
-            self.getCurrentView().updateLastCursorX();
+            self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
         },
     }
 }
@@ -151,13 +151,13 @@ fn breakLine(self: *EditorController) !void {
     const edit = self.editor.client.active_edit.?;
     try edit.text.breakLine(edit.cursor.getPosition());
     try edit.cursor.moveForward();
-    self.getCurrentView().updateLastCursorX();
+    self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
 fn killLine(self: *EditorController) !void {
     const edit = self.editor.client.active_edit.?;
     try edit.text.killLine(edit.cursor.getPosition());
-    self.getCurrentView().updateLastCursorX();
+    self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
 fn getCurrentView(self: *const EditorController) *BufferView {

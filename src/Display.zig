@@ -112,7 +112,7 @@ pub fn render(self: *Display, client: *Client) !void {
         rest += 1;
     }
     self.status_view.render(bottom_line[0][bottom_line[0].len - rest ..]);
-    try self.writeUpdates();
+    try self.writeUpdates(client);
 }
 
 fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 {
@@ -133,36 +133,7 @@ fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 
     return new_buffer;
 }
 
-fn handleEvent(ctx: *anyopaque, event_: view.Event) anyerror!void {
-    const self: *Display = @ptrCast(@alignCast(ctx));
-    switch (event_) {
-        .buffer_view_updated => {
-            try self.synchronizeBufferView();
-            try self.writeUpdates();
-        },
-        .command_buffer_view_updated, .status_view_updated => {
-            try self.updateBottomLine();
-            try self.writeUpdates();
-        },
-        .screen_size_changed => {
-            const new_buffer = try initBuffer(self.allocator, self.size);
-            errdefer {
-                for (0..new_buffer.len) |i| self.allocator.free(new_buffer[i]);
-                self.allocator.free(new_buffer);
-            }
-            for (0..self.buffer.len) |i| self.allocator.free(self.buffer[i]);
-            self.allocator.free(self.buffer);
-
-            self.buffer = new_buffer;
-
-            try self.file_buffer_view.setSize(self.size.cols, self.size.rows - 1);
-            try self.command_buffer_view.setSize(self.size.cols, 1);
-            try self.status_view.setSize(self.size.cols);
-        },
-    }
-}
-
-fn writeUpdates(self: *const Display) !void {
+fn writeUpdates(self: *const Display, client: *Client) !void {
     if (builtin.is_test) {
         return;
     }
@@ -177,7 +148,7 @@ fn writeUpdates(self: *const Display) !void {
         try tmp.appendSlice("\x1b[K");
         try tmp.appendSlice(self.buffer[y]);
     }
-    try self.putCurrentCursor(arena.allocator(), &tmp);
+    try self.putCurrentCursor(client, arena.allocator(), &tmp);
     try self.showCursor(&tmp);
     try std.io.getStdOut().writeAll(tmp.items);
 }
