@@ -115,13 +115,6 @@ pub fn getBufferPosition(self: *const BufferView, view_position: Position) Posit
     };
 }
 
-pub fn scrollTo(self: *BufferView, y_scroll: usize) void {
-    self.getBuffer().y_scroll = if (self.rows.items.len < y_scroll)
-        self.rows.items.len
-    else
-        y_scroll;
-}
-
 pub fn normalizeScroll(self: *BufferView) void {
     const cursor = self.getCursor();
     const upper_limit = self.getBuffer().y_scroll;
