@@ -72,6 +72,13 @@ pub fn getActiveFile(self: *@This()) ?*Edit {
     return null;
 }
 
+pub fn getActiveEdit(self: *@This()) ?*Edit {
+    if (self.is_command_line_active) {
+        return &self.command_line_edit;
+    }
+    return self.getActiveFile();
+}
+
 pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Buffer) !void {
     if (!self.file_edits.contains(file_name)) {
         const key = try self.allocator.dupe(u8, file_name);
