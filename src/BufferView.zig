@@ -5,6 +5,7 @@ const Buffer = @import("Buffer.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Position = @import("Position.zig");
 const Editor = @import("Editor.zig");
+const Client = @import("Client.zig");
 
 const BufferView = @This();
 
@@ -133,9 +134,9 @@ pub fn normalizeScroll(self: *BufferView) void {
     }
 }
 
-pub fn getNormalizedCursor(self: *BufferView) Position {
-    const upper_limit = self.getBuffer().y_scroll;
-    const bottom_limit = self.getBuffer().y_scroll + self.height;
+pub fn getNormalizedCursor(self: *BufferView, edit: *Client.Edit) Position {
+    const upper_limit = edit.text.y_scroll;
+    const bottom_limit = edit.text.y_scroll + self.height;
     const cursor = self.getCursor();
     if (cursor.y < upper_limit) {
         return .{ .x = cursor.x, .y = upper_limit };

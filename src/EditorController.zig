@@ -88,7 +88,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
             },
             'V' => {
                 self.getCurrentView().scrollDown(self.getCurrentView().height);
-                const buf_pos = self.getCurrentView().getBufferPosition(self.getCurrentView().getNormalizedCursor());
+                const buf_pos = self.getCurrentView().getBufferPosition(self.getCurrentView().getNormalizedCursor(self.editor.client.getActiveFile().?));
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.setPosition(buf_pos);
             },
@@ -97,7 +97,7 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
         .meta => |k| switch (k) {
             'v' => {
                 self.getCurrentView().scrollUp(self.getCurrentView().height);
-                const buf_pos = self.getCurrentView().getBufferPosition(self.getCurrentView().getNormalizedCursor());
+                const buf_pos = self.getCurrentView().getBufferPosition(self.getCurrentView().getNormalizedCursor(self.editor.client.getActiveFile().?));
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.setPosition(buf_pos);
             },
