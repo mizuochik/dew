@@ -115,18 +115,6 @@ pub fn getBufferPosition(self: *const BufferView, view_position: Position) Posit
     };
 }
 
-pub fn normalizeScroll(self: *BufferView) void {
-    const cursor = self.getCursor();
-    const upper_limit = self.getBuffer().y_scroll;
-    const bottom_limit = self.getBuffer().y_scroll + self.height;
-    if (cursor.y < upper_limit) {
-        self.getBuffer().y_scroll = cursor.y;
-    }
-    if (cursor.y >= bottom_limit) {
-        self.getBuffer().y_scroll = cursor.y - self.height + 1;
-    }
-}
-
 pub fn getNormalizedCursor(self: *BufferView, edit: *Client.Edit) Position {
     const upper_limit = edit.text.y_scroll;
     const bottom_limit = edit.text.y_scroll + self.height;
