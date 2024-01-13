@@ -1,30 +1,30 @@
 const std = @import("std");
 const models = @import("models.zig");
-const Buffer = @import("Buffer.zig");
+const Text = @import("Text.zig");
 const Editor = @import("Editor.zig");
 
 const BufferSelector = @This();
 
 allocator: std.mem.Allocator,
-file_buffers: std.StringHashMap(*Buffer),
+file_buffers: std.StringHashMap(*Text),
 editor: *Editor,
 
 pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
-    var file_buffer = try Buffer.init(allocator);
-    errdefer file_buffer.deinit();
+    var file_text = try Text.init(allocator);
+    errdefer file_text.deinit();
 
-    var file_buffers = std.StringHashMap(*Buffer).init(allocator);
-    errdefer file_buffers.deinit();
+    var file_texts = std.StringHashMap(*Text).init(allocator);
+    errdefer file_texts.deinit();
 
     const default_key = try std.fmt.allocPrint(allocator, "default", .{});
     errdefer allocator.free(default_key);
-    try file_buffers.put(default_key, file_buffer);
+    try file_texts.put(default_key, file_text);
 
-    try editor.client.putFileEdit("default", file_buffer);
+    try editor.client.putFileEdit("default", file_text);
 
     return .{
         .allocator = allocator,
-        .file_buffers = file_buffers,
+        .file_buffers = file_texts,
         .editor = editor,
     };
 }
@@ -43,35 +43,35 @@ pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
         try self.editor.client.putFileEdit(entry.key_ptr.*, entry.value_ptr.*);
         return;
     }
-    var buffer = try Buffer.init(self.allocator);
-    errdefer buffer.deinit();
-    buffer.openFile(name) catch |err| switch (err) {
+    var text = try Text.init(self.allocator);
+    errdefer text.deinit();
+    text.openFile(name) catch |err| switch (err) {
         std.fs.File.OpenError.FileNotFound => {}, // Open as an empty file
         else => return err,
     };
     const key = try self.allocator.dupe(u8, name);
     errdefer self.allocator.free(key);
-    try self.file_buffers.put(key, buffer);
+    try self.file_buffers.put(key, text);
     errdefer _ = self.file_buffers.remove(key);
-    try self.editor.client.putFileEdit(key, buffer);
+    try self.editor.client.putFileEdit(key, text);
 }
 
 pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
-    const buffer = try self.editor.client.getActiveFile().?.cursor.buffer.clone();
-    errdefer buffer.deinit();
+    const text = try self.editor.client.getActiveFile().?.cursor.text.clone();
+    errdefer text.deinit();
     const key = try self.allocator.dupe(u8, name);
     errdefer self.allocator.free(key);
     const result = try self.file_buffers.getOrPut(key);
     errdefer if (!result.found_existing) {
         _ = self.file_buffers.remove(key);
     };
-    try buffer.saveFile(name);
+    try text.saveFile(name);
     if (result.found_existing) {
         self.allocator.free(key);
         result.value_ptr.*.deinit();
     }
-    result.value_ptr.* = buffer;
-    try self.editor.client.putFileEdit(name, buffer);
+    result.value_ptr.* = text;
+    try self.editor.client.putFileEdit(name, text);
 }
 
 test {

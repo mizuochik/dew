@@ -1,17 +1,17 @@
 const std = @import("std");
-const Buffer = @import("Buffer.zig");
+const Text = @import("Text.zig");
 const Cursor = @import("Cursor.zig");
 const Status = @import("Status.zig");
 
 pub const Edit = struct {
-    text: *Buffer,
+    text: *Text,
     cursor: Cursor,
     y_scroll: usize,
 };
 
 current_file: ?[]const u8 = null,
 scroll_positions: std.StringHashMap(usize),
-command_line: *Buffer,
+command_line: *Text,
 command_line_edit: Edit,
 status: Status,
 file_edits: std.StringHashMap(Edit),
@@ -20,7 +20,7 @@ allocator: std.mem.Allocator,
 is_command_line_active: bool = false,
 
 pub fn init(allocator: std.mem.Allocator) !@This() {
-    var command_line = try Buffer.init(allocator);
+    var command_line = try Text.init(allocator);
     errdefer command_line.deinit();
     var st = try Status.init(allocator);
     errdefer st.deinit();
@@ -35,7 +35,7 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
         .command_line_edit = .{
             .text = command_line,
             .cursor = .{
-                .buffer = command_line,
+                .text = command_line,
                 .x = 0,
                 .y = 0,
             },
@@ -79,14 +79,14 @@ pub fn getActiveEdit(self: *@This()) ?*Edit {
     return self.getActiveFile();
 }
 
-pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Buffer) !void {
+pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Text) !void {
     if (!self.file_edits.contains(file_name)) {
         const key = try self.allocator.dupe(u8, file_name);
         errdefer self.allocator.free(key);
         try self.file_edits.putNoClobber(key, .{
             .text = text,
             .cursor = .{
-                .buffer = text,
+                .text = text,
                 .x = 0,
                 .y = 0,
             },

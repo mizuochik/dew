@@ -1,7 +1,7 @@
 const std = @import("std");
 const models = @import("models.zig");
 const view = @import("view.zig");
-const Buffer = @import("Buffer.zig");
+const Text = @import("Text.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Position = @import("Position.zig");
 const Editor = @import("Editor.zig");
@@ -25,18 +25,18 @@ width: usize,
 height: usize,
 is_active: bool,
 last_cursor_x: usize = 0,
-mode: Buffer.Mode,
+mode: Text.Mode,
 editor: *Editor,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Buffer.Mode) BufferView {
+pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Text.Mode) BufferView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
         .rows = rows,
         .width = 0,
         .height = 0,
-        .is_active = mode != Buffer.Mode.command,
+        .is_active = mode != Text.Mode.command,
         .mode = mode,
         .editor = editor,
         .allocator = allocator,
@@ -152,7 +152,7 @@ pub fn scrollDown(self: *BufferView, edit: *Client.Edit, diff: usize) void {
         edit.text.y_scroll += diff;
 }
 
-pub fn render(self: *BufferView, text: *Buffer, buffer: [][]u8) !void {
+pub fn render(self: *BufferView, text: *Text, buffer: [][]u8) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     const buffer_width = buffer[0].len;

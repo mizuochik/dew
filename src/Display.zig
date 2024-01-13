@@ -100,7 +100,7 @@ pub fn render(self: *Display, client: *Client) !void {
             self.buffer[i][j] = ' ';
         }
     }
-    try self.file_buffer_view.render(client.getActiveFile().?.cursor.buffer, self.buffer[0 .. self.buffer.len - 1]);
+    try self.file_buffer_view.render(client.getActiveFile().?.cursor.text, self.buffer[0 .. self.buffer.len - 1]);
     var bottom_line = self.buffer[self.buffer.len - 1 ..];
     for (0..bottom_line[0].len) |i| {
         bottom_line[0][i] = ' ';

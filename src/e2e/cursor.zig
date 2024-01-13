@@ -7,7 +7,7 @@ test "move cursor to any directions" {
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
     const cursor = &editor.client.getActiveFile().?.cursor;
-    try editor.client.getActiveFile().?.cursor.buffer.openFile("src/e2e/100x100.txt");
+    try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/100x100.txt");
 
     try editor.display.render(&editor.client);
     try std.testing.expectEqualDeep(Position{ .x = 0, .y = 0 }, cursor.getPosition());
@@ -34,7 +34,7 @@ test "move to the beginning or end of line" {
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
     const cursor = &editor.client.getActiveFile().?.cursor;
-    try editor.client.getActiveFile().?.cursor.buffer.openFile("src/e2e/100x100.txt");
+    try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/100x100.txt");
 
     for (0..10) |_| try cursor.moveForward();
     try editor.display.render(&editor.client);
@@ -57,7 +57,7 @@ test "move vertically considering double bytes" {
         defer editor.deinit();
         try editor.controller.changeDisplaySize(100, 100);
         const cursor = &editor.client.getActiveFile().?.cursor;
-        try editor.client.getActiveFile().?.cursor.buffer.openFile("src/e2e/mixed-byte-lines.txt");
+        try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/mixed-byte-lines.txt");
         try editor.display.render(&editor.client);
 
         // Move to first half of double byte character
@@ -76,7 +76,7 @@ test "move vertically considering double bytes" {
         defer editor.deinit();
         try editor.controller.changeDisplaySize(100, 100);
         const cursor = &editor.client.getActiveFile().?.cursor;
-        try editor.client.getActiveFile().?.cursor.buffer.openFile("src/e2e/mixed-byte-lines.txt");
+        try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/mixed-byte-lines.txt");
         try editor.display.render(&editor.client);
 
         // Move to back half of double byte character

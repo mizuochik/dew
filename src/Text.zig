@@ -4,8 +4,6 @@ const models = @import("models.zig");
 const Cursor = @import("Cursor.zig");
 const Position = @import("Position.zig");
 
-const Buffer = @This();
-
 pub const Mode = enum {
     file,
     command,
@@ -17,9 +15,9 @@ c_y: usize = 0,
 y_scroll: usize,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator) !*Buffer {
-    const buffer = try allocator.create(Buffer);
-    errdefer allocator.destroy(buffer);
+pub fn init(allocator: std.mem.Allocator) !*@This() {
+    const text = try allocator.create(@This());
+    errdefer allocator.destroy(text);
     var rows = std.ArrayList(UnicodeString).init(allocator);
     errdefer rows.deinit();
     errdefer for (rows.items) |row| row.deinit();
@@ -28,44 +26,44 @@ pub fn init(allocator: std.mem.Allocator) !*Buffer {
         errdefer l.deinit();
         try rows.append(l);
     }
-    buffer.* = .{
+    text.* = .{
         .rows = rows,
         .y_scroll = 0,
         .allocator = allocator,
     };
-    return buffer;
+    return text;
 }
 
-pub fn deinit(self: *const Buffer) void {
+pub fn deinit(self: *const @This()) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
     self.allocator.destroy(self);
 }
 
-pub fn clone(self: *const Buffer) !*Buffer {
-    var buffer = try self.allocator.create(Buffer);
-    errdefer self.allocator.destroy(buffer);
-    buffer.* = self.*;
-    buffer.rows = std.ArrayList(UnicodeString).init(self.allocator);
+pub fn clone(self: *const @This()) !*@This() {
+    var text = try self.allocator.create(@This());
+    errdefer self.allocator.destroy(text);
+    text.* = self.*;
+    text.rows = std.ArrayList(UnicodeString).init(self.allocator);
     errdefer {
-        for (buffer.rows.items) |row| {
+        for (text.rows.items) |row| {
             row.deinit();
         }
-        buffer.rows.deinit();
+        text.rows.deinit();
     }
     for (self.rows.items) |row| {
         const cloned = try row.clone();
         errdefer cloned.deinit();
-        try buffer.rows.append(cloned);
+        try text.rows.append(cloned);
     }
-    return buffer;
+    return text;
 }
 
-pub fn insertChar(self: *Buffer, pos: Position, c: u21) !void {
+pub fn insertChar(self: *@This(), pos: Position, c: u21) !void {
     try self.rows.items[pos.y].insert(pos.x, c);
 }
 
-pub fn deleteChar(self: *Buffer, pos: Position) !void {
+pub fn deleteChar(self: *@This(), pos: Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
         try self.joinLine(pos);
@@ -74,12 +72,12 @@ pub fn deleteChar(self: *Buffer, pos: Position) !void {
     try row.remove(pos.x);
 }
 
-pub fn deleteBackwardChar(self: *Buffer) !void {
+pub fn deleteBackwardChar(self: *@This()) !void {
     try self.moveBackward();
     try self.deleteChar();
 }
 
-pub fn joinLine(self: *Buffer, pos: Position) !void {
+pub fn joinLine(self: *@This(), pos: Position) !void {
     if (pos.y >= self.rows.items.len - 1) {
         return;
     }
@@ -90,7 +88,7 @@ pub fn joinLine(self: *Buffer, pos: Position) !void {
     _ = self.rows.orderedRemove(pos.y + 1);
 }
 
-pub fn killLine(self: *Buffer, pos: Position) !void {
+pub fn killLine(self: *@This(), pos: Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
         try self.deleteChar(pos);
@@ -101,7 +99,7 @@ pub fn killLine(self: *Buffer, pos: Position) !void {
     }
 }
 
-pub fn breakLine(self: *Buffer, pos: Position) !void {
+pub fn breakLine(self: *@This(), pos: Position) !void {
     var new_row = try UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
     const row = &self.rows.items[pos.y];
@@ -114,12 +112,12 @@ pub fn breakLine(self: *Buffer, pos: Position) !void {
     try self.rows.insert(pos.y + 1, new_row);
 }
 
-pub fn clear(self: *Buffer) !void {
+pub fn clear(self: *@This()) !void {
     std.debug.assert(self.rows.items.len == 1);
     try self.rows.items[0].clear();
 }
 
-pub fn openFile(self: *Buffer, path: []const u8) !void {
+pub fn openFile(self: *@This(), path: []const u8) !void {
     var f = try std.fs.cwd().openFile(path, .{});
     defer f.close();
     var reader = f.reader();
@@ -150,7 +148,7 @@ pub fn openFile(self: *Buffer, path: []const u8) !void {
     self.rows = new_rows;
 }
 
-pub fn saveFile(self: *const Buffer, path: []const u8) !void {
+pub fn saveFile(self: *const @This(), path: []const u8) !void {
     var f = try std.fs.cwd().createFile(path, .{});
     defer f.close();
     for (self.rows.items, 0..) |row, i| {

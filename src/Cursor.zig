@@ -1,10 +1,10 @@
 const std = @import("std");
 const models = @import("models.zig");
-const Buffer = @import("Buffer.zig");
+const Text = @import("Text.zig");
 const Position = @import("Position.zig");
 const UnicodeString = @import("UnicodeString.zig");
 
-buffer: *Buffer,
+text: *Text,
 x: usize = 0,
 y: usize = 0,
 
@@ -13,7 +13,7 @@ const Cursor = @This();
 pub fn moveForward(self: *Cursor) !void {
     if (self.x < self.getCurrentRow().getLen()) {
         self.x += 1;
-    } else if (self.y < self.buffer.rows.items.len - 1) {
+    } else if (self.y < self.text.rows.items.len - 1) {
         self.y += 1;
         self.x = 0;
     }
@@ -49,5 +49,5 @@ pub fn setPosition(self: *Cursor, pos: Position) !void {
 }
 
 fn getCurrentRow(self: *const Cursor) UnicodeString {
-    return self.buffer.rows.items[self.y];
+    return self.text.rows.items[self.y];
 }
