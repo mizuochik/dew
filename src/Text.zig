@@ -10,7 +10,6 @@ pub const Mode = enum {
 };
 
 rows: std.ArrayList(UnicodeString),
-y_scroll: usize,
 allocator: std.mem.Allocator,
 
 pub fn init(allocator: std.mem.Allocator) !*@This() {
@@ -26,7 +25,6 @@ pub fn init(allocator: std.mem.Allocator) !*@This() {
     }
     text.* = .{
         .rows = rows,
-        .y_scroll = 0,
         .allocator = allocator,
     };
     return text;

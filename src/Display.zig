@@ -100,12 +100,12 @@ pub fn render(self: *Display, client: *Client) !void {
             self.buffer[i][j] = ' ';
         }
     }
-    try self.file_edit_view.render(client.getActiveFile().?.cursor.text, self.buffer[0 .. self.buffer.len - 1]);
+    try self.file_edit_view.render(client.getActiveEdit().?, self.buffer[0 .. self.buffer.len - 1]);
     var bottom_line = self.buffer[self.buffer.len - 1 ..];
     for (0..bottom_line[0].len) |i| {
         bottom_line[0][i] = ' ';
     }
-    try self.command_edit_view.render(client.command_line, bottom_line);
+    try self.command_edit_view.render(&client.command_line_edit, bottom_line);
     var rest: usize = 0;
     var i = @as(i32, @intCast(bottom_line[0].len)) - 1;
     while (i >= 0 and bottom_line[0][@intCast(i)] == ' ') : (i -= 1) {

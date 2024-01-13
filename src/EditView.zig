@@ -49,7 +49,7 @@ pub fn viewCursor(self: *const @This(), edit: *Client.Edit) ?Position {
         return null;
     }
     const cursor = self.getCursor(edit);
-    const y_offset = if (cursor.y >= edit.text.y_scroll) cursor.y - edit.text.y_scroll else return null;
+    const y_offset = if (cursor.y >= edit.y_scroll) cursor.y - edit.y_scroll else return null;
     if (y_offset >= self.height) {
         return null;
     }
@@ -113,8 +113,8 @@ pub fn getBufferPosition(self: *const @This(), edit: *Client.Edit, view_position
 }
 
 pub fn getNormalizedCursor(self: *@This(), edit: *Client.Edit) Position {
-    const upper_limit = edit.text.y_scroll;
-    const bottom_limit = edit.text.y_scroll + self.height;
+    const upper_limit = edit.y_scroll;
+    const bottom_limit = edit.y_scroll + self.height;
     const cursor = self.getCursor(edit);
     if (cursor.y < upper_limit) {
         return .{ .x = cursor.x, .y = upper_limit };
@@ -135,25 +135,25 @@ pub fn setSize(self: *@This(), width: usize, height: usize) !void {
 }
 
 pub fn scrollUp(_: *@This(), edit: *Client.Edit, diff: usize) void {
-    if (edit.text.y_scroll < diff)
-        edit.text.y_scroll = 0
+    if (edit.y_scroll < diff)
+        edit.y_scroll = 0
     else
-        edit.text.y_scroll -= diff;
+        edit.y_scroll -= diff;
 }
 
 pub fn scrollDown(self: *@This(), edit: *Client.Edit, diff: usize) void {
     const max_scroll = if (self.rows.items.len > self.height) self.rows.items.len - self.height else 0;
-    if (edit.text.y_scroll + diff > max_scroll)
-        edit.text.y_scroll = max_scroll
+    if (edit.y_scroll + diff > max_scroll)
+        edit.y_scroll = max_scroll
     else
-        edit.text.y_scroll += diff;
+        edit.y_scroll += diff;
 }
 
-pub fn render(self: *@This(), text: *Text, buffer: [][]u8) !void {
+pub fn render(self: *@This(), edit: *Client.Edit, buffer: [][]u8) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     const buffer_width = buffer[0].len;
-    for (text.rows.items, 0..) |row, y| {
+    for (edit.text.rows.items, 0..) |row, y| {
         var x_start: usize = 0;
         for (0..row.getLen()) |x| {
             if (row.width_index.items[x + 1] - row.width_index.items[x_start] > buffer_width) {
@@ -173,10 +173,10 @@ pub fn render(self: *@This(), text: *Text, buffer: [][]u8) !void {
             });
         }
     }
-    const draw_height = if (buffer.len < new_rows.items.len - text.y_scroll) buffer.len else new_rows.items.len - text.y_scroll;
+    const draw_height = if (buffer.len < new_rows.items.len - edit.y_scroll) buffer.len else new_rows.items.len - edit.y_scroll;
     for (0..draw_height) |i| {
-        const row_slice = new_rows.items[i + text.y_scroll];
-        std.mem.copy(u8, buffer[i], text.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
+        const row_slice = new_rows.items[i + edit.y_scroll];
+        std.mem.copy(u8, buffer[i], edit.text.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
     }
     self.rows.deinit();
     self.rows = new_rows;
