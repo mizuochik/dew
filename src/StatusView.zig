@@ -22,13 +22,6 @@ pub fn render(_: *const @This(), status: *Status, buffer: []u8) void {
     std.mem.copy(u8, buffer[blank_size..], status.message[0..non_blank_size]);
 }
 
-fn handleEvent(_: *anyopaque, event_: models.Event) anyerror!void {
-    switch (event_) {
-        .status_updated => {},
-        else => {},
-    }
-}
-
 pub fn setSize(self: *@This(), width: usize) !void {
     self.width = width;
 }
