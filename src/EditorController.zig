@@ -121,16 +121,16 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
         .up => {
             const y = self.getCurrentView().getCursor(self.editor.client.getActiveEdit().?).y;
             if (y > 0) {
-                const pos = self.getCurrentView().getBufferPosition(self.editor.client.getActiveEdit().?, .{ .x = self.getCurrentView().last_cursor_x, .y = y - 1 });
-                const edit = self.editor.client.active_edit.?;
+                var edit = self.editor.client.getActiveEdit().?;
+                const pos = self.getCurrentView().getBufferPosition(edit, .{ .x = edit.cursor.last_view_x, .y = y - 1 });
                 try edit.cursor.setPosition(pos);
             }
         },
         .down => {
             const y = self.getCurrentView().getCursor(self.editor.client.getActiveEdit().?).y;
             if (y < self.getCurrentView().getNumberOfLines() - 1) {
-                const pos = self.getCurrentView().getBufferPosition(self.editor.client.getActiveEdit().?, .{ .x = self.getCurrentView().last_cursor_x, .y = y + 1 });
                 const edit = self.editor.client.active_edit.?;
+                const pos = self.getCurrentView().getBufferPosition(edit, .{ .x = edit.cursor.last_view_x, .y = y + 1 });
                 try edit.cursor.setPosition(pos);
             }
         },

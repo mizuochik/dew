@@ -7,6 +7,7 @@ const UnicodeString = @import("UnicodeString.zig");
 text: *Text,
 x: usize = 0,
 y: usize = 0,
+last_view_x: usize = 0,
 
 const Cursor = @This();
 

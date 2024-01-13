@@ -22,7 +22,6 @@ rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
 is_active: bool,
-last_cursor_x: usize = 0,
 mode: Text.Mode,
 editor: *Editor,
 allocator: std.mem.Allocator,
@@ -127,7 +126,7 @@ pub fn getNormalizedCursor(self: *@This(), edit: *Client.Edit) Position {
 }
 
 pub fn updateLastCursorX(self: *@This(), edit: *Client.Edit) void {
-    self.last_cursor_x = self.getCursor(edit).x;
+    edit.cursor.last_view_x = self.getCursor(edit).x;
 }
 
 pub fn setSize(self: *@This(), width: usize, height: usize) !void {
