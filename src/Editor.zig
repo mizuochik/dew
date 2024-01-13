@@ -57,7 +57,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
     editor.status = try Status.init(allocator);
     errdefer editor.status.deinit();
 
-    editor.status_view = StatusView.init(&editor.status);
+    editor.status_view = StatusView.init();
     errdefer editor.status_view.deinit();
 
     editor.display_size = DisplaySize.init();

@@ -111,7 +111,7 @@ pub fn render(self: *Display, client: *Client) !void {
     while (i >= 0 and bottom_line[0][@intCast(i)] == ' ') : (i -= 1) {
         rest += 1;
     }
-    self.status_view.render(bottom_line[0][bottom_line[0].len - rest ..]);
+    self.status_view.render(&client.status, bottom_line[0][bottom_line[0].len - rest ..]);
     try self.writeUpdates(client);
 }
 
