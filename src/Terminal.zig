@@ -13,11 +13,9 @@ const darwin_INPCK: std.os.tcflag_t = 0x10;
 const darwin_ISTRIP: std.os.tcflag_t = 0x20;
 const darwin_CS8: std.os.tcflag_t = 0x300;
 
-const Terminal = @This();
-
 orig_termios: ?std.os.termios = null,
 
-pub fn enableRawMode(self: *Terminal) !void {
+pub fn enableRawMode(self: *@This()) !void {
     const orig = try std.os.tcgetattr(std.os.STDIN_FILENO);
     var term = orig;
     term.iflag &= ~(darwin_BRKINT | darwin_IXON | darwin_ICRNL | darwin_INPCK | darwin_ISTRIP);
@@ -28,7 +26,7 @@ pub fn enableRawMode(self: *Terminal) !void {
     self.orig_termios = orig;
 }
 
-pub fn disableRawMode(self: *Terminal) !void {
+pub fn disableRawMode(self: *@This()) !void {
     if (self.orig_termios) |orig| {
         try std.os.tcsetattr(std.os.STDIN_FILENO, std.os.TCSA.FLUSH, orig);
     }
@@ -39,7 +37,7 @@ pub const WindowSize = struct {
     cols: u32,
 };
 
-pub fn getWindowSize(_: *const Terminal) !WindowSize {
+pub fn getWindowSize(_: *const @This()) !WindowSize {
     var ws: c.winsize = undefined;
     const status = c.ioctl(std.io.getStdOut().handle, c.TIOCGWINSZ, &ws);
     if (status != 0) {

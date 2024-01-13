@@ -14,8 +14,6 @@ const DisplaySize = @import("DisplaySize.zig");
 const CommandRegistry = @import("CommandRegistry.zig");
 const EditorController = @import("EditorController.zig");
 
-const Editor = @This();
-
 pub const Options = struct {
     is_debug: bool = false,
 };
@@ -35,8 +33,8 @@ terminal: Terminal,
 client: Client,
 display: Display,
 
-pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
-    const editor = try allocator.create(Editor);
+pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
+    const editor = try allocator.create(@This());
     errdefer allocator.destroy(editor);
 
     editor.allocator = allocator;
@@ -90,7 +88,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
     return editor;
 }
 
-pub fn deinit(self: *Editor) void {
+pub fn deinit(self: *@This()) void {
     self.edit_view.deinit();
     self.command_edit_view.deinit();
     self.buffer_selector.deinit();

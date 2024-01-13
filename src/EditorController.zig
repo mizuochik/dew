@@ -21,10 +21,8 @@ allocator: std.mem.Allocator,
 editor: *Editor,
 cursors: [1]*Cursor,
 
-const EditorController = @This();
-
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edit_view: *EditView, status: *Status, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !EditorController {
-    return EditorController{
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edit_view: *EditView, status: *Status, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
+    return @This(){
         .allocator = allocator,
         .file_edit_view = file_edit_view,
         .command_edit_view = command_edit_view,
@@ -37,9 +35,9 @@ pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edi
     };
 }
 
-pub fn deinit(_: *const EditorController) void {}
+pub fn deinit(_: *const @This()) void {}
 
-pub fn processKeypress(self: *EditorController, key: models.Key) !void {
+pub fn processKeypress(self: *@This(), key: models.Key) !void {
     switch (key) {
         .del => {
             const edit = self.editor.client.active_edit.?;
@@ -112,11 +110,11 @@ pub fn processKeypress(self: *EditorController, key: models.Key) !void {
     }
 }
 
-pub fn changeDisplaySize(self: *const EditorController, cols: usize, rows: usize) !void {
+pub fn changeDisplaySize(self: *const @This(), cols: usize, rows: usize) !void {
     try self.display.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
 }
 
-fn moveCursor(self: *EditorController, k: models.Arrow) !void {
+fn moveCursor(self: *@This(), k: models.Arrow) !void {
     switch (k) {
         .up => {
             const y = self.getCurrentView().getCursor(self.editor.client.getActiveEdit().?).y;
@@ -147,27 +145,27 @@ fn moveCursor(self: *EditorController, k: models.Arrow) !void {
     }
 }
 
-fn breakLine(self: *EditorController) !void {
+fn breakLine(self: *@This()) !void {
     const edit = self.editor.client.active_edit.?;
     try edit.text.breakLine(edit.cursor.getPosition());
     try edit.cursor.moveForward();
     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
-fn killLine(self: *EditorController) !void {
+fn killLine(self: *@This()) !void {
     const edit = self.editor.client.active_edit.?;
     try edit.text.killLine(edit.cursor.getPosition());
     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
-fn getCurrentView(self: *const EditorController) *EditView {
+fn getCurrentView(self: *const @This()) *EditView {
     return if (self.editor.client.is_command_line_active)
         self.command_edit_view
     else
         self.file_edit_view;
 }
 
-pub fn openFile(self: *EditorController, path: []const u8) !void {
+pub fn openFile(self: *@This(), path: []const u8) !void {
     try self.buffer_selector.openFileBuffer(path);
     const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);

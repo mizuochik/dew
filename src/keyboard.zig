@@ -1,11 +1,9 @@
 const std = @import("std");
 const models = @import("models.zig");
 
-const Keyboard = @This();
-
 fixed_buffer_stream: ?std.io.FixedBufferStream([]const u8) = null, // for testing only
 
-pub fn inputKey(self: *Keyboard) !models.Key {
+pub fn inputKey(self: *@This()) !models.Key {
     var k = try self.readByte();
     if (k == 0x1b) {
         k = try self.readByte();
@@ -36,7 +34,7 @@ pub fn inputKey(self: *Keyboard) !models.Key {
     return .{ .plain = try std.unicode.utf8Decode(buf[0..l]) };
 }
 
-fn readByte(self: *Keyboard) anyerror!u8 {
+fn readByte(self: *@This()) anyerror!u8 {
     if (self.fixed_buffer_stream) |*fixed| {
         return try fixed.reader().readByte();
     }
@@ -58,7 +56,7 @@ test "Keyboard: inputKey" {
         .{ .given = "\x7f", .expected = models.Key.del },
     };
     inline for (cases) |case| {
-        var k = Keyboard{
+        var k = @This(){
             .fixed_buffer_stream = std.io.fixedBufferStream(case.given),
         };
         const actual = try k.inputKey();

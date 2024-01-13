@@ -14,8 +14,6 @@ command_edit_view: *EditView,
 allocator: std.mem.Allocator,
 size: *DisplaySize,
 
-const Display = @This();
-
 pub const Area = struct {
     rows: [][]u8,
     allocator: std.mem.Allocator,
@@ -44,7 +42,7 @@ pub const Area = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, command_edit_view: *EditView, size: *DisplaySize) !Display {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, command_edit_view: *EditView, size: *DisplaySize) !@This() {
     const buffer = try initBuffer(allocator, size);
     errdefer {
         for (0..buffer.len) |i| allocator.free(buffer[i]);
@@ -60,14 +58,14 @@ pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view
     };
 }
 
-pub fn deinit(self: *const Display) void {
+pub fn deinit(self: *const @This()) void {
     for (self.buffer) |row| {
         self.allocator.free(row);
     }
     self.allocator.free(self.buffer);
 }
 
-pub fn getArea(self: *const Display, top: usize, bottom: usize, left: usize, right: usize) !Area {
+pub fn getArea(self: *const @This(), top: usize, bottom: usize, left: usize, right: usize) !Area {
     var area = try Area.init(self.allocator, right - left, bottom - top);
     errdefer area.deinit();
     for (0..(bottom - top)) |i| {
@@ -76,7 +74,7 @@ pub fn getArea(self: *const Display, top: usize, bottom: usize, left: usize, rig
     return area;
 }
 
-pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
+pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
     self.size.cols = @intCast(size.cols);
     self.size.rows = @intCast(size.rows);
     const new_buffer = try initBuffer(self.allocator, self.size);
@@ -94,7 +92,7 @@ pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
     try self.status_view.setSize(self.size.cols);
 }
 
-pub fn render(self: *Display, client: *Client) !void {
+pub fn render(self: *@This(), client: *Client) !void {
     for (0..self.buffer.len - 1) |i| {
         for (0..self.buffer[i].len) |j| {
             self.buffer[i][j] = ' ';
@@ -133,7 +131,7 @@ fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 
     return new_buffer;
 }
 
-fn writeUpdates(self: *const Display, client: *Client) !void {
+fn writeUpdates(self: *const @This(), client: *Client) !void {
     if (builtin.is_test) {
         return;
     }
@@ -153,7 +151,7 @@ fn writeUpdates(self: *const Display, client: *Client) !void {
     try std.io.getStdOut().writeAll(tmp.items);
 }
 
-fn synchronizeEditView(self: *Display) !void {
+fn synchronizeEditView(self: *@This()) !void {
     for (0..self.file_edit_view.height) |i| {
         const row = self.file_edit_view.viewRow(i);
         for (0..self.size.cols) |j| {
@@ -162,19 +160,19 @@ fn synchronizeEditView(self: *Display) !void {
     }
 }
 
-fn hideCursor(_: *const Display, buf: *std.ArrayList(u8)) !void {
+fn hideCursor(_: *const @This(), buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25l");
 }
 
-fn showCursor(_: *const Display, buf: *std.ArrayList(u8)) !void {
+fn showCursor(_: *const @This(), buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25h");
 }
 
-fn putCursor(_: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
+fn putCursor(_: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
     try buf.appendSlice(try std.fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
 }
 
-fn putCurrentCursor(self: *const Display, client: *Client, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
+fn putCurrentCursor(self: *const @This(), client: *Client, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
     if (self.file_edit_view.viewCursor(client.getActiveFile().?)) |cursor| {
         try self.putCursor(arena, buf, cursor.x, cursor.y);
     }

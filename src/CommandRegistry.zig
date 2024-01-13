@@ -2,29 +2,27 @@ const std = @import("std");
 const builtin_commands = @import("builtin_commands.zig");
 const Editor = @import("Editor.zig");
 
-const CommandRegistry = @This();
-
 const Command = *const fn (editor: *Editor, arguments: [][]const u8) anyerror!void;
 
 allocator: std.mem.Allocator,
 commands: std.StringHashMap(Command),
 
-pub fn init(allocator: std.mem.Allocator) CommandRegistry {
+pub fn init(allocator: std.mem.Allocator) @This() {
     return .{
         .allocator = allocator,
         .commands = std.StringHashMap(Command).init(allocator),
     };
 }
 
-pub fn get(self: *const CommandRegistry, name: []const u8) !Command {
+pub fn get(self: *const @This(), name: []const u8) !Command {
     return self.commands.get(name) orelse error.CommandNotFound;
 }
 
-pub fn registerCommand(self: *CommandRegistry, name: []const u8, command: Command) !void {
+pub fn registerCommand(self: *@This(), name: []const u8, command: Command) !void {
     try self.commands.putNoClobber(name, command);
 }
 
-pub fn registerBuiltinCommands(self: *CommandRegistry) !void {
+pub fn registerBuiltinCommands(self: *@This()) !void {
     try self.commands.putNoClobber("open-file", builtin_commands.open_file);
     errdefer _ = self.commands.remove("open-file");
     try self.commands.putNoClobber("new-file", builtin_commands.new_file);
@@ -33,6 +31,6 @@ pub fn registerBuiltinCommands(self: *CommandRegistry) !void {
     errdefer _ = self.commands.remove("save-file");
 }
 
-pub fn deinit(self: *CommandRegistry) void {
+pub fn deinit(self: *@This()) void {
     self.commands.deinit();
 }

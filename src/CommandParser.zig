@@ -8,8 +8,6 @@ index: usize,
 buffer_selector: *BufferSelector,
 status: *Status,
 
-const CommandParser = @This();
-
 pub const CommandLine = struct {
     allocator: std.mem.Allocator,
     command_name: []const u8,
@@ -29,7 +27,7 @@ const Error = error{
     Error,
 };
 
-pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status: *Status) !CommandParser {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status: *Status) !@This() {
     const in = try allocator.alloc([]u8, 0);
     errdefer allocator.free(in);
     return .{
@@ -41,14 +39,14 @@ pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, stat
     };
 }
 
-pub fn deinit(self: *const CommandParser) void {
+pub fn deinit(self: *const @This()) void {
     for (self.input) |cp| {
         self.allocator.free(cp);
     }
     self.allocator.free(self.input);
 }
 
-pub fn parse(self: *CommandParser, input: []const u8) !CommandLine {
+pub fn parse(self: *@This(), input: []const u8) !CommandLine {
     try self.setInput(input);
     const command_name = try self.parseCommandName();
     errdefer self.allocator.free(command_name);
@@ -72,7 +70,7 @@ pub fn parse(self: *CommandParser, input: []const u8) !CommandLine {
     };
 }
 
-fn setInput(self: *CommandParser, input: []const u8) !void {
+fn setInput(self: *@This(), input: []const u8) !void {
     const view = try std.unicode.Utf8View.init(input);
     var it = view.iterator();
     var cps = std.ArrayList([]const u8).init(self.allocator);
@@ -96,7 +94,7 @@ fn setInput(self: *CommandParser, input: []const u8) !void {
     self.input = in;
 }
 
-fn parseCommandName(self: *CommandParser) ![]const u8 {
+fn parseCommandName(self: *@This()) ![]const u8 {
     var command_name_al = std.ArrayList(u8).init(self.allocator);
     defer command_name_al.deinit();
     try command_name_al.appendSlice(try self.parseAnyLetter());
@@ -106,7 +104,7 @@ fn parseCommandName(self: *CommandParser) ![]const u8 {
     return try command_name_al.toOwnedSlice();
 }
 
-fn parseAnyLetter(self: *CommandParser) ![]const u8 {
+fn parseAnyLetter(self: *@This()) ![]const u8 {
     if (self.index >= self.input.len) {
         return Error.EOL;
     }
@@ -118,7 +116,7 @@ fn parseAnyLetter(self: *CommandParser) ![]const u8 {
     return r;
 }
 
-fn parseSpaces(self: *CommandParser) !void {
+fn parseSpaces(self: *@This()) !void {
     if (self.index >= self.input.len) {
         return Error.EOL;
     }
@@ -131,7 +129,7 @@ fn parseSpaces(self: *CommandParser) !void {
     }
 }
 
-fn parseArgument(self: *CommandParser) ![]const u8 {
+fn parseArgument(self: *@This()) ![]const u8 {
     var cmd = std.ArrayList(u8).init(self.allocator);
     errdefer cmd.deinit();
     try cmd.appendSlice(try self.parseAnyLetter());
