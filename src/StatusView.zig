@@ -15,13 +15,6 @@ pub fn init(status: *Status) @This() {
 
 pub fn deinit(_: *@This()) void {}
 
-pub fn viewContent(self: *const @This()) ![]const u8 {
-    return if (self.status.message.len < self.width)
-        self.status.message[0..]
-    else
-        self.status.message[0..self.width];
-}
-
 pub fn render(self: *const @This(), buffer: []u8) void {
     const blank_size = if (buffer.len > self.status.message.len) buffer.len - self.status.message.len else 0;
     for (0..blank_size) |i| {

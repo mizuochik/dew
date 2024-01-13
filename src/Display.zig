@@ -162,29 +162,6 @@ fn synchronizeEditView(self: *Display) !void {
     }
 }
 
-fn updateBottomLine(self: *Display) !void {
-    const status_bar = try self.status_view.viewContent();
-    const command_buffer = self.command_edit_view.viewRow(0);
-    const bottom = self.size.rows - 1;
-    for (0..command_buffer.len) |x| {
-        self.buffer[bottom][x] = command_buffer[x];
-    }
-    if (self.size.cols >= command_buffer.len + status_bar.len) {
-        const space = self.size.cols - (command_buffer.len + status_bar.len);
-        for (0..space) |i| {
-            self.buffer[bottom][command_buffer.len + i] = ' ';
-        }
-        for (0..status_bar.len) |i| {
-            self.buffer[bottom][command_buffer.len + space + i] = status_bar[i];
-        }
-    } else {
-        const overlap = command_buffer.len + status_bar.len - self.size.cols;
-        for (0..status_bar.len - overlap) |i| {
-            self.buffer[bottom][command_buffer.len + i] = status_bar[i - overlap];
-        }
-    }
-}
-
 fn hideCursor(_: *const Display, buf: *std.ArrayList(u8)) !void {
     try buf.appendSlice("\x1b[?25l");
 }
