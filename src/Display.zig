@@ -98,7 +98,7 @@ pub fn render(self: *@This(), client: *Client) !void {
             self.buffer[i][j] = ' ';
         }
     }
-    try self.file_edit_view.render(client.getActiveEdit().?, self.buffer[0 .. self.buffer.len - 1]);
+    try self.file_edit_view.render(client.getActiveFile().?, self.buffer[0 .. self.buffer.len - 1]);
     var bottom_line = self.buffer[self.buffer.len - 1 ..];
     for (0..bottom_line[0].len) |i| {
         bottom_line[0][i] = ' ';
