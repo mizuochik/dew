@@ -1,16 +1,16 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const view = @import("view.zig");
-const BufferView = @import("BufferView.zig");
+const EditView = @import("EditView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const Client = @import("Client.zig");
 const Terminal = @import("Terminal.zig");
 
 buffer: [][]u8,
-file_buffer_view: *BufferView,
+file_edit_view: *EditView,
 status_view: *StatusView,
-command_buffer_view: *BufferView,
+command_edit_view: *EditView,
 allocator: std.mem.Allocator,
 size: *DisplaySize,
 
@@ -44,7 +44,7 @@ pub const Area = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, status_view: *StatusView, command_buffer_view: *BufferView, size: *DisplaySize) !Display {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, command_edit_view: *EditView, size: *DisplaySize) !Display {
     const buffer = try initBuffer(allocator, size);
     errdefer {
         for (0..buffer.len) |i| allocator.free(buffer[i]);
@@ -52,9 +52,9 @@ pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, status_
     }
     return .{
         .buffer = buffer,
-        .file_buffer_view = file_buffer_view,
+        .file_edit_view = file_edit_view,
         .status_view = status_view,
-        .command_buffer_view = command_buffer_view,
+        .command_edit_view = command_edit_view,
         .allocator = allocator,
         .size = size,
     };
@@ -89,8 +89,8 @@ pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
 
     self.buffer = new_buffer;
 
-    try self.file_buffer_view.setSize(self.size.cols, self.size.rows - 1);
-    try self.command_buffer_view.setSize(self.size.cols, 1);
+    try self.file_edit_view.setSize(self.size.cols, self.size.rows - 1);
+    try self.command_edit_view.setSize(self.size.cols, 1);
     try self.status_view.setSize(self.size.cols);
 }
 
@@ -100,12 +100,12 @@ pub fn render(self: *Display, client: *Client) !void {
             self.buffer[i][j] = ' ';
         }
     }
-    try self.file_buffer_view.render(client.getActiveFile().?.cursor.text, self.buffer[0 .. self.buffer.len - 1]);
+    try self.file_edit_view.render(client.getActiveFile().?.cursor.text, self.buffer[0 .. self.buffer.len - 1]);
     var bottom_line = self.buffer[self.buffer.len - 1 ..];
     for (0..bottom_line[0].len) |i| {
         bottom_line[0][i] = ' ';
     }
-    try self.command_buffer_view.render(client.command_line, bottom_line);
+    try self.command_edit_view.render(client.command_line, bottom_line);
     var rest: usize = 0;
     var i = @as(i32, @intCast(bottom_line[0].len)) - 1;
     while (i >= 0 and bottom_line[0][@intCast(i)] == ' ') : (i -= 1) {
@@ -153,9 +153,9 @@ fn writeUpdates(self: *const Display, client: *Client) !void {
     try std.io.getStdOut().writeAll(tmp.items);
 }
 
-fn synchronizeBufferView(self: *Display) !void {
-    for (0..self.file_buffer_view.height) |i| {
-        const row = self.file_buffer_view.viewRow(i);
+fn synchronizeEditView(self: *Display) !void {
+    for (0..self.file_edit_view.height) |i| {
+        const row = self.file_edit_view.viewRow(i);
         for (0..self.size.cols) |j| {
             self.buffer[i][j] = if (j < row.len) row[j] else ' ';
         }
@@ -164,7 +164,7 @@ fn synchronizeBufferView(self: *Display) !void {
 
 fn updateBottomLine(self: *Display) !void {
     const status_bar = try self.status_view.viewContent();
-    const command_buffer = self.command_buffer_view.viewRow(0);
+    const command_buffer = self.command_edit_view.viewRow(0);
     const bottom = self.size.rows - 1;
     for (0..command_buffer.len) |x| {
         self.buffer[bottom][x] = command_buffer[x];
@@ -198,10 +198,10 @@ fn putCursor(_: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8
 }
 
 fn putCurrentCursor(self: *const Display, client: *Client, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    if (self.file_buffer_view.viewCursor(client.getActiveFile().?)) |cursor| {
+    if (self.file_edit_view.viewCursor(client.getActiveFile().?)) |cursor| {
         try self.putCursor(arena, buf, cursor.x, cursor.y);
     }
-    if (self.command_buffer_view.viewCursor(&client.command_line_edit)) |cursor| {
+    if (self.command_edit_view.viewCursor(&client.command_line_edit)) |cursor| {
         try self.putCursor(arena, buf, cursor.x, self.size.rows - 1);
     }
 }

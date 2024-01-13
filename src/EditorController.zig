@@ -2,7 +2,7 @@ const std = @import("std");
 const view = @import("view.zig");
 const models = @import("models.zig");
 const Text = @import("Text.zig");
-const BufferView = @import("BufferView.zig");
+const EditView = @import("EditView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const Status = @import("Status.zig");
 const BufferSelector = @import("BufferSelector.zig");
@@ -10,8 +10,8 @@ const Display = @import("Display.zig");
 const Editor = @import("Editor.zig");
 const Cursor = @import("Cursor.zig");
 
-file_buffer_view: *BufferView,
-command_buffer_view: *BufferView,
+file_edit_view: *EditView,
+command_edit_view: *EditView,
 status: *Status,
 file_path: ?[]const u8 = null,
 buffer_selector: *BufferSelector,
@@ -23,11 +23,11 @@ cursors: [1]*Cursor,
 
 const EditorController = @This();
 
-pub fn init(allocator: std.mem.Allocator, file_buffer_view: *BufferView, command_buffer_view: *BufferView, status: *Status, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !EditorController {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edit_view: *EditView, status: *Status, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !EditorController {
     return EditorController{
         .allocator = allocator,
-        .file_buffer_view = file_buffer_view,
-        .command_buffer_view = command_buffer_view,
+        .file_edit_view = file_edit_view,
+        .command_edit_view = command_edit_view,
         .status = status,
         .buffer_selector = buffer_selector,
         .display = display,
@@ -160,11 +160,11 @@ fn killLine(self: *EditorController) !void {
     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
-fn getCurrentView(self: *const EditorController) *BufferView {
+fn getCurrentView(self: *const EditorController) *EditView {
     return if (self.editor.client.is_command_line_active)
-        self.command_buffer_view
+        self.command_edit_view
     else
-        self.file_buffer_view;
+        self.file_edit_view;
 }
 
 pub fn openFile(self: *EditorController, path: []const u8) !void {

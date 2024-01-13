@@ -7,8 +7,6 @@ const Position = @import("Position.zig");
 const Editor = @import("Editor.zig");
 const Client = @import("Client.zig");
 
-const BufferView = @This();
-
 const RowSlice = struct {
     buf_y: usize,
     buf_x_start: usize,
@@ -29,7 +27,7 @@ mode: Text.Mode,
 editor: *Editor,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Text.Mode) BufferView {
+pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Text.Mode) @This() {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -43,11 +41,11 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Text.Mode) Buff
     };
 }
 
-pub fn deinit(self: *const BufferView) void {
+pub fn deinit(self: *const @This()) void {
     self.rows.deinit();
 }
 
-pub fn viewCursor(self: *const BufferView, edit: *Client.Edit) ?Position {
+pub fn viewCursor(self: *const @This(), edit: *Client.Edit) ?Position {
     if (!self.is_active) {
         return null;
     }
@@ -62,7 +60,7 @@ pub fn viewCursor(self: *const BufferView, edit: *Client.Edit) ?Position {
     };
 }
 
-pub fn getCursor(self: *const BufferView, edit: *Client.Edit) Position {
+pub fn getCursor(self: *const @This(), edit: *Client.Edit) Position {
     const cursor = switch (self.mode) {
         .command => self.editor.client.command_line_edit.cursor,
         else => self.editor.client.getActiveFile().?.cursor,
@@ -94,11 +92,11 @@ pub fn getCursor(self: *const BufferView, edit: *Client.Edit) Position {
     };
 }
 
-pub fn getNumberOfLines(self: *const BufferView) usize {
+pub fn getNumberOfLines(self: *const @This()) usize {
     return self.rows.items.len;
 }
 
-pub fn getBufferPosition(self: *const BufferView, edit: *Client.Edit, view_position: Position) Position {
+pub fn getBufferPosition(self: *const @This(), edit: *Client.Edit, view_position: Position) Position {
     const row_slice = self.rows.items[view_position.y];
     const buffer_row = edit.text.rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
@@ -115,7 +113,7 @@ pub fn getBufferPosition(self: *const BufferView, edit: *Client.Edit, view_posit
     };
 }
 
-pub fn getNormalizedCursor(self: *BufferView, edit: *Client.Edit) Position {
+pub fn getNormalizedCursor(self: *@This(), edit: *Client.Edit) Position {
     const upper_limit = edit.text.y_scroll;
     const bottom_limit = edit.text.y_scroll + self.height;
     const cursor = self.getCursor(edit);
@@ -128,23 +126,23 @@ pub fn getNormalizedCursor(self: *BufferView, edit: *Client.Edit) Position {
     return cursor;
 }
 
-pub fn updateLastCursorX(self: *BufferView, edit: *Client.Edit) void {
+pub fn updateLastCursorX(self: *@This(), edit: *Client.Edit) void {
     self.last_cursor_x = self.getCursor(edit).x;
 }
 
-pub fn setSize(self: *BufferView, width: usize, height: usize) !void {
+pub fn setSize(self: *@This(), width: usize, height: usize) !void {
     self.width = width;
     self.height = height;
 }
 
-pub fn scrollUp(_: *BufferView, edit: *Client.Edit, diff: usize) void {
+pub fn scrollUp(_: *@This(), edit: *Client.Edit, diff: usize) void {
     if (edit.text.y_scroll < diff)
         edit.text.y_scroll = 0
     else
         edit.text.y_scroll -= diff;
 }
 
-pub fn scrollDown(self: *BufferView, edit: *Client.Edit, diff: usize) void {
+pub fn scrollDown(self: *@This(), edit: *Client.Edit, diff: usize) void {
     const max_scroll = if (self.rows.items.len > self.height) self.rows.items.len - self.height else 0;
     if (edit.text.y_scroll + diff > max_scroll)
         edit.text.y_scroll = max_scroll
@@ -152,7 +150,7 @@ pub fn scrollDown(self: *BufferView, edit: *Client.Edit, diff: usize) void {
         edit.text.y_scroll += diff;
 }
 
-pub fn render(self: *BufferView, text: *Text, buffer: [][]u8) !void {
+pub fn render(self: *@This(), text: *Text, buffer: [][]u8) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     const buffer_width = buffer[0].len;

@@ -8,7 +8,7 @@ const CommandEvaluator = @import("CommandEvaluator.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
 const Client = @import("Client.zig");
-const BufferView = @import("BufferView.zig");
+const EditView = @import("EditView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const CommandRegistry = @import("CommandRegistry.zig");
@@ -21,8 +21,8 @@ pub const Options = struct {
 };
 
 allocator: std.mem.Allocator,
-buffer_view: BufferView,
-command_buffer_view: BufferView,
+edit_view: EditView,
+command_edit_view: EditView,
 buffer_selector: BufferSelector,
 status: Status,
 status_view: StatusView,
@@ -48,11 +48,11 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
     editor.buffer_selector = try BufferSelector.init(allocator, editor);
     errdefer editor.buffer_selector.deinit();
 
-    editor.buffer_view = BufferView.init(allocator, editor, .file);
-    errdefer editor.buffer_view.deinit();
+    editor.edit_view = EditView.init(allocator, editor, .file);
+    errdefer editor.edit_view.deinit();
 
-    editor.command_buffer_view = BufferView.init(allocator, editor, .command);
-    errdefer editor.command_buffer_view.deinit();
+    editor.command_edit_view = EditView.init(allocator, editor, .command);
+    errdefer editor.command_edit_view.deinit();
 
     editor.status = try Status.init(allocator);
     errdefer editor.status.deinit();
@@ -61,13 +61,13 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
     errdefer editor.status_view.deinit();
 
     editor.display_size = DisplaySize.init();
-    editor.display = try Display.init(allocator, &editor.buffer_view, &editor.status_view, &editor.command_buffer_view, &editor.display_size);
+    editor.display = try Display.init(allocator, &editor.edit_view, &editor.status_view, &editor.command_edit_view, &editor.display_size);
     errdefer editor.display.deinit();
 
     editor.controller = try EditorController.init(
         allocator,
-        &editor.buffer_view,
-        &editor.command_buffer_view,
+        &editor.edit_view,
+        &editor.command_edit_view,
         &editor.status,
         &editor.buffer_selector,
         &editor.display,
@@ -91,8 +91,8 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
 }
 
 pub fn deinit(self: *Editor) void {
-    self.buffer_view.deinit();
-    self.command_buffer_view.deinit();
+    self.edit_view.deinit();
+    self.command_edit_view.deinit();
     self.buffer_selector.deinit();
     self.status.deinit();
     self.status_view.deinit();
