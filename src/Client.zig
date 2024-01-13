@@ -6,7 +6,16 @@ const Status = @import("Status.zig");
 pub const Edit = struct {
     text: *Text,
     cursor: Cursor,
-    y_scroll: usize,
+    y_scroll: usize = 0,
+
+    pub fn init(text: *Text) @This() {
+        return .{
+            .text = text,
+            .cursor = .{
+                .text = text,
+            },
+        };
+    }
 };
 
 current_file: ?[]const u8 = null,
@@ -32,15 +41,7 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
         .file_edits = file_edits,
         .status = st,
         .allocator = allocator,
-        .command_line_edit = .{
-            .text = command_line,
-            .cursor = .{
-                .text = command_line,
-                .x = 0,
-                .y = 0,
-            },
-            .y_scroll = 0,
-        },
+        .command_line_edit = Edit.init(command_line),
     };
 }
 
@@ -83,15 +84,7 @@ pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Text) !void {
     if (!self.file_edits.contains(file_name)) {
         const key = try self.allocator.dupe(u8, file_name);
         errdefer self.allocator.free(key);
-        try self.file_edits.putNoClobber(key, .{
-            .text = text,
-            .cursor = .{
-                .text = text,
-                .x = 0,
-                .y = 0,
-            },
-            .y_scroll = 0,
-        });
+        try self.file_edits.putNoClobber(key, Edit.init(text));
     }
     errdefer self.removeFileEdit(file_name);
     const file = self.file_edits.getEntry(file_name).?;
