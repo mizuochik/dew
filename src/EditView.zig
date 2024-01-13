@@ -1,5 +1,4 @@
 const std = @import("std");
-const models = @import("models.zig");
 const view = @import("view.zig");
 const Text = @import("Text.zig");
 const BufferSelector = @import("BufferSelector.zig");

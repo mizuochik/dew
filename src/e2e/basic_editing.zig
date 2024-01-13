@@ -1,6 +1,5 @@
 const std = @import("std");
 const Editor = @import("../Editor.zig");
-const models = @import("../models.zig");
 
 test "input characters" {
     var editor = try Editor.init(std.testing.allocator, .{});

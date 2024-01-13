@@ -1,6 +1,5 @@
 const std = @import("std");
 const UnicodeString = @import("UnicodeString.zig");
-const models = @import("models.zig");
 const Cursor = @import("Cursor.zig");
 const Position = @import("Position.zig");
 

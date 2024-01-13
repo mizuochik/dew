@@ -1,5 +1,4 @@
 const std = @import("std");
-const models = @import("../models.zig");
 const Editor = @import("../Editor.zig");
 
 test "scroll down/up" {

@@ -1,6 +1,5 @@
 const std = @import("std");
 const view = @import("view.zig");
-const models = @import("models.zig");
 const Text = @import("Text.zig");
 const EditView = @import("EditView.zig");
 const DisplaySize = @import("DisplaySize.zig");
@@ -9,6 +8,7 @@ const BufferSelector = @import("BufferSelector.zig");
 const Display = @import("Display.zig");
 const Editor = @import("Editor.zig");
 const Cursor = @import("Cursor.zig");
+const Keyboard = @import("Keyboard.zig");
 
 file_edit_view: *EditView,
 command_edit_view: *EditView,
@@ -37,7 +37,7 @@ pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edi
 
 pub fn deinit(_: *const @This()) void {}
 
-pub fn processKeypress(self: *@This(), key: models.Key) !void {
+pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
     switch (key) {
         .del => {
             const edit = self.editor.client.active_edit.?;
@@ -114,7 +114,7 @@ pub fn changeDisplaySize(self: *const @This(), cols: usize, rows: usize) !void {
     try self.display.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
 }
 
-fn moveCursor(self: *@This(), k: models.Arrow) !void {
+fn moveCursor(self: *@This(), k: Keyboard.Arrow) !void {
     switch (k) {
         .up => {
             const y = self.getCurrentView().getCursor(self.editor.client.getActiveEdit().?).y;

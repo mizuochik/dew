@@ -1,9 +1,23 @@
 const std = @import("std");
-const models = @import("models.zig");
+
+pub const Key = union(enum) {
+    plain: u21,
+    ctrl: u8,
+    meta: u8,
+    arrow: Arrow,
+    del,
+};
+
+pub const Arrow = enum {
+    up,
+    down,
+    right,
+    left,
+};
 
 fixed_buffer_stream: ?std.io.FixedBufferStream([]const u8) = null, // for testing only
 
-pub fn inputKey(self: *@This()) !models.Key {
+pub fn inputKey(self: *@This()) !Key {
     var k = try self.readByte();
     if (k == 0x1b) {
         k = try self.readByte();
@@ -43,17 +57,17 @@ fn readByte(self: *@This()) anyerror!u8 {
 
 test "Keyboard: inputKey" {
     const cases = .{
-        .{ .given = "\x00", .expected = models.Key{ .ctrl = '@' } },
-        .{ .given = "\x08", .expected = models.Key{ .ctrl = 'H' } },
-        .{ .given = "A", .expected = models.Key{ .plain = 'A' } },
-        .{ .given = "あ", .expected = models.Key{ .plain = 'あ' } },
-        .{ .given = "\x1b[A", .expected = models.Key{ .arrow = .up } },
-        .{ .given = "\x1b[B", .expected = models.Key{ .arrow = .down } },
-        .{ .given = "\x1b[C", .expected = models.Key{ .arrow = .right } },
-        .{ .given = "\x1b[D", .expected = models.Key{ .arrow = .left } },
-        .{ .given = "\x1bA", .expected = models.Key{ .meta = 'A' } },
-        .{ .given = "\x1bz", .expected = models.Key{ .meta = 'z' } },
-        .{ .given = "\x7f", .expected = models.Key.del },
+        .{ .given = "\x00", .expected = Key{ .ctrl = '@' } },
+        .{ .given = "\x08", .expected = Key{ .ctrl = 'H' } },
+        .{ .given = "A", .expected = Key{ .plain = 'A' } },
+        .{ .given = "あ", .expected = Key{ .plain = 'あ' } },
+        .{ .given = "\x1b[A", .expected = Key{ .arrow = .up } },
+        .{ .given = "\x1b[B", .expected = Key{ .arrow = .down } },
+        .{ .given = "\x1b[C", .expected = Key{ .arrow = .right } },
+        .{ .given = "\x1b[D", .expected = Key{ .arrow = .left } },
+        .{ .given = "\x1bA", .expected = Key{ .meta = 'A' } },
+        .{ .given = "\x1bz", .expected = Key{ .meta = 'z' } },
+        .{ .given = "\x7f", .expected = Key.del },
     };
     inline for (cases) |case| {
         var k = @This(){

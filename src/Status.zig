@@ -1,5 +1,4 @@
 const std = @import("std");
-const models = @import("models.zig");
 
 message: []const u8,
 allocator: std.mem.Allocator,

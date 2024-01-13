@@ -1,5 +1,4 @@
 const std = @import("std");
-const models = @import("models.zig");
 const Text = @import("Text.zig");
 const Position = @import("Position.zig");
 const UnicodeString = @import("UnicodeString.zig");
