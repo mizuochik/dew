@@ -10,8 +10,6 @@ pub const Mode = enum {
 };
 
 rows: std.ArrayList(UnicodeString),
-c_x: usize = 0,
-c_y: usize = 0,
 y_scroll: usize,
 allocator: std.mem.Allocator,
 
