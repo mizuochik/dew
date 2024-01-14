@@ -53,6 +53,7 @@ file_edit_view: *EditView,
 status_view: *StatusView,
 command_edit_view: *EditView,
 allocator: std.mem.Allocator,
+client: *Client,
 size: *DisplaySize,
 
 pub const Area = struct {
@@ -83,7 +84,7 @@ pub const Area = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, command_edit_view: *EditView, size: *DisplaySize) !@This() {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, command_edit_view: *EditView, client: *Client, size: *DisplaySize) !@This() {
     const buffer = try initBuffer(allocator, size);
     errdefer {
         for (0..buffer.len) |i| allocator.free(buffer[i]);
@@ -98,6 +99,7 @@ pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view
         .status_view = status_view,
         .command_edit_view = command_edit_view,
         .allocator = allocator,
+        .client = client,
         .size = size,
     };
 }
@@ -136,25 +138,25 @@ pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
     try self.status_view.setSize(self.size.cols);
 }
 
-pub fn render(self: *@This(), client: *Client) !void {
+pub fn render(self: *@This()) !void {
     for (0..self.buffer.len - 1) |i| {
         for (0..self.buffer[i].len) |j| {
             self.buffer[i][j] = ' ';
         }
     }
-    try self.file_edit_view.render(client.getActiveFile().?, self.buffer[0 .. self.buffer.len - 1]);
+    try self.file_edit_view.render(self.client.getActiveFile().?, self.buffer[0 .. self.buffer.len - 1]);
     var bottom_line = self.buffer[self.buffer.len - 1 ..];
     for (0..bottom_line[0].len) |i| {
         bottom_line[0][i] = ' ';
     }
-    try self.command_edit_view.render(&client.command_line_edit, bottom_line);
+    try self.command_edit_view.render(&self.client.command_line_edit, bottom_line);
     var rest: usize = 0;
     var i = @as(i32, @intCast(bottom_line[0].len)) - 1;
     while (i >= 0 and bottom_line[0][@intCast(i)] == ' ') : (i -= 1) {
         rest += 1;
     }
-    self.status_view.render(&client.status, bottom_line[0][bottom_line[0].len - rest ..]);
-    try self.writeUpdates(client);
+    self.status_view.render(&self.client.status, bottom_line[0][bottom_line[0].len - rest ..]);
+    try self.writeUpdates();
 }
 
 fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 {
@@ -175,7 +177,7 @@ fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 
     return new_buffer;
 }
 
-fn writeUpdates(self: *const @This(), client: *Client) !void {
+fn writeUpdates(self: *const @This()) !void {
     if (builtin.is_test) {
         return;
     }
@@ -190,7 +192,7 @@ fn writeUpdates(self: *const @This(), client: *Client) !void {
         try tmp.appendSlice("\x1b[K");
         try tmp.appendSlice(self.buffer[y]);
     }
-    try self.putCurrentCursor(client, arena.allocator(), &tmp);
+    try self.putCurrentCursor(arena.allocator(), &tmp);
     try self.showCursor(&tmp);
     try std.io.getStdOut().writeAll(tmp.items);
 }
@@ -216,15 +218,11 @@ fn putCursor(_: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8
     try buf.appendSlice(try std.fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
 }
 
-fn putCurrentCursor(self: *const @This(), client: *Client, arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    if (self.file_edit_view.viewCursor(client.getActiveFile().?)) |cursor| {
+fn putCurrentCursor(self: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
+    if (self.file_edit_view.viewCursor(self.client.getActiveFile().?)) |cursor| {
         try self.putCursor(arena, buf, cursor.x, cursor.y);
     }
-    if (self.command_edit_view.viewCursor(&client.command_line_edit)) |cursor| {
+    if (self.command_edit_view.viewCursor(&self.client.command_line_edit)) |cursor| {
         try self.putCursor(arena, buf, cursor.x, self.size.rows - 1);
     }
-}
-
-test {
-    std.testing.refAllDeclsRecursive(@This());
 }

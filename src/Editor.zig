@@ -38,9 +38,8 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
 
     editor.allocator = allocator;
 
-    var client = try Client.init(allocator);
-    errdefer client.deinit();
-    editor.client = client;
+    editor.client = try Client.init(allocator);
+    errdefer editor.client.deinit();
 
     editor.buffer_selector = try BufferSelector.init(allocator, editor);
     errdefer editor.buffer_selector.deinit();
@@ -58,7 +57,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     errdefer editor.status_view.deinit();
 
     editor.display_size = DisplaySize.init();
-    editor.display = try Display.init(allocator, &editor.edit_view, &editor.status_view, &editor.command_edit_view, &editor.display_size);
+    editor.display = try Display.init(allocator, &editor.edit_view, &editor.status_view, &editor.command_edit_view, &editor.client, &editor.display_size);
     errdefer editor.display.deinit();
 
     editor.controller = try EditorController.init(
