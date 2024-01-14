@@ -52,6 +52,10 @@ pub fn sliceAsRaw(self: *const @This(), i: usize, j: usize) []u8 {
     return self.buffer.items[self.u8_index.items[i]..self.u8_index.items[j]];
 }
 
+pub fn utf8View(self: *@This(), i: usize, j: usize) !std.unicode.Utf8View {
+    return std.unicode.Utf8View.init(self.buffer.items[self.u8_index.items[i]..self.u8_index.items[j]]);
+}
+
 fn refreshIndex(self: *@This()) !void {
     try self.refreshU8Index();
     try self.refreshWidthIndex();
