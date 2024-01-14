@@ -28,7 +28,11 @@ pub const Buffer = struct {
         const cells = try allocator.alloc(?Cell, width * height);
         errdefer allocator.free(cells);
         for (cells) |*cell| {
-            cell.* = null;
+            cell.* = .{
+                .character = ' ',
+                .foreground = .default,
+                .background = .default,
+            };
         }
         return .{
             .allocator = allocator,
