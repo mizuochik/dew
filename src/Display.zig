@@ -27,19 +27,24 @@ pub const Buffer = struct {
     pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !@This() {
         const cells = try allocator.alloc(?Cell, width * height);
         errdefer allocator.free(cells);
-        for (cells) |*cell| {
+        var buffer = @This(){
+            .allocator = allocator,
+            .width = width,
+            .height = height,
+            .cells = cells,
+        };
+        buffer.clear();
+        return buffer;
+    }
+
+    pub fn clear(self: *@This()) void {
+        for (self.cells) |*cell| {
             cell.* = .{
                 .character = ' ',
                 .foreground = .default,
                 .background = .default,
             };
         }
-        return .{
-            .allocator = allocator,
-            .width = width,
-            .height = height,
-            .cells = cells,
-        };
     }
 
     pub fn deinit(self: *const @This()) void {
@@ -157,6 +162,10 @@ pub fn render(self: *@This()) !void {
     }
     self.status_view.render(&self.client.status, bottom_line[0][bottom_line[0].len - rest ..]);
     try self.writeUpdates();
+}
+
+pub fn renderByCell(self: *@This()) !void {
+    try self.cell_buffer.clear();
 }
 
 fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 {
