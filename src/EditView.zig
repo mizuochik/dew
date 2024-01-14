@@ -5,6 +5,7 @@ const BufferSelector = @import("BufferSelector.zig");
 const Position = @import("Position.zig");
 const Editor = @import("Editor.zig");
 const Client = @import("Client.zig");
+const Display = @import("Display.zig");
 
 const RowSlice = struct {
     buf_y: usize,
@@ -176,6 +177,55 @@ pub fn render(self: *@This(), edit: *Client.Edit, buffer: [][]u8) !void {
     for (0..draw_height) |i| {
         const row_slice = new_rows.items[i + edit.y_scroll];
         std.mem.copy(u8, buffer[i], edit.text.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
+    }
+    self.rows.deinit();
+    self.rows = new_rows;
+}
+
+pub fn renderCells(self: *@This(), edit: *Client.Edit, buffer: *Display.Buffer) !void {
+    var new_rows = std.ArrayList(RowSlice).init(self.allocator);
+    errdefer new_rows.deinit();
+    for (edit.text.rows.items, 0..) |row, y| {
+        var x_start: usize = 0;
+        for (0..row.getLen()) |x| {
+            if (row.width_index.items[x + 1] - row.width_index.items[x_start] > buffer.width) {
+                try new_rows.append(.{
+                    .buf_y = y,
+                    .buf_x_start = x_start,
+                    .buf_x_end = x,
+                });
+                x_start = x;
+            }
+        }
+        if (row.getLen() <= 0 or x_start < row.getLen()) {
+            try new_rows.append(RowSlice{
+                .buf_y = y,
+                .buf_x_start = x_start,
+                .buf_x_end = row.getLen(),
+            });
+        }
+    }
+    const draw_height = @min(buffer.height - 1, new_rows.items.len - edit.y_scroll);
+    for (0..draw_height) |l| {
+        const row_slice = new_rows.items[l + edit.y_scroll];
+        const row_utf8 = try edit.text.rows.items[row_slice.buf_y].utf8View(row_slice.buf_x_start, row_slice.buf_x_end);
+        var row_utf8_it = row_utf8.iterator();
+        var c: usize = 0;
+        while (row_utf8_it.nextCodepoint()) |cp| {
+            var buf: [3]u8 = undefined;
+            const size = try std.unicode.utf8Encode(cp, &buf);
+            _ = size;
+            buffer.cells[l * buffer.width + c] = .{
+                .character = cp,
+                .foreground = .default,
+                .background = .default,
+            };
+            c += 1;
+            if (cp > std.math.maxInt(u8)) {
+                buffer.cells[l * buffer.width + c] = null;
+                c += 1;
+            }
+        }
     }
     self.rows.deinit();
     self.rows = new_rows;

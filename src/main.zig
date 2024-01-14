@@ -40,6 +40,7 @@ pub fn main() !void {
         try editor.status.setMessage(msg);
     }
     try editor.display.render();
+    try editor.display.renderByCell();
 
     while (true) {
         const key = try editor.keyboard.inputKey();
@@ -48,6 +49,7 @@ pub fn main() !void {
             else => return err,
         };
         try editor.display.render();
+        try editor.display.renderByCell();
     }
 }
 
