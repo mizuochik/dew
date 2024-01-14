@@ -7,7 +7,44 @@ const DisplaySize = @import("DisplaySize.zig");
 const Client = @import("Client.zig");
 const Terminal = @import("Terminal.zig");
 
+pub const Color = enum {
+    default,
+    gray,
+};
+
+pub const Cell = struct {
+    character: u21,
+    foreground: Color,
+    background: Color,
+};
+
+pub const Buffer = struct {
+    allocator: std.mem.Allocator,
+    width: usize,
+    height: usize,
+    cells: []?Cell,
+
+    pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !@This() {
+        const cells = try allocator.alloc(?Cell, width * height);
+        errdefer allocator.free(cells);
+        for (cells) |*cell| {
+            cell.* = null;
+        }
+        return .{
+            .allocator = allocator,
+            .width = width,
+            .height = height,
+            .cells = cells,
+        };
+    }
+
+    pub fn deinit(self: *const @This()) void {
+        self.allocator.free(self.cells);
+    }
+};
+
 buffer: [][]u8,
+cell_buffer: Buffer,
 file_edit_view: *EditView,
 status_view: *StatusView,
 command_edit_view: *EditView,
@@ -48,8 +85,11 @@ pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view
         for (0..buffer.len) |i| allocator.free(buffer[i]);
         allocator.free(buffer);
     }
+    const cell_buffer = try Buffer.init(allocator, size.cols, size.rows);
+    errdefer cell_buffer.deinit();
     return .{
         .buffer = buffer,
+        .cell_buffer = cell_buffer,
         .file_edit_view = file_edit_view,
         .status_view = status_view,
         .command_edit_view = command_edit_view,
@@ -179,4 +219,8 @@ fn putCurrentCursor(self: *const @This(), client: *Client, arena: std.mem.Alloca
     if (self.command_edit_view.viewCursor(&client.command_line_edit)) |cursor| {
         try self.putCursor(arena, buf, cursor.x, self.size.rows - 1);
     }
+}
+
+test {
+    std.testing.refAllDeclsRecursive(@This());
 }
