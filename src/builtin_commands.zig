@@ -6,7 +6,7 @@ pub fn new_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
     if (arguments.len != want_arguments_len) {
         const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want {d} but {d}", .{ want_arguments_len, arguments.len });
         errdefer editor.allocator.free(message);
-        try editor.status.setMessage(message);
+        try editor.client.status.setMessage(message);
         return;
     }
     const untitled_name = try std.fmt.allocPrint(editor.allocator, "Untitled", .{});
@@ -19,7 +19,7 @@ pub fn open_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
     if (arguments.len != want_arguments_len) {
         const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want {d} but {d}", .{ want_arguments_len, arguments.len });
         errdefer editor.allocator.free(message);
-        try editor.status.setMessage(message);
+        try editor.client.status.setMessage(message);
         return;
     }
     const file_path = arguments[0];
@@ -31,7 +31,7 @@ pub fn save_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
     if (arguments.len > want_arguments_max_len) {
         const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want <= {} but {d}", .{ want_arguments_max_len, arguments.len });
         errdefer editor.allocator.free(message);
-        try editor.status.setMessage(message);
+        try editor.client.status.setMessage(message);
         return;
     }
     const file_name = switch (arguments.len) {
@@ -40,7 +40,7 @@ pub fn save_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
         else => {
             const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want <= 1 but {d}", .{arguments.len});
             errdefer editor.allocator.free(message);
-            try editor.status.setMessage(message);
+            try editor.client.status.setMessage(message);
             return;
         },
     };
