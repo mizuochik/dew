@@ -3,8 +3,8 @@
     .version = "0.0.0",
     .dependencies = .{
         .clap = .{
-            .url = "https://github.com/mizuochik/zig-clap/archive/refs/tags/latest.tar.gz",
-            .hash = "1220b641ac5ed4187f293906201ee07f98423c942bf82e28c7c75a22d700b494c177",
+            .url = "https://github.com/mizuochik/zig-clap/archive/refs/tags/20240109T072140.tar.gz",
+            .hash = "12209e829da9d7d0bc089e4e0cbc07bb882f6192cd583277277da34df53cd05b8f2a",
         },
     },
     .paths = .{
