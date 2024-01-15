@@ -21,7 +21,6 @@ allocator: std.mem.Allocator,
 edit_view: EditView,
 command_edit_view: EditView,
 buffer_selector: BufferSelector,
-status: Status,
 status_view: StatusView,
 display_size: DisplaySize,
 controller: EditorController,
@@ -50,9 +49,6 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     editor.command_edit_view = EditView.init(allocator, editor, .command);
     errdefer editor.command_edit_view.deinit();
 
-    editor.status = try Status.init(allocator);
-    errdefer editor.status.deinit();
-
     editor.status_view = StatusView.init();
     errdefer editor.status_view.deinit();
 
@@ -64,7 +60,6 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
         allocator,
         &editor.edit_view,
         &editor.command_edit_view,
-        &editor.status,
         &editor.buffer_selector,
         &editor.display,
         &editor.display_size,
@@ -90,7 +85,6 @@ pub fn deinit(self: *@This()) void {
     self.edit_view.deinit();
     self.command_edit_view.deinit();
     self.buffer_selector.deinit();
-    self.status.deinit();
     self.status_view.deinit();
     self.display.deinit();
     self.command_registry.deinit();

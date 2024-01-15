@@ -12,7 +12,6 @@ const Keyboard = @import("Keyboard.zig");
 
 file_edit_view: *EditView,
 command_edit_view: *EditView,
-status: *Status,
 file_path: ?[]const u8 = null,
 buffer_selector: *BufferSelector,
 display_size: *DisplaySize,
@@ -21,12 +20,11 @@ allocator: std.mem.Allocator,
 editor: *Editor,
 cursors: [1]*Cursor,
 
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edit_view: *EditView, status: *Status, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edit_view: *EditView, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
     return @This(){
         .allocator = allocator,
         .file_edit_view = file_edit_view,
         .command_edit_view = command_edit_view,
-        .status = status,
         .buffer_selector = buffer_selector,
         .display = display,
         .display_size = display_size,
@@ -169,5 +167,5 @@ pub fn openFile(self: *@This(), path: []const u8) !void {
     try self.buffer_selector.openFileBuffer(path);
     const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
     errdefer self.allocator.free(new_message);
-    try self.status.setMessage(new_message);
+    try self.editor.client.status.setMessage(new_message);
 }
