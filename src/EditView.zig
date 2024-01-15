@@ -205,7 +205,16 @@ pub fn renderCells(self: *@This(), edit: *Client.Edit, buffer: *Display.Buffer) 
             });
         }
     }
-    const draw_height = @min(buffer.height - 1, new_rows.items.len - edit.y_scroll);
+    const cells, const draw_height = switch (self.mode) {
+        .file => .{
+            buffer.cells,
+            @min(buffer.height - 1, new_rows.items.len - edit.y_scroll),
+        },
+        .command => .{
+            buffer.cells[buffer.width * (buffer.height - 1) ..],
+            1,
+        },
+    };
     for (0..draw_height) |l| {
         const row_slice = new_rows.items[l + edit.y_scroll];
         const row_utf8 = try edit.text.rows.items[row_slice.buf_y].utf8View(row_slice.buf_x_start, row_slice.buf_x_end);
@@ -215,14 +224,14 @@ pub fn renderCells(self: *@This(), edit: *Client.Edit, buffer: *Display.Buffer) 
             var buf: [3]u8 = undefined;
             const size = try std.unicode.utf8Encode(cp, &buf);
             _ = size;
-            buffer.cells[l * buffer.width + c] = .{
+            cells[l * buffer.width + c] = .{
                 .character = cp,
                 .foreground = .default,
                 .background = .default,
             };
             c += 1;
             if (cp > std.math.maxInt(u8)) {
-                buffer.cells[l * buffer.width + c] = null;
+                cells[l * buffer.width + c] = null;
                 c += 1;
             }
         }
