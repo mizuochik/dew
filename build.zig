@@ -10,7 +10,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    exe.addModule("clap", b.dependency("clap", .{
+    exe.root_module.addImport("clap", b.dependency("clap", .{
         .target = target,
         .optimize = optimize,
     }).module("clap"));
