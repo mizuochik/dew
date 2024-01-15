@@ -175,6 +175,7 @@ pub fn renderByCell(self: *@This()) !void {
     self.cell_buffer.clear();
     try self.file_edit_view.renderCells(self.client.getActiveFile().?, &self.cell_buffer);
     try self.command_edit_view.renderCells(&self.client.command_line_edit, &self.cell_buffer);
+    try self.status_view.renderCells(&self.client.status, &self.cell_buffer);
     try self.writeCellUpdates();
 }
 
