@@ -19,7 +19,7 @@ pub fn render(_: *const @This(), status: *Status, buffer: []u8) void {
         buffer[i] = ' ';
     }
     const non_blank_size = if (buffer.len < status.message.len) buffer.len else status.message.len;
-    std.mem.copy(u8, buffer[blank_size..], status.message[0..non_blank_size]);
+    std.mem.copyForwards(u8, buffer[blank_size..], status.message[0..non_blank_size]);
 }
 
 pub fn renderCells(_: *const @This(), status: *Status, buffer: *Display.Buffer) !void {

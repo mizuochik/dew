@@ -121,7 +121,7 @@ pub fn getArea(self: *const @This(), top: usize, bottom: usize, left: usize, rig
     var area = try Area.init(self.allocator, right - left, bottom - top);
     errdefer area.deinit();
     for (0..(bottom - top)) |i| {
-        std.mem.copy(u8, area.rows[i], self.buffer[top + i][left..right]);
+        std.mem.copyForwards(u8, area.rows[i], self.buffer[top + i][left..right]);
     }
     return area;
 }

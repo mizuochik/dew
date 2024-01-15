@@ -176,7 +176,7 @@ pub fn render(self: *@This(), edit: *Client.Edit, buffer: [][]u8) !void {
     const draw_height = if (buffer.len < new_rows.items.len - edit.y_scroll) buffer.len else new_rows.items.len - edit.y_scroll;
     for (0..draw_height) |i| {
         const row_slice = new_rows.items[i + edit.y_scroll];
-        std.mem.copy(u8, buffer[i], edit.text.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
+        std.mem.copyForwards(u8, buffer[i], edit.text.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
     }
     self.rows.deinit();
     self.rows = new_rows;
