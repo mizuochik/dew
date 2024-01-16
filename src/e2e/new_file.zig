@@ -6,7 +6,7 @@ test "show the opened file" {
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
     try editor.controller.openFile("src/e2e/hello-world.txt");
-    try editor.display.renderByCell();
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 11);
     defer area.deinit();
     try area.expectEqualSlice(
@@ -28,7 +28,7 @@ test "open new file" {
     }
     try editor.controller.processKeypress(.{ .ctrl = 'M' });
 
-    try editor.display.renderByCell();
+    try editor.display.render();
     const top_area = try editor.display.getArea(0, 99, 0, 20);
     defer top_area.deinit();
     try top_area.expectEqualSlice(

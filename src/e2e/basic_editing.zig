@@ -10,7 +10,7 @@ test "input characters" {
     try editor.controller.processKeypress(.{ .plain = 'b' });
     try editor.controller.processKeypress(.{ .plain = 'c' });
 
-    try editor.display.renderByCell();
+    try editor.display.render();
 
     const area = try editor.display.getArea(0, 1, 0, 10);
     defer area.deinit();
@@ -32,7 +32,7 @@ test "insert characters" {
         try editor.controller.processKeypress(.{ .plain = c });
     }
 
-    try editor.display.renderByCell();
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
     defer area.deinit();
     try area.expectEqualSlice(
@@ -53,7 +53,7 @@ test "delete characters" {
         try editor.controller.processKeypress(.{ .ctrl = 'D' });
     }
 
-    try editor.display.renderByCell();
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
     defer area.deinit();
     try area.expectEqualSlice(
@@ -74,7 +74,7 @@ test "delete backward characters" {
         try editor.controller.processKeypress(.{ .ctrl = 'H' });
     }
 
-    try editor.display.renderByCell();
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
     defer area.deinit();
     try area.expectEqualSlice(
@@ -93,7 +93,7 @@ test "break lines" {
     }
     try editor.controller.processKeypress(.{ .ctrl = 'M' });
 
-    try editor.display.renderByCell();
+    try editor.display.render();
     const area = try editor.display.getArea(0, 2, 0, 20);
     defer area.deinit();
     try area.expectEqualSlice(
@@ -113,7 +113,7 @@ test "join lines" {
     }
     try editor.controller.processKeypress(.{ .ctrl = 'J' });
 
-    try editor.display.renderByCell();
+    try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
     defer area.deinit();
     try area.expectEqualSlice(
@@ -130,7 +130,7 @@ test "kill lines" {
     try editor.controller.processKeypress(.{ .arrow = .right });
     try editor.controller.processKeypress(.{ .ctrl = 'K' });
     {
-        try editor.display.renderByCell();
+        try editor.display.render();
         const area = try editor.display.getArea(0, 2, 0, 20);
         defer area.deinit();
         try area.expectEqualSlice(
@@ -141,7 +141,7 @@ test "kill lines" {
 
     try editor.controller.processKeypress(.{ .ctrl = 'K' });
     {
-        try editor.display.renderByCell();
+        try editor.display.render();
         const area = try editor.display.getArea(0, 2, 0, 20);
         defer area.deinit();
         try area.expectEqualSlice(

@@ -6,10 +6,10 @@ test "scroll down/up" {
     defer editor.deinit();
     try editor.controller.changeDisplaySize(10, 11); // 11 lines = 10 lines (file content) + one line (status bar)
     try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/line-numbers.txt");
-    try editor.display.renderByCell();
+    try editor.display.render();
     {
         try editor.controller.processKeypress(.{ .ctrl = 'V' });
-        try editor.display.renderByCell();
+        try editor.display.render();
         const area = try editor.display.getArea(0, 10, 0, 10);
         defer area.deinit();
         try area.expectEqualSlice(
@@ -27,7 +27,7 @@ test "scroll down/up" {
     }
     {
         try editor.controller.processKeypress(.{ .ctrl = 'V' });
-        try editor.display.renderByCell();
+        try editor.display.render();
         const area = try editor.display.getArea(0, 10, 0, 10);
         defer area.deinit();
         try area.expectEqualSlice(
@@ -45,7 +45,7 @@ test "scroll down/up" {
     }
     {
         try editor.controller.processKeypress(.{ .meta = 'v' });
-        try editor.display.renderByCell();
+        try editor.display.render();
         const area = try editor.display.getArea(0, 10, 0, 10);
         defer area.deinit();
         try area.expectEqualSlice(
@@ -63,7 +63,7 @@ test "scroll down/up" {
     }
     {
         try editor.controller.processKeypress(.{ .meta = 'v' });
-        try editor.display.renderByCell();
+        try editor.display.render();
         const area = try editor.display.getArea(0, 10, 0, 10);
         defer area.deinit();
         try area.expectEqualSlice(
