@@ -274,7 +274,7 @@ fn writeCellUpdates(self: *const @This()) !void {
     defer tmp.deinit();
     try self.hideCursor(&tmp);
     try self.putCursor(arena.allocator(), &tmp, 0, 0);
-    for (0..self.cell_buffer.height - 10) |y| {
+    for (0..self.cell_buffer.height) |y| {
         if (y > 0) try tmp.appendSlice("\r\n");
         try tmp.appendSlice("\x1b[K");
         for (0..self.cell_buffer.width) |x| {
