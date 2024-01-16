@@ -1,5 +1,4 @@
 const std = @import("std");
-const view = @import("view.zig");
 const Text = @import("Text.zig");
 const EditView = @import("EditView.zig");
 const DisplaySize = @import("DisplaySize.zig");

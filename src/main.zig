@@ -59,6 +59,5 @@ test {
     _ = @import("Terminal.zig");
     _ = @import("Client.zig");
     _ = @import("keyboard.zig");
-    _ = @import("view.zig");
     _ = @import("e2e.zig");
 }

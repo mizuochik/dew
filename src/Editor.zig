@@ -1,5 +1,4 @@
 const std = @import("std");
-const view = @import("view.zig");
 const Keyboard = @import("Keyboard.zig");
 const Terminal = @import("Terminal.zig");
 const Display = @import("Display.zig");

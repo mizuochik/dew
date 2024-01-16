@@ -1,5 +1,4 @@
 const std = @import("std");
-const view = @import("view.zig");
 const Status = @import("Status.zig");
 const Display = @import("Display.zig");
 

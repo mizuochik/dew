@@ -1,6 +1,5 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const view = @import("view.zig");
 const EditView = @import("EditView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");

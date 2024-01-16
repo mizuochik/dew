@@ -1,5 +1,4 @@
 const std = @import("std");
-const view = @import("view.zig");
 
 cols: usize,
 rows: usize,
