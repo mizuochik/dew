@@ -6,25 +6,77 @@ test "scroll down/up" {
     defer editor.deinit();
     try editor.controller.changeDisplaySize(10, 11); // 11 lines = 10 lines (file content) + one line (status bar)
     try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/line-numbers.txt");
-    try editor.display.render();
-
-    try editor.controller.processKeypress(.{ .ctrl = 'V' });
-    try editor.display.render();
-    try std.testing.expectEqualStrings("11", editor.display.buffer[0][0..2]);
-    try std.testing.expectEqualStrings("20", editor.display.buffer[9][0..2]);
-
-    try editor.controller.processKeypress(.{ .ctrl = 'V' });
-    try editor.display.render();
-    try std.testing.expectEqualStrings("21", editor.display.buffer[0][0..2]);
-    try std.testing.expectEqualStrings("30", editor.display.buffer[9][0..2]);
-
-    try editor.controller.processKeypress(.{ .meta = 'v' });
-    try editor.display.render();
-    try std.testing.expectEqualStrings("11", editor.display.buffer[0][0..2]);
-    try std.testing.expectEqualStrings("20", editor.display.buffer[9][0..2]);
-
-    try editor.controller.processKeypress(.{ .meta = 'v' });
-    try editor.display.render();
-    try std.testing.expectEqualStrings("1 ", editor.display.buffer[0][0..2]);
-    try std.testing.expectEqualStrings("10", editor.display.buffer[9][0..2]);
+    try editor.display.renderByCell();
+    {
+        try editor.controller.processKeypress(.{ .ctrl = 'V' });
+        try editor.display.renderByCell();
+        const area = try editor.display.getArea(0, 10, 0, 10);
+        defer area.deinit();
+        try area.expectEqualSlice(
+            \\11
+            \\12
+            \\13
+            \\14
+            \\15
+            \\16
+            \\17
+            \\18
+            \\19
+            \\20
+        );
+    }
+    {
+        try editor.controller.processKeypress(.{ .ctrl = 'V' });
+        try editor.display.renderByCell();
+        const area = try editor.display.getArea(0, 10, 0, 10);
+        defer area.deinit();
+        try area.expectEqualSlice(
+            \\21
+            \\22
+            \\23
+            \\24
+            \\25
+            \\26
+            \\27
+            \\28
+            \\29
+            \\30
+        );
+    }
+    {
+        try editor.controller.processKeypress(.{ .meta = 'v' });
+        try editor.display.renderByCell();
+        const area = try editor.display.getArea(0, 10, 0, 10);
+        defer area.deinit();
+        try area.expectEqualSlice(
+            \\11
+            \\12
+            \\13
+            \\14
+            \\15
+            \\16
+            \\17
+            \\18
+            \\19
+            \\20
+        );
+    }
+    {
+        try editor.controller.processKeypress(.{ .meta = 'v' });
+        try editor.display.renderByCell();
+        const area = try editor.display.getArea(0, 10, 0, 10);
+        defer area.deinit();
+        try area.expectEqualSlice(
+            \\1
+            \\2
+            \\3
+            \\4
+            \\5
+            \\6
+            \\7
+            \\8
+            \\9
+            \\10
+        );
+    }
 }
