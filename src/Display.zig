@@ -49,6 +49,50 @@ pub const Buffer = struct {
     pub fn deinit(self: *const @This()) void {
         self.allocator.free(self.cells);
     }
+
+    pub fn view(self: *const @This(), top: usize, bottom: usize, left: usize, right: usize) !@This() {
+        const view_width = right - left;
+        const view_height = bottom - top;
+        const view_buffer = try @This().init(self.allocator, view_width, view_height);
+        errdefer view_buffer.deinit();
+        for (0..view_height) |i| {
+            for (0..view_width) |j| {
+                view_buffer.cells[i * view_width + j] = self.cells[(top + i) * self.width + left + j];
+            }
+        }
+        return view_buffer;
+    }
+
+    pub fn rowSlice(self: *const @This(), y: usize) ![]const u8 {
+        var s = std.ArrayList(u8).init(self.allocator);
+        errdefer s.deinit();
+        var buf: [4]u8 = undefined;
+        for (0..self.width) |x| {
+            const cell = self.cells[y * self.width + x] orelse continue;
+            const n = try std.unicode.utf8Encode(cell.character, &buf);
+            try s.appendSlice(buf[0..n]);
+        }
+        return s.toOwnedSlice();
+    }
+
+    pub fn expectEqualSlice(self: *const @This(), expected: []const u8) !void {
+        var expected_it = (try std.unicode.Utf8View.init(expected)).iterator();
+        var expected_row_st: usize = 0;
+        var y: usize = 0;
+        while (expected_it.i < expected.len) {
+            while (expected_it.nextCodepoint()) |cp| {
+                if (cp == '\n') {
+                    break;
+                }
+            }
+            const expected_row = std.mem.trimRight(u8, expected[expected_row_st..expected_it.i], " \n");
+            const actual_row = try self.rowSlice(y);
+            defer self.allocator.free(actual_row);
+            try std.testing.expectEqualStrings(expected_row, std.mem.trimRight(u8, actual_row, " "));
+            expected_row_st = expected_it.i;
+            y += 1;
+        }
+    }
 };
 
 buffer: [][]u8,
@@ -123,6 +167,10 @@ pub fn getArea(self: *const @This(), top: usize, bottom: usize, left: usize, rig
         std.mem.copyForwards(u8, area.rows[i], self.buffer[top + i][left..right]);
     }
     return area;
+}
+
+pub fn view(self: *const @This(), top: usize, bottom: usize, left: usize, right: usize) !Buffer {
+    return self.cell_buffer.view(top, bottom, left, right);
 }
 
 pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
