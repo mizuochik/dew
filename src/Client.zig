@@ -81,15 +81,19 @@ pub fn getActiveEdit(self: *@This()) ?*Edit {
 }
 
 pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Text) !void {
-    if (!self.file_edits.contains(file_name)) {
-        const key = try self.allocator.dupe(u8, file_name);
-        errdefer self.allocator.free(key);
-        try self.file_edits.putNoClobber(key, Edit.init(text));
+    const result = try self.file_edits.getOrPut(file_name);
+    errdefer if (!result.found_existing) {
+        _ = self.file_edits.remove(file_name);
+    };
+    if (!result.found_existing) {
+        result.key_ptr.* = try self.allocator.dupe(u8, file_name);
     }
-    errdefer self.removeFileEdit(file_name);
-    const file = self.file_edits.getEntry(file_name).?;
-    self.current_file = file.key_ptr.*;
-    self.active_edit = file.value_ptr;
+    errdefer if (!result.found_existing) {
+        self.allocator.free(result.key_ptr.*);
+    };
+    result.value_ptr.* = Edit.init(text);
+    self.current_file = result.key_ptr.*;
+    self.active_edit = result.value_ptr;
 }
 
 pub fn removeFileEdit(self: *@This(), file_name: []const u8) void {
