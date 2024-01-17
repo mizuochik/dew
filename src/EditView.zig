@@ -148,40 +148,7 @@ pub fn scrollDown(self: *@This(), edit: *Client.Edit, diff: usize) void {
         edit.y_scroll += diff;
 }
 
-pub fn render(self: *@This(), edit: *Client.Edit, buffer: [][]u8) !void {
-    var new_rows = std.ArrayList(RowSlice).init(self.allocator);
-    errdefer new_rows.deinit();
-    const buffer_width = buffer[0].len;
-    for (edit.text.rows.items, 0..) |row, y| {
-        var x_start: usize = 0;
-        for (0..row.getLen()) |x| {
-            if (row.width_index.items[x + 1] - row.width_index.items[x_start] > buffer_width) {
-                try new_rows.append(.{
-                    .buf_y = y,
-                    .buf_x_start = x_start,
-                    .buf_x_end = x,
-                });
-                x_start = x;
-            }
-        }
-        if (row.getLen() <= 0 or x_start < row.getLen()) {
-            try new_rows.append(RowSlice{
-                .buf_y = y,
-                .buf_x_start = x_start,
-                .buf_x_end = row.getLen(),
-            });
-        }
-    }
-    const draw_height = if (buffer.len < new_rows.items.len - edit.y_scroll) buffer.len else new_rows.items.len - edit.y_scroll;
-    for (0..draw_height) |i| {
-        const row_slice = new_rows.items[i + edit.y_scroll];
-        std.mem.copyForwards(u8, buffer[i], edit.text.rows.items[row_slice.buf_y].sliceAsRaw(row_slice.buf_x_start, row_slice.buf_x_end));
-    }
-    self.rows.deinit();
-    self.rows = new_rows;
-}
-
-pub fn renderCells(self: *@This(), edit: *Client.Edit, buffer: *Display.Buffer) !void {
+pub fn render(self: *@This(), edit: *Client.Edit, buffer: *Display.Buffer) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     for (edit.text.rows.items, 0..) |row, y| {

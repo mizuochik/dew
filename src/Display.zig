@@ -190,9 +190,9 @@ pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
 
 pub fn render(self: *@This()) !void {
     self.cell_buffer.clear();
-    try self.file_edit_view.renderCells(self.client.getActiveFile().?, &self.cell_buffer);
-    try self.command_edit_view.renderCells(&self.client.command_line_edit, &self.cell_buffer);
-    try self.status_view.renderCells(&self.client.status, &self.cell_buffer);
+    try self.file_edit_view.render(self.client.getActiveFile().?, &self.cell_buffer);
+    try self.command_edit_view.render(&self.client.command_line_edit, &self.cell_buffer);
+    try self.status_view.render(&self.client.status, &self.cell_buffer);
     try self.writeCellUpdates();
 }
 
