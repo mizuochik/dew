@@ -148,7 +148,7 @@ pub fn scrollDown(self: *@This(), edit: *Client.Edit, diff: usize) void {
         edit.y_scroll += diff;
 }
 
-pub fn render(self: *@This(), edit: *Client.Edit, buffer: *Display.Buffer) !void {
+pub fn render(self: *@This(), buffer: *Display.Buffer, edit: *Client.Edit) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     for (edit.text.rows.items, 0..) |row, y| {

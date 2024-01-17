@@ -12,7 +12,7 @@ pub fn init() @This() {
 
 pub fn deinit(_: *@This()) void {}
 
-pub fn render(_: *const @This(), status: *Status, buffer: *Display.Buffer) !void {
+pub fn render(_: *const @This(), buffer: *Display.Buffer, status: *Status) !void {
     const l_offset = buffer.height - 1;
     const c_offset = if (buffer.width > status.message.len) buffer.width - status.message.len else 0;
     for (0..@min(buffer.width, status.message.len)) |c| {
