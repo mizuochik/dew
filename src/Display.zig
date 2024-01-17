@@ -95,8 +95,7 @@ pub const Buffer = struct {
     }
 };
 
-buffer: [][]u8,
-cell_buffer: Buffer,
+buffer: Buffer,
 file_edit_view: *EditView,
 status_view: *StatusView,
 command_edit_view: *EditView,
@@ -133,16 +132,10 @@ pub const Area = struct {
 };
 
 pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, command_edit_view: *EditView, client: *Client, size: *DisplaySize) !@This() {
-    const buffer = try initBuffer(allocator, size);
-    errdefer {
-        for (0..buffer.len) |i| allocator.free(buffer[i]);
-        allocator.free(buffer);
-    }
-    const cell_buffer = try Buffer.init(allocator, size.cols, size.rows);
-    errdefer cell_buffer.deinit();
+    const buffer = try Buffer.init(allocator, size.cols, size.rows);
+    errdefer buffer.deinit();
     return .{
         .buffer = buffer,
-        .cell_buffer = cell_buffer,
         .file_edit_view = file_edit_view,
         .status_view = status_view,
         .command_edit_view = command_edit_view,
@@ -153,47 +146,34 @@ pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view
 }
 
 pub fn deinit(self: *const @This()) void {
-    for (self.buffer) |row| {
-        self.allocator.free(row);
-    }
-    self.allocator.free(self.buffer);
-    self.cell_buffer.deinit();
+    self.buffer.deinit();
 }
 
 pub fn getArea(self: *const @This(), top: usize, bottom: usize, left: usize, right: usize) !Buffer {
-    return self.cell_buffer.view(top, bottom, left, right);
+    return self.buffer.view(top, bottom, left, right);
 }
 
 pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
     self.size.cols = @intCast(size.cols);
     self.size.rows = @intCast(size.rows);
 
-    const new_buffer = try initBuffer(self.allocator, self.size);
-    errdefer {
-        for (0..new_buffer.len) |i| self.allocator.free(new_buffer[i]);
-        self.allocator.free(new_buffer);
-    }
-    for (0..self.buffer.len) |i| self.allocator.free(self.buffer[i]);
-    self.allocator.free(self.buffer);
-    self.buffer = new_buffer;
-
     try self.file_edit_view.setSize(self.size.cols, self.size.rows - 1);
 
-    const new_cell_buffer = try Buffer.init(self.allocator, size.cols, size.rows);
-    errdefer new_cell_buffer.deinit();
-    self.cell_buffer.deinit();
-    self.cell_buffer = new_cell_buffer;
+    const new_buffer = try Buffer.init(self.allocator, size.cols, size.rows);
+    errdefer new_buffer.deinit();
+    self.buffer.deinit();
+    self.buffer = new_buffer;
 
     try self.command_edit_view.setSize(self.size.cols, 1);
     try self.status_view.setSize(self.size.cols);
 }
 
 pub fn render(self: *@This()) !void {
-    self.cell_buffer.clear();
-    try self.file_edit_view.render(self.client.getActiveFile().?, &self.cell_buffer);
-    try self.command_edit_view.render(&self.client.command_line_edit, &self.cell_buffer);
-    try self.status_view.render(&self.client.status, &self.cell_buffer);
-    try self.writeCellUpdates();
+    self.buffer.clear();
+    try self.file_edit_view.render(self.client.getActiveFile().?, &self.buffer);
+    try self.command_edit_view.render(&self.client.command_line_edit, &self.buffer);
+    try self.status_view.render(&self.client.status, &self.buffer);
+    try self.drawBuffer();
 }
 
 fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 {
@@ -214,7 +194,7 @@ fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 
     return new_buffer;
 }
 
-fn writeUpdates(self: *const @This()) !void {
+fn drawBuffer(self: *const @This()) !void {
     if (builtin.is_test) {
         return;
     }
@@ -224,31 +204,11 @@ fn writeUpdates(self: *const @This()) !void {
     defer tmp.deinit();
     try self.hideCursor(&tmp);
     try self.putCursor(arena.allocator(), &tmp, 0, 0);
-    for (0..self.size.rows) |y| {
+    for (0..self.buffer.height) |y| {
         if (y > 0) try tmp.appendSlice("\r\n");
         try tmp.appendSlice("\x1b[K");
-        try tmp.appendSlice(self.buffer[y]);
-    }
-    try self.putCurrentCursor(arena.allocator(), &tmp);
-    try self.showCursor(&tmp);
-    try std.io.getStdOut().writeAll(tmp.items);
-}
-
-fn writeCellUpdates(self: *const @This()) !void {
-    if (builtin.is_test) {
-        return;
-    }
-    var arena = std.heap.ArenaAllocator.init(self.allocator);
-    defer arena.deinit();
-    var tmp = std.ArrayList(u8).init(self.allocator);
-    defer tmp.deinit();
-    try self.hideCursor(&tmp);
-    try self.putCursor(arena.allocator(), &tmp, 0, 0);
-    for (0..self.cell_buffer.height) |y| {
-        if (y > 0) try tmp.appendSlice("\r\n");
-        try tmp.appendSlice("\x1b[K");
-        for (0..self.cell_buffer.width) |x| {
-            if (self.cell_buffer.cells[y * self.cell_buffer.width + x]) |cell| {
+        for (0..self.buffer.width) |x| {
+            if (self.buffer.cells[y * self.buffer.width + x]) |cell| {
                 var character: [3]u8 = undefined;
                 const size = try std.unicode.utf8Encode(cell.character, &character);
                 try tmp.appendSlice(character[0..size]);
@@ -258,15 +218,6 @@ fn writeCellUpdates(self: *const @This()) !void {
     try self.putCurrentCursor(arena.allocator(), &tmp);
     try self.showCursor(&tmp);
     try std.io.getStdOut().writeAll(tmp.items);
-}
-
-fn synchronizeEditView(self: *@This()) !void {
-    for (0..self.file_edit_view.height) |i| {
-        const row = self.file_edit_view.viewRow(i);
-        for (0..self.size.cols) |j| {
-            self.buffer[i][j] = if (j < row.len) row[j] else ' ';
-        }
-    }
 }
 
 fn hideCursor(_: *const @This(), buf: *std.ArrayList(u8)) !void {
