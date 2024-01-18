@@ -33,6 +33,9 @@ pub fn main() !void {
 
     const win_size = try editor.terminal.getWindowSize();
     try editor.controller.changeDisplaySize(win_size.cols, win_size.rows);
+    try editor.display.initTerminalCursor();
+    defer editor.display.deinitTerminalCursor();
+
     try editor.controller.openFile(res.positionals[0]);
     {
         const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});

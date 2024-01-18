@@ -202,8 +202,7 @@ fn drawBuffer(self: *const @This()) !void {
     defer arena.deinit();
     var tmp = std.ArrayList(u8).init(self.allocator);
     defer tmp.deinit();
-    try self.hideCursor(&tmp);
-    try self.putCursor(arena.allocator(), &tmp, 0, 0);
+    try self.moveTerminalCursor(arena.allocator(), &tmp, 0, 0);
     var last_background = Color.default;
     for (0..self.buffer.height) |y| {
         if (y > 0) try tmp.appendSlice("\r\n");
@@ -225,14 +224,14 @@ fn drawBuffer(self: *const @This()) !void {
     try std.io.getStdOut().writeAll(tmp.items);
 }
 
-fn hideCursor(_: *const @This(), buf: *std.ArrayList(u8)) !void {
-    try buf.appendSlice("\x1b[?25l");
+pub fn initTerminalCursor(_: *const @This()) !void {
+    _ = try std.io.getStdOut().write("\x1b[?25l");
 }
 
-fn showCursor(_: *const @This(), buf: *std.ArrayList(u8)) !void {
-    try buf.appendSlice("\x1b[?25h");
+pub fn deinitTerminalCursor(_: *const @This()) void {
+    _ = std.io.getStdOut().write("\x1b[?25h") catch unreachable;
 }
 
-fn putCursor(_: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
+fn moveTerminalCursor(_: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
     try buf.appendSlice(try std.fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
 }
