@@ -204,4 +204,9 @@ pub fn render(self: *@This(), buffer: *Display.Buffer, edit: *Client.Edit) !void
     }
     self.rows.deinit();
     self.rows = new_rows;
+    if (self.viewCursor(edit)) |cursor| {
+        if (buffer.cells[cursor.y * buffer.width + cursor.x]) |*cell| {
+            cell.background = .gray;
+        }
+    }
 }

@@ -204,18 +204,24 @@ fn drawBuffer(self: *const @This()) !void {
     defer tmp.deinit();
     try self.hideCursor(&tmp);
     try self.putCursor(arena.allocator(), &tmp, 0, 0);
+    var last_background = Color.default;
     for (0..self.buffer.height) |y| {
         if (y > 0) try tmp.appendSlice("\r\n");
         for (0..self.buffer.width) |x| {
             if (self.buffer.cells[y * self.buffer.width + x]) |cell| {
+                if (cell.background != last_background) {
+                    try tmp.appendSlice(switch (cell.background) {
+                        .gray => "\x1b[47m",
+                        .default => "\x1b[0m",
+                    });
+                    last_background = cell.background;
+                }
                 var character: [3]u8 = undefined;
                 const size = try std.unicode.utf8Encode(cell.character, &character);
                 try tmp.appendSlice(character[0..size]);
             }
         }
     }
-    try self.putCurrentCursor(arena.allocator(), &tmp);
-    try self.showCursor(&tmp);
     try std.io.getStdOut().writeAll(tmp.items);
 }
 
@@ -229,13 +235,4 @@ fn showCursor(_: *const @This(), buf: *std.ArrayList(u8)) !void {
 
 fn putCursor(_: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
     try buf.appendSlice(try std.fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
-}
-
-fn putCurrentCursor(self: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8)) !void {
-    if (self.file_edit_view.viewCursor(self.client.getActiveFile().?)) |cursor| {
-        try self.putCursor(arena, buf, cursor.x, cursor.y);
-    }
-    if (self.command_edit_view.viewCursor(&self.client.command_line_edit)) |cursor| {
-        try self.putCursor(arena, buf, cursor.x, self.size.rows - 1);
-    }
 }
