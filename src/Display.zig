@@ -206,7 +206,6 @@ fn drawBuffer(self: *const @This()) !void {
     try self.putCursor(arena.allocator(), &tmp, 0, 0);
     for (0..self.buffer.height) |y| {
         if (y > 0) try tmp.appendSlice("\r\n");
-        try tmp.appendSlice("\x1b[K");
         for (0..self.buffer.width) |x| {
             if (self.buffer.cells[y * self.buffer.width + x]) |cell| {
                 var character: [3]u8 = undefined;
