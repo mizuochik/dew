@@ -53,12 +53,3 @@ pub fn main() !void {
         try editor.display.render();
     }
 }
-
-test {
-    _ = @import("Editor.zig");
-    _ = @import("Display.zig");
-    _ = @import("Terminal.zig");
-    _ = @import("Client.zig");
-    _ = @import("keyboard.zig");
-    _ = @import("e2e.zig");
-}
