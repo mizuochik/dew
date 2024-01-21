@@ -2,7 +2,7 @@ const std = @import("std");
 const Keyboard = @import("Keyboard.zig");
 const Terminal = @import("Terminal.zig");
 const Display = @import("Display.zig");
-const CommandEvaluator = @import("CommandEvaluator.zig");
+const MethodEvaluator = @import("MethodEvaluator.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
 const Client = @import("Client.zig");
@@ -23,7 +23,7 @@ buffer_selector: BufferSelector,
 status_view: StatusView,
 display_size: DisplaySize,
 controller: EditorController,
-command_evaluator: CommandEvaluator,
+method_evaluator: MethodEvaluator,
 resource_registry: ResourceRegistry,
 keyboard: Keyboard,
 terminal: Terminal,
@@ -66,7 +66,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     );
     errdefer editor.controller.deinit();
 
-    editor.command_evaluator = .{
+    editor.method_evaluator = .{
         .editor = editor,
     };
 

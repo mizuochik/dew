@@ -4,10 +4,10 @@ const UnicodeString = @import("UnicodeString.zig");
 
 editor: *Editor,
 
-pub fn evaluate(self: *@This(), raw_command_line: UnicodeString) !void {
+pub fn evaluate(self: *@This(), raw_method_line: UnicodeString) !void {
     var parser = try CommandParser.init(self.editor.allocator, &self.editor.buffer_selector, &self.editor.client.status);
     defer parser.deinit();
-    var command_line = try parser.parse(raw_command_line.buffer.items);
+    var command_line = try parser.parse(raw_method_line.buffer.items);
     defer command_line.deinit();
     const command = try self.editor.resource_registry.get(command_line.command_name);
     try command(self.editor, command_line.arguments);

@@ -56,7 +56,7 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
             },
             'M' => if (self.editor.client.is_command_line_active) {
                 const command = self.editor.client.command_line.rows.items[0];
-                try self.editor.command_evaluator.evaluate(command);
+                try self.editor.method_evaluator.evaluate(command);
             } else {
                 try self.breakLine();
             },
