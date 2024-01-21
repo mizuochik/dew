@@ -7,7 +7,7 @@ test {
         pub const Terminal = @import("Terminal.zig");
         pub const Client = @import("Client.zig");
         pub const CommandParser = @import("CommandParser.zig");
-        pub const CommandRegistry = @import("CommandParser.zig");
+        pub const ResourceRegistry = @import("CommandParser.zig");
         pub const CommandEvaluator = @import("CommandEvaluator.zig");
         pub const keyboard = @import("keyboard.zig");
         pub const e2e = @import("e2e.zig");

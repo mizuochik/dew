@@ -9,7 +9,7 @@ const Client = @import("Client.zig");
 const EditView = @import("EditView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
-const CommandRegistry = @import("CommandRegistry.zig");
+const ResourceRegistry = @import("ResourceRegistry.zig");
 const EditorController = @import("EditorController.zig");
 
 pub const Options = struct {
@@ -24,7 +24,7 @@ status_view: StatusView,
 display_size: DisplaySize,
 controller: EditorController,
 command_evaluator: CommandEvaluator,
-command_registry: CommandRegistry,
+resource_registry: ResourceRegistry,
 keyboard: Keyboard,
 terminal: Terminal,
 client: Client,
@@ -70,9 +70,9 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
         .editor = editor,
     };
 
-    editor.command_registry = CommandRegistry.init(allocator);
-    errdefer editor.command_registry.deinit();
-    try editor.command_registry.registerBuiltinCommands();
+    editor.resource_registry = ResourceRegistry.init(allocator);
+    errdefer editor.resource_registry.deinit();
+    try editor.resource_registry.registerBuiltinCommands();
 
     editor.keyboard = .{};
     editor.terminal = .{};
@@ -86,7 +86,7 @@ pub fn deinit(self: *@This()) void {
     self.buffer_selector.deinit();
     self.status_view.deinit();
     self.display.deinit();
-    self.command_registry.deinit();
+    self.resource_registry.deinit();
     self.controller.deinit();
     self.client.deinit();
     self.allocator.destroy(self);
