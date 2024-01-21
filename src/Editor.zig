@@ -73,6 +73,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     editor.resource_registry = ResourceRegistry.init(allocator);
     errdefer editor.resource_registry.deinit();
     try editor.resource_registry.registerBuiltinCommands();
+    try editor.resource_registry.registerBuiltinResources();
 
     editor.keyboard = .{};
     editor.terminal = .{};
