@@ -1,11 +1,11 @@
-const CommandParser = @import("CommandParser.zig");
+const MethodParser = @import("MethodParser.zig");
 const Editor = @import("Editor.zig");
 const UnicodeString = @import("UnicodeString.zig");
 
 editor: *Editor,
 
 pub fn evaluate(self: *@This(), raw_method_line: UnicodeString) !void {
-    var parser = try CommandParser.init(self.editor.allocator, &self.editor.buffer_selector, &self.editor.client.status);
+    var parser = try MethodParser.init(self.editor.allocator, &self.editor.buffer_selector, &self.editor.client.status);
     defer parser.deinit();
     var command_line = try parser.parse(raw_method_line.buffer.items);
     defer command_line.deinit();
