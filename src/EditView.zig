@@ -20,7 +20,6 @@ const empty: []const u8 = b: {
 rows: std.ArrayList(RowSlice),
 width: usize,
 height: usize,
-is_active: bool,
 mode: Text.Mode,
 editor: *Editor,
 allocator: std.mem.Allocator,
@@ -32,7 +31,6 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Text.Mode) @Thi
         .rows = rows,
         .width = 0,
         .height = 0,
-        .is_active = mode != Text.Mode.command,
         .mode = mode,
         .editor = editor,
         .allocator = allocator,
@@ -43,8 +41,13 @@ pub fn deinit(self: *const @This()) void {
     self.rows.deinit();
 }
 
+pub fn isActive(self: *const @This(), edit: *Client.Edit) bool {
+    const active_edit = self.editor.client.getActiveEdit() orelse return false;
+    return edit == active_edit;
+}
+
 pub fn viewCursor(self: *const @This(), edit: *Client.Edit) ?Position {
-    if (!self.is_active) {
+    if (!self.isActive(edit)) {
         return null;
     }
     const cursor = self.getCursor(edit);
@@ -205,7 +208,7 @@ pub fn render(self: *@This(), buffer: *Display.Buffer, edit: *Client.Edit) !void
     self.rows.deinit();
     self.rows = new_rows;
     if (self.viewCursor(edit)) |cursor| {
-        if (buffer.cells[cursor.y * buffer.width + cursor.x]) |*cell| {
+        if (cells[cursor.y * buffer.width + cursor.x]) |*cell| {
             cell.background = .gray;
         }
     }
