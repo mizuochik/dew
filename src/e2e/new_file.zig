@@ -23,7 +23,7 @@ test "open new file" {
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     try editor.controller.processKeypress(.{ .ctrl = 'X' });
-    for ("new-file") |c| {
+    for ("files.new") |c| {
         try editor.controller.processKeypress(.{ .plain = c });
     }
     try editor.controller.processKeypress(.{ .ctrl = 'M' });

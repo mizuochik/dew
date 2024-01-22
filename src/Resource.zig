@@ -21,6 +21,10 @@ pub fn deinit(self: *@This()) void {
     self.methods.deinit();
 }
 
+pub fn getMethod(self: *const @This(), method_name: []const u8) ?Method {
+    return self.methods.get(method_name);
+}
+
 pub fn callMethod(self: *@This(), editor: *Editor, method_name: []const u8, arguments: [][]const u8) !void {
     const method = self.methods.get(method_name) orelse return error.MethodNotFound;
     try method(editor, arguments);

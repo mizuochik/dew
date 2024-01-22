@@ -41,7 +41,7 @@ test "open file via command" {
     try editor.controller.changeDisplaySize(100, 100);
 
     try editor.controller.processKeypress(.{ .ctrl = 'X' });
-    for ("open-file src/e2e/hello-world.txt") |c| {
+    for ("files.open src/e2e/hello-world.txt") |c| {
         try editor.controller.processKeypress(.{ .plain = c });
     }
 
@@ -49,7 +49,7 @@ test "open file via command" {
     const footer_area = try editor.display.getArea(99, 100, 0, 40);
     defer footer_area.deinit();
     try footer_area.expectEqualSlice(
-        \\open-file src/e2e/hello-world.txt
+        \\files.open src/e2e/hello-world.txt
     );
 
     try editor.controller.processKeypress(.{ .ctrl = 'M' });

@@ -8,7 +8,7 @@ test "save existing buffer" {
     try std.fs.cwd().copyFile("src/e2e/hello-world.txt", std.fs.cwd(), "src/e2e/hello-world.tmp.txt", .{});
     defer std.fs.cwd().deleteFile("src/e2e/hello-world.tmp.txt") catch {};
     try editor.controller.processKeypress(.{ .ctrl = 'X' });
-    for ("open-file src/e2e/hello-world.tmp.txt") |c| {
+    for ("files.open src/e2e/hello-world.tmp.txt") |c| {
         try editor.controller.processKeypress(.{ .plain = c });
     }
     try editor.controller.processKeypress(.{ .ctrl = 'M' });
@@ -30,7 +30,7 @@ test "save file as a new buffer" {
     try std.fs.cwd().copyFile("src/e2e/hello-world.txt", std.fs.cwd(), "src/e2e/hello-world.tmp.txt", .{});
     defer std.fs.cwd().deleteFile("src/e2e/hello-world.tmp.txt") catch {};
     try editor.controller.processKeypress(.{ .ctrl = 'X' });
-    for ("open-file src/e2e/hello-world.tmp.txt") |c| {
+    for ("files.open src/e2e/hello-world.tmp.txt") |c| {
         try editor.controller.processKeypress(.{ .plain = c });
     }
     try editor.controller.processKeypress(.{ .ctrl = 'M' });
@@ -39,7 +39,7 @@ test "save file as a new buffer" {
         try editor.controller.processKeypress(.{ .plain = c });
     }
     try editor.controller.processKeypress(.{ .ctrl = 'X' });
-    for ("save-file src/e2e/hello-world-renamed.tmp.txt") |c| {
+    for ("files.save src/e2e/hello-world-renamed.tmp.txt") |c| {
         try editor.controller.processKeypress(.{ .plain = c });
     }
     try editor.controller.processKeypress(.{ .ctrl = 'M' });
