@@ -1,5 +1,5 @@
 const std = @import("std");
-const builtin_commands = @import("builtin_commands.zig");
+const builtin_resources = @import("builtin_resources.zig");
 const Editor = @import("Editor.zig");
 const Resource = @import("Resource.zig");
 
@@ -24,11 +24,8 @@ pub fn get(self: *const @This(), name: []const u8) !Resource.Method {
 }
 
 pub fn registerBuiltinResources(self: *@This()) !void {
-    var files = Resource.init(self.allocator);
+    var files = try builtin_resources.files.init(self.allocator);
     errdefer files.deinit();
-    try files.putMethod("open", builtin_commands.open_file);
-    try files.putMethod("new", builtin_commands.new_file);
-    try files.putMethod("save", builtin_commands.save_file);
     try self.resources.putNoClobber("files", files);
     errdefer self.resources.remove("files");
 }

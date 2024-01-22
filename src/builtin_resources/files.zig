@@ -1,7 +1,17 @@
 const std = @import("std");
-const Editor = @import("Editor.zig");
+const Editor = @import("../Editor.zig");
+const Resource = @import("../Resource.zig");
 
-pub fn new_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
+pub fn init(allocator: std.mem.Allocator) !Resource {
+    var files = Resource.init(allocator);
+    errdefer files.deinit();
+    try files.putMethod("new", new);
+    try files.putMethod("open", open);
+    try files.putMethod("save", save);
+    return files;
+}
+
+fn new(editor: *Editor, arguments: [][]const u8) anyerror!void {
     const want_arguments_len = 0;
     if (arguments.len != want_arguments_len) {
         const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want {d} but {d}", .{ want_arguments_len, arguments.len });
@@ -14,7 +24,7 @@ pub fn new_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
     try editor.buffer_selector.openFileBuffer(untitled_name);
 }
 
-pub fn open_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
+fn open(editor: *Editor, arguments: [][]const u8) anyerror!void {
     const want_arguments_len = 1;
     if (arguments.len != want_arguments_len) {
         const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want {d} but {d}", .{ want_arguments_len, arguments.len });
@@ -26,7 +36,7 @@ pub fn open_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
     try editor.buffer_selector.openFileBuffer(file_path);
 }
 
-pub fn save_file(editor: *Editor, arguments: [][]const u8) anyerror!void {
+fn save(editor: *Editor, arguments: [][]const u8) anyerror!void {
     const want_arguments_max_len = 1;
     if (arguments.len > want_arguments_max_len) {
         const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want <= {} but {d}", .{ want_arguments_max_len, arguments.len });
