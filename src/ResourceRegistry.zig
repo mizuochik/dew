@@ -24,6 +24,9 @@ pub fn get(self: *const @This(), name: []const u8) !Resource.Method {
 }
 
 pub fn registerBuiltinResources(self: *@This()) !void {
+    var editor = try builtin_resources.editor.init(self.allocator);
+    errdefer editor.deinit();
+    try self.resources.putNoClobber("editor", editor);
     var files = try builtin_resources.files.init(self.allocator);
     errdefer files.deinit();
     try self.resources.putNoClobber("files", files);
