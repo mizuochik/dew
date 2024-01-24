@@ -1,26 +1,13 @@
 const std = @import("std");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
+const CommandLine = @import("CommandLine.zig");
 
 allocator: std.mem.Allocator,
 input: [][]const u8,
 index: usize,
 buffer_selector: *BufferSelector,
 status: *Status,
-
-pub const CommandLine = struct {
-    allocator: std.mem.Allocator,
-    command_name: []const u8,
-    arguments: [][]const u8,
-
-    pub fn deinit(self: *const CommandLine) void {
-        self.allocator.free(self.command_name);
-        for (self.arguments) |argument| {
-            self.allocator.free(argument);
-        }
-        self.allocator.free(self.arguments);
-    }
-};
 
 const Error = error{
     EOL,
