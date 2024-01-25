@@ -6,6 +6,21 @@ pub const Key = union(enum) {
     meta: u8,
     arrow: Arrow,
     del,
+
+    pub fn toName(self: Key, allocator: std.mem.Allocator) ![]const u8 {
+        return switch (self) {
+            .plain => |u| try std.fmt.allocPrint(allocator, "{u}", .{u}),
+            .ctrl => |c| try std.fmt.allocPrint(allocator, "C+{c}", .{c}),
+            .meta => |c| try std.fmt.allocPrint(allocator, "A+{c}", .{c}),
+            .arrow => |arrow| switch (arrow) {
+                .up => try std.fmt.allocPrint(allocator, "up", .{}),
+                .down => try std.fmt.allocPrint(allocator, "down", .{}),
+                .right => try std.fmt.allocPrint(allocator, "right", .{}),
+                .left => try std.fmt.allocPrint(allocator, "left", .{}),
+            },
+            .del => try std.fmt.allocPrint(allocator, "del", .{}),
+        };
+    }
 };
 
 pub const Arrow = enum {
