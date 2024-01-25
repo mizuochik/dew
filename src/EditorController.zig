@@ -10,7 +10,7 @@ const Cursor = @import("Cursor.zig");
 const Keyboard = @import("Keyboard.zig");
 
 file_edit_view: *EditView,
-command_edit_view: *EditView,
+method_edit_view: *EditView,
 file_path: ?[]const u8 = null,
 buffer_selector: *BufferSelector,
 display_size: *DisplaySize,
@@ -19,11 +19,11 @@ allocator: std.mem.Allocator,
 editor: *Editor,
 cursors: [1]*Cursor,
 
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edit_view: *EditView, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, method_edit_view: *EditView, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
     return @This(){
         .allocator = allocator,
         .file_edit_view = file_edit_view,
-        .command_edit_view = command_edit_view,
+        .method_edit_view = method_edit_view,
         .buffer_selector = buffer_selector,
         .display = display,
         .display_size = display_size,
@@ -54,8 +54,8 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                 try edit.cursor.moveBackward();
                 try edit.text.deleteChar(edit.cursor.getPosition());
             },
-            'M' => if (self.editor.client.is_command_line_active) {
-                const command = self.editor.client.command_line.rows.items[0];
+            'M' => if (self.editor.client.is_method_line_active) {
+                const command = self.editor.client.method_line.rows.items[0];
                 try self.editor.method_evaluator.evaluate(command);
             } else {
                 try self.breakLine();
@@ -79,7 +79,7 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                 self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
             },
             'X' => {
-                try self.editor.client.toggleCommandLine();
+                try self.editor.client.toggleMethodLine();
             },
             'V' => {
                 self.getCurrentView().scrollDown(self.editor.client.getActiveEdit().?, self.getCurrentView().height);
@@ -156,8 +156,8 @@ fn killLine(self: *@This()) !void {
 }
 
 fn getCurrentView(self: *const @This()) *EditView {
-    return if (self.editor.client.is_command_line_active)
-        self.command_edit_view
+    return if (self.editor.client.is_method_line_active)
+        self.method_edit_view
     else
         self.file_edit_view;
 }

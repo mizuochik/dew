@@ -98,7 +98,7 @@ pub const Buffer = struct {
 buffer: Buffer,
 file_edit_view: *EditView,
 status_view: *StatusView,
-command_edit_view: *EditView,
+method_edit_view: *EditView,
 allocator: std.mem.Allocator,
 client: *Client,
 size: *DisplaySize,
@@ -131,14 +131,14 @@ pub const Area = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, command_edit_view: *EditView, client: *Client, size: *DisplaySize) !@This() {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, method_edit_view: *EditView, client: *Client, size: *DisplaySize) !@This() {
     const buffer = try Buffer.init(allocator, size.cols, size.rows);
     errdefer buffer.deinit();
     return .{
         .buffer = buffer,
         .file_edit_view = file_edit_view,
         .status_view = status_view,
-        .command_edit_view = command_edit_view,
+        .method_edit_view = method_edit_view,
         .allocator = allocator,
         .client = client,
         .size = size,
@@ -164,14 +164,14 @@ pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
     self.buffer.deinit();
     self.buffer = new_buffer;
 
-    try self.command_edit_view.setSize(self.size.cols, 1);
+    try self.method_edit_view.setSize(self.size.cols, 1);
     try self.status_view.setSize(self.size.cols);
 }
 
 pub fn render(self: *@This()) !void {
     self.buffer.clear();
     try self.file_edit_view.render(&self.buffer, self.client.getActiveFile().?);
-    try self.command_edit_view.render(&self.buffer, &self.client.command_line_edit);
+    try self.method_edit_view.render(&self.buffer, &self.client.method_line_edit);
     try self.status_view.render(&self.buffer, &self.client.status);
     try self.drawBuffer();
 }

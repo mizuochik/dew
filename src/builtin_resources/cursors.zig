@@ -45,8 +45,8 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
 }
 
 fn getCurrentView(editor: *Editor) *EditView {
-    return if (editor.client.is_command_line_active)
-        editor.command_edit_view
+    return if (editor.client.is_method_line_active)
+        editor.method_edit_view
     else
         editor.edit_view;
 }

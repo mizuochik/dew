@@ -20,33 +20,33 @@ pub const Edit = struct {
 
 current_file: ?[]const u8 = null,
 scroll_positions: std.StringHashMap(usize),
-command_line: *Text,
-command_line_edit: Edit,
+method_line: *Text,
+method_line_edit: Edit,
 status: Status,
 file_edits: std.StringHashMap(Edit),
 active_edit: ?*Edit = null,
 allocator: std.mem.Allocator,
-is_command_line_active: bool = false,
+is_method_line_active: bool = false,
 
 pub fn init(allocator: std.mem.Allocator) !@This() {
-    var command_line = try Text.init(allocator);
-    errdefer command_line.deinit();
+    var method_line = try Text.init(allocator);
+    errdefer method_line.deinit();
     var st = try Status.init(allocator);
     errdefer st.deinit();
     const file_edits = std.StringHashMap(Edit).init(allocator);
     errdefer file_edits.deinit();
     return .{
         .scroll_positions = std.StringHashMap(usize).init(allocator),
-        .command_line = command_line,
+        .method_line = method_line,
         .file_edits = file_edits,
         .status = st,
         .allocator = allocator,
-        .command_line_edit = Edit.init(command_line),
+        .method_line_edit = Edit.init(method_line),
     };
 }
 
 pub fn deinit(self: *@This()) void {
-    self.command_line.deinit();
+    self.method_line.deinit();
     self.status.deinit();
     self.scroll_positions.deinit();
     var editing_file_keys = self.file_edits.keyIterator();
@@ -54,15 +54,15 @@ pub fn deinit(self: *@This()) void {
     self.file_edits.deinit();
 }
 
-pub fn toggleCommandLine(self: *@This()) !void {
-    if (self.is_command_line_active) {
-        try self.command_line.clear();
-        self.command_line_edit.cursor.x = 0;
-        self.is_command_line_active = false;
+pub fn toggleMethodLine(self: *@This()) !void {
+    if (self.is_method_line_active) {
+        try self.method_line.clear();
+        self.method_line_edit.cursor.x = 0;
+        self.is_method_line_active = false;
         self.active_edit = self.getActiveFile();
     } else {
-        self.is_command_line_active = true;
-        self.active_edit = &self.command_line_edit;
+        self.is_method_line_active = true;
+        self.active_edit = &self.method_line_edit;
     }
 }
 
@@ -74,8 +74,8 @@ pub fn getActiveFile(self: *@This()) ?*Edit {
 }
 
 pub fn getActiveEdit(self: *@This()) ?*Edit {
-    if (self.is_command_line_active) {
-        return &self.command_line_edit;
+    if (self.is_method_line_active) {
+        return &self.method_line_edit;
     }
     return self.getActiveFile();
 }

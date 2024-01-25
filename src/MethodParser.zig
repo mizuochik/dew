@@ -1,7 +1,7 @@
 const std = @import("std");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
-const CommandLine = @import("CommandLine.zig");
+const MethodLine = @import("MethodLine.zig");
 
 allocator: std.mem.Allocator,
 input: [][]const u8,
@@ -33,10 +33,10 @@ pub fn deinit(self: *const @This()) void {
     self.allocator.free(self.input);
 }
 
-pub fn parse(self: *@This(), input: []const u8) !CommandLine {
+pub fn parse(self: *@This(), input: []const u8) !MethodLine {
     try self.setInput(input);
-    const command_name = try self.parseCommandName();
-    errdefer self.allocator.free(command_name);
+    const method_name = try self.parseMethodName();
+    errdefer self.allocator.free(method_name);
     var arg_list = std.ArrayList([]const u8).init(self.allocator);
     errdefer {
         for (arg_list.items) |arg| self.allocator.free(arg);
@@ -52,7 +52,7 @@ pub fn parse(self: *@This(), input: []const u8) !CommandLine {
     errdefer self.allocator.free(args);
     return .{
         .allocator = self.allocator,
-        .command_name = command_name,
+        .method_name = method_name,
         .params = args,
     };
 }
@@ -81,14 +81,14 @@ fn setInput(self: *@This(), input: []const u8) !void {
     self.input = in;
 }
 
-fn parseCommandName(self: *@This()) ![]const u8 {
-    var command_name_al = std.ArrayList(u8).init(self.allocator);
-    defer command_name_al.deinit();
-    try command_name_al.appendSlice(try self.parseAnyLetter());
+fn parseMethodName(self: *@This()) ![]const u8 {
+    var method_name_al = std.ArrayList(u8).init(self.allocator);
+    defer method_name_al.deinit();
+    try method_name_al.appendSlice(try self.parseAnyLetter());
     while (self.parseAnyLetter()) |letter| {
-        try command_name_al.appendSlice(letter);
+        try method_name_al.appendSlice(letter);
     } else |_| {}
-    return try command_name_al.toOwnedSlice();
+    return try method_name_al.toOwnedSlice();
 }
 
 fn parseAnyLetter(self: *@This()) ![]const u8 {

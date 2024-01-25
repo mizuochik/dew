@@ -4,7 +4,7 @@ const ResourceRegistry = @import("ResourceRegistry.zig");
 const UnicodeString = @import("UnicodeString.zig");
 
 allocator: std.mem.Allocator,
-key_map: std.StringHashMap([][]const u8), // Key Name -> Command Lines
+key_map: std.StringHashMap([][]const u8), // Key Name -> Method Lines
 
 pub fn init(allocator: std.mem.Allocator) @This() {
     return .{
@@ -40,7 +40,7 @@ pub fn putBuiltinKeyMap(self: *@This(), key_name: []const u8, commands: anytype)
     try self.putKeyMap(key_name, buf[0..commands.len]);
 }
 
-pub fn putKeyMap(self: *@This(), key_name: []const u8, command_lines: [][]const u8) !void {
+pub fn putKeyMap(self: *@This(), key_name: []const u8, method_lines: [][]const u8) !void {
     const result = try self.key_map.getOrPut(key_name);
     if (!result.found_existing) {
         const key = try self.allocator.dupe(u8, key_name);
@@ -49,16 +49,16 @@ pub fn putKeyMap(self: *@This(), key_name: []const u8, command_lines: [][]const 
     errdefer if (!result.found_existing) {
         self.allocator.free(result.key_ptr.*);
     };
-    const command_lines_duped = try self.allocator.alloc([]const u8, command_lines.len);
-    errdefer self.allocator.free(command_lines_duped);
+    const method_lines_duped = try self.allocator.alloc([]const u8, method_lines.len);
+    errdefer self.allocator.free(method_lines_duped);
     var i: usize = 0;
     errdefer for (0..i) |j| {
-        self.allocator.free(command_lines[j]);
+        self.allocator.free(method_lines[j]);
     };
-    while (i < command_lines_duped.len) : (i += 1) {
-        command_lines_duped[i] = try self.allocator.dupe(u8, command_lines[i]);
+    while (i < method_lines_duped.len) : (i += 1) {
+        method_lines_duped[i] = try self.allocator.dupe(u8, method_lines[i]);
     }
-    result.value_ptr.* = command_lines_duped;
+    result.value_ptr.* = method_lines_duped;
 }
 
 pub fn removeKeyMap(self: *@This(), key_name: []const u8) void {

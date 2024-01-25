@@ -18,7 +18,7 @@ pub const Options = struct {
 
 allocator: std.mem.Allocator,
 edit_view: EditView,
-command_edit_view: EditView,
+method_edit_view: EditView,
 buffer_selector: BufferSelector,
 status_view: StatusView,
 display_size: DisplaySize,
@@ -45,20 +45,20 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     editor.edit_view = EditView.init(allocator, editor, .file);
     errdefer editor.edit_view.deinit();
 
-    editor.command_edit_view = EditView.init(allocator, editor, .command);
-    errdefer editor.command_edit_view.deinit();
+    editor.method_edit_view = EditView.init(allocator, editor, .command);
+    errdefer editor.method_edit_view.deinit();
 
     editor.status_view = StatusView.init();
     errdefer editor.status_view.deinit();
 
     editor.display_size = DisplaySize.init();
-    editor.display = try Display.init(allocator, &editor.edit_view, &editor.status_view, &editor.command_edit_view, &editor.client, &editor.display_size);
+    editor.display = try Display.init(allocator, &editor.edit_view, &editor.status_view, &editor.method_edit_view, &editor.client, &editor.display_size);
     errdefer editor.display.deinit();
 
     editor.controller = try EditorController.init(
         allocator,
         &editor.edit_view,
-        &editor.command_edit_view,
+        &editor.method_edit_view,
         &editor.buffer_selector,
         &editor.display,
         &editor.display_size,
@@ -82,7 +82,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
 
 pub fn deinit(self: *@This()) void {
     self.edit_view.deinit();
-    self.command_edit_view.deinit();
+    self.method_edit_view.deinit();
     self.buffer_selector.deinit();
     self.status_view.deinit();
     self.display.deinit();
