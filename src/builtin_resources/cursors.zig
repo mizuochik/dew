@@ -9,14 +9,14 @@ pub fn init(allocator: std.mem.Allocator) !Resource {
     return cursors;
 }
 
-fn moveTo(editor: *Editor, arguments: [][]const u8) anyerror!void {
-    if (arguments.len != 1) {
-        const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want {} but {}", .{ 1, arguments.len });
+fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
+    if (params.len != 1) {
+        const message = try std.fmt.allocPrint(editor.allocator, "invalid argument length: want {} but {}", .{ 1, params.len });
         errdefer editor.allocator.free(message);
         try editor.client.status.setMessage(message);
         return error.InvalidArguments;
     }
-    const location = arguments[0];
+    const location = params[0];
     var edit = editor.client.getActiveEdit() orelse return;
     if (std.mem.eql(u8, location, "next-character")) {
         try edit.cursor.moveForward();

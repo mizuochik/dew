@@ -53,7 +53,7 @@ pub fn parse(self: *@This(), input: []const u8) !CommandLine {
     return .{
         .allocator = self.allocator,
         .command_name = command_name,
-        .arguments = args,
+        .params = args,
     };
 }
 

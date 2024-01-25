@@ -10,6 +10,6 @@ pub fn evaluate(self: *@This(), raw_method_line: UnicodeString) !void {
     var command_line = try parser.parse(raw_method_line.buffer.items);
     defer command_line.deinit();
     const command = try self.editor.resource_registry.get(command_line.command_name);
-    try command(self.editor, command_line.arguments);
+    try command(self.editor, command_line.params);
     try self.editor.client.toggleCommandLine();
 }

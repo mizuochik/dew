@@ -3,7 +3,7 @@ const builtin_resources = @import("builtin_resources.zig");
 const Editor = @import("Editor.zig");
 const Resource = @import("Resource.zig");
 
-const Command = *const fn (editor: *Editor, arguments: [][]const u8) anyerror!void;
+const Command = *const fn (editor: *Editor, params: [][]const u8) anyerror!void;
 
 allocator: std.mem.Allocator,
 resources: std.StringHashMap(Resource),

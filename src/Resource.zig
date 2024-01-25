@@ -1,7 +1,7 @@
 const std = @import("std");
 const Editor = @import("Editor.zig");
 
-pub const Method = *const fn (editor: *Editor, arguments: [][]const u8) anyerror!void;
+pub const Method = *const fn (editor: *Editor, params: [][]const u8) anyerror!void;
 
 allocator: std.mem.Allocator,
 methods: std.StringHashMap(Method),
@@ -25,9 +25,9 @@ pub fn getMethod(self: *const @This(), method_name: []const u8) ?Method {
     return self.methods.get(method_name);
 }
 
-pub fn callMethod(self: *@This(), editor: *Editor, method_name: []const u8, arguments: [][]const u8) !void {
+pub fn callMethod(self: *@This(), editor: *Editor, method_name: []const u8, params: [][]const u8) !void {
     const method = self.methods.get(method_name) orelse return error.MethodNotFound;
-    try method(editor, arguments);
+    try method(editor, params);
 }
 
 pub fn putMethod(self: *@This(), method_name: []const u8, method: Method) !void {
