@@ -10,6 +10,7 @@ test {
         pub const MethodParser = @import("MethodParser.zig");
         pub const ResourceRegistry = @import("MethodParser.zig");
         pub const MethodEvaluator = @import("MethodEvaluator.zig");
+        pub const KeyEvaluator = @import("KeyEvaluator.zig");
         pub const keyboard = @import("keyboard.zig");
         pub const builtin_resources = @import("builtin_resources.zig");
         pub const e2e = @import("e2e.zig");
