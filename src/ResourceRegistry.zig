@@ -27,10 +27,14 @@ pub fn registerBuiltinResources(self: *@This()) !void {
     var editor = try builtin_resources.editor.init(self.allocator);
     errdefer editor.deinit();
     try self.resources.putNoClobber("editor", editor);
+    errdefer _ = self.resources.remove("editor");
     var files = try builtin_resources.files.init(self.allocator);
     errdefer files.deinit();
     try self.resources.putNoClobber("files", files);
-    errdefer self.resources.remove("files");
+    errdefer _ = self.resources.remove("files");
+    const cursors = try builtin_resources.cursors.init(self.allocator);
+    try self.resources.putNoClobber("cursors", cursors);
+    errdefer self.resources.remove("cursors");
 }
 
 pub fn deinit(self: *@This()) void {
