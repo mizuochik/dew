@@ -47,6 +47,14 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
         try edit.cursor.setPosition(pos);
         return;
     }
+    if (std.mem.eql(u8, location, "beginning-of-line")) {
+        try edit.cursor.moveToBeginningOfLine();
+        return;
+    }
+    if (std.mem.eql(u8, location, "end-of-line")) {
+        try edit.cursor.moveToEndOfLine();
+        return;
+    }
     return error.UnknownLocation;
 }
 

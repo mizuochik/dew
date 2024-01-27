@@ -40,6 +40,8 @@ pub fn installDefaultKeyMap(self: *@This()) !void {
     try self.putBuiltinKeyMap("left", .{"cursors.move-to backward-character"});
     try self.putBuiltinKeyMap("up", .{"cursors.move-to previous-line"});
     try self.putBuiltinKeyMap("down", .{"cursors.move-to next-line"});
+    try self.putBuiltinKeyMap("C+a", .{"cursors.move-to beginning-of-line"});
+    try self.putBuiltinKeyMap("C+e", .{"cursors.move-to end-of-line"});
 }
 
 pub fn putBuiltinKeyMap(self: *@This(), key_name: []const u8, commands: anytype) !void {

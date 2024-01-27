@@ -74,16 +74,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                     const edit = self.editor.client.active_edit.?;
                     try edit.text.joinLine(edit.cursor.getPosition());
                 },
-                'A' => {
-                    const edit = self.editor.client.active_edit.?;
-                    try edit.cursor.moveToBeginningOfLine();
-                    self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
-                },
-                'E' => {
-                    const edit = self.editor.client.active_edit.?;
-                    try edit.cursor.moveToEndOfLine();
-                    self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
-                },
                 'X' => {
                     try self.editor.client.toggleCommandLine();
                 },
