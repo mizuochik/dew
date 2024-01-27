@@ -70,10 +70,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                 } else {
                     try self.breakLine();
                 },
-                'P' => try self.moveCursor(.up),
-                'N' => try self.moveCursor(.down),
-                'F' => try self.moveCursor(.right),
-                'B' => try self.moveCursor(.left),
                 'J' => {
                     const edit = self.editor.client.active_edit.?;
                     try edit.text.joinLine(edit.cursor.getPosition());
@@ -121,37 +117,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
 
 pub fn changeDisplaySize(self: *const @This(), cols: usize, rows: usize) !void {
     try self.display.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
-}
-
-fn moveCursor(self: *@This(), k: Keyboard.Arrow) !void {
-    switch (k) {
-        .up => {
-            const y = self.getCurrentView().getCursor(self.editor.client.getActiveEdit().?).y;
-            if (y > 0) {
-                var edit = self.editor.client.getActiveEdit().?;
-                const pos = self.getCurrentView().getBufferPosition(edit, .{ .x = edit.cursor.last_view_x, .y = y - 1 });
-                try edit.cursor.setPosition(pos);
-            }
-        },
-        .down => {
-            const y = self.getCurrentView().getCursor(self.editor.client.getActiveEdit().?).y;
-            if (y < self.getCurrentView().getNumberOfLines() - 1) {
-                const edit = self.editor.client.active_edit.?;
-                const pos = self.getCurrentView().getBufferPosition(edit, .{ .x = edit.cursor.last_view_x, .y = y + 1 });
-                try edit.cursor.setPosition(pos);
-            }
-        },
-        .left => {
-            const edit = self.editor.client.active_edit.?;
-            try edit.cursor.moveBackward();
-            self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
-        },
-        .right => {
-            const edit = self.editor.client.active_edit.?;
-            try edit.cursor.moveForward();
-            self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
-        },
-    }
 }
 
 fn breakLine(self: *@This()) !void {
