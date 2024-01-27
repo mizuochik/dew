@@ -25,6 +25,12 @@ pub fn deinit(self: *@This()) void {
     self.key_map.deinit();
 }
 
+pub fn evaluate(self: *@This(), key: Keyboard.Key) ![][]const u8 {
+    const key_name = try key.toName(self.allocator);
+    defer self.allocator.free(key_name);
+    return self.key_map.get(key_name) orelse error.NoKeyMap;
+}
+
 pub fn installDefaultKeyMap(self: *@This()) !void {
     try self.putBuiltinKeyMap("C+f", .{"cursors.move-to forward-character"});
     try self.putBuiltinKeyMap("C+b", .{"cursors.move-to previous-character"});
