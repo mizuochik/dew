@@ -1,7 +1,7 @@
 const std = @import("std");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
-const MethodLine = @import("MethodLine.zig");
+const CommandLine = @import("CommandLine.zig");
 
 allocator: std.mem.Allocator,
 input: [][]const u8,
@@ -33,7 +33,7 @@ pub fn deinit(self: *const @This()) void {
     self.allocator.free(self.input);
 }
 
-pub fn parse(self: *@This(), input: []const u8) !MethodLine {
+pub fn parse(self: *@This(), input: []const u8) !CommandLine {
     try self.setInput(input);
     const method_name = try self.parseMethodName();
     errdefer self.allocator.free(method_name);

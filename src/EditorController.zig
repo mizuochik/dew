@@ -41,7 +41,7 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
             var u_method = try UnicodeString.init(self.allocator);
             defer u_method.deinit();
             try u_method.appendSlice(method);
-            try self.editor.method_evaluator.evaluate(u_method);
+            try self.editor.command_evaluator.evaluate(u_method);
         }
     } else |err| switch (err) {
         error.NoKeyMap => switch (key) {
@@ -63,10 +63,10 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                     try edit.cursor.moveBackward();
                     try edit.text.deleteChar(edit.cursor.getPosition());
                 },
-                'M' => if (self.editor.client.is_method_line_active) {
-                    const command = self.editor.client.method_line.rows.items[0];
-                    try self.editor.method_evaluator.evaluate(command);
-                    try self.editor.client.toggleMethodLine();
+                'M' => if (self.editor.client.is_command_line_active) {
+                    const command = self.editor.client.command_line.rows.items[0];
+                    try self.editor.command_evaluator.evaluate(command);
+                    try self.editor.client.toggleCommandLine();
                 } else {
                     try self.breakLine();
                 },
@@ -89,7 +89,7 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
                 },
                 'X' => {
-                    try self.editor.client.toggleMethodLine();
+                    try self.editor.client.toggleCommandLine();
                 },
                 'V' => {
                     self.getCurrentView().scrollDown(self.editor.client.getActiveEdit().?, self.getCurrentView().height);
@@ -168,7 +168,7 @@ fn killLine(self: *@This()) !void {
 }
 
 fn getCurrentView(self: *const @This()) *EditView {
-    return if (self.editor.client.is_method_line_active)
+    return if (self.editor.client.is_command_line_active)
         self.method_edit_view
     else
         self.file_edit_view;

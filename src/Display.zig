@@ -171,7 +171,7 @@ pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
 pub fn render(self: *@This()) !void {
     self.buffer.clear();
     try self.file_edit_view.render(&self.buffer, self.client.getActiveFile().?);
-    try self.method_edit_view.render(&self.buffer, &self.client.method_line_edit);
+    try self.method_edit_view.render(&self.buffer, &self.client.command_line_edit);
     try self.status_view.render(&self.buffer, &self.client.status);
     try self.drawBuffer();
 }
