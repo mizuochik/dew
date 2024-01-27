@@ -21,10 +21,12 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
     var edit = editor.client.getActiveEdit() orelse return;
     if (std.mem.eql(u8, location, "forward-character")) {
         try edit.cursor.moveForward();
+        getCurrentView(editor).updateLastCursorX(editor.client.getActiveEdit().?);
         return;
     }
     if (std.mem.eql(u8, location, "backward-character")) {
         try edit.cursor.moveBackward();
+        getCurrentView(editor).updateLastCursorX(editor.client.getActiveEdit().?);
         return;
     }
     const view = getCurrentView(editor);
