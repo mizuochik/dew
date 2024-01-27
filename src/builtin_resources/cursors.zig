@@ -6,6 +6,7 @@ const EditView = @import("../EditView.zig");
 pub fn init(allocator: std.mem.Allocator) !Resource {
     var cursors = Resource.init(allocator);
     errdefer cursors.deinit();
+    try cursors.putMethod("move-to", moveTo);
     return cursors;
 }
 
@@ -18,11 +19,11 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
     }
     const location = params[0];
     var edit = editor.client.getActiveEdit() orelse return;
-    if (std.mem.eql(u8, location, "next-character")) {
+    if (std.mem.eql(u8, location, "forward-character")) {
         try edit.cursor.moveForward();
         return;
     }
-    if (std.mem.eql(u8, location, "previous-character")) {
+    if (std.mem.eql(u8, location, "backward-character")) {
         try edit.cursor.moveBackward();
         return;
     }
@@ -34,6 +35,7 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
         }
         const pos = view.getBufferPosition(edit, .{ .x = edit.cursor.last_view_x, .y = view_y + 1 });
         try edit.cursor.setPosition(pos);
+        return;
     }
     if (std.mem.eql(u8, location, "previous-line")) {
         if (view_y <= 0) {
@@ -41,12 +43,14 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
         }
         const pos = view.getBufferPosition(edit, .{ .x = edit.cursor.last_view_x, .y = view_y - 1 });
         try edit.cursor.setPosition(pos);
+        return;
     }
+    return error.UnknownLocation;
 }
 
 fn getCurrentView(editor: *Editor) *EditView {
     return if (editor.client.is_method_line_active)
-        editor.method_edit_view
+        &editor.method_edit_view
     else
-        editor.edit_view;
+        &editor.edit_view;
 }

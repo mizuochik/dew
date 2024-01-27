@@ -1,6 +1,7 @@
 const std = @import("std");
 const clap = @import("clap");
 const Editor = @import("Editor.zig");
+const UnicodeString = @import("UnicodeString.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{
@@ -46,7 +47,6 @@ pub fn main() !void {
 
     while (true) {
         const key = try editor.keyboard.inputKey();
-
         editor.controller.processKeypress(key) catch |err| switch (err) {
             error.Quit => return,
             else => return err,

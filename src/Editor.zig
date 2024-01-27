@@ -3,6 +3,7 @@ const Keyboard = @import("Keyboard.zig");
 const Terminal = @import("Terminal.zig");
 const Display = @import("Display.zig");
 const MethodEvaluator = @import("MethodEvaluator.zig");
+const KeyEvaluator = @import("KeyEvaluator.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
 const Client = @import("Client.zig");
@@ -24,6 +25,7 @@ status_view: StatusView,
 display_size: DisplaySize,
 controller: EditorController,
 method_evaluator: MethodEvaluator,
+key_evaluator: KeyEvaluator,
 resource_registry: ResourceRegistry,
 keyboard: Keyboard,
 terminal: Terminal,
@@ -70,6 +72,10 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
         .editor = editor,
     };
 
+    editor.key_evaluator = KeyEvaluator.init(allocator);
+    errdefer editor.key_evaluator.deinit();
+    try editor.key_evaluator.installDefaultKeyMap();
+
     editor.resource_registry = ResourceRegistry.init(allocator);
     errdefer editor.resource_registry.deinit();
     try editor.resource_registry.registerBuiltinResources();
@@ -87,6 +93,7 @@ pub fn deinit(self: *@This()) void {
     self.status_view.deinit();
     self.display.deinit();
     self.resource_registry.deinit();
+    self.key_evaluator.deinit();
     self.controller.deinit();
     self.client.deinit();
     self.allocator.destroy(self);

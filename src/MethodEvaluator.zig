@@ -1,6 +1,7 @@
 const MethodParser = @import("MethodParser.zig");
 const Editor = @import("Editor.zig");
 const UnicodeString = @import("UnicodeString.zig");
+const std = @import("std");
 
 editor: *Editor,
 
@@ -11,5 +12,4 @@ pub fn evaluate(self: *@This(), raw_method_line: UnicodeString) !void {
     defer method_line.deinit();
     const command = try self.editor.resource_registry.get(method_line.method_name);
     try command(self.editor, method_line.params);
-    try self.editor.client.toggleMethodLine();
 }

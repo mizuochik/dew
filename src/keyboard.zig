@@ -10,8 +10,8 @@ pub const Key = union(enum) {
     pub fn toName(self: Key, allocator: std.mem.Allocator) ![]const u8 {
         return switch (self) {
             .plain => |u| try std.fmt.allocPrint(allocator, "{u}", .{u}),
-            .ctrl => |c| try std.fmt.allocPrint(allocator, "C+{c}", .{c}),
-            .meta => |c| try std.fmt.allocPrint(allocator, "A+{c}", .{c}),
+            .ctrl => |c| try std.fmt.allocPrint(allocator, "C+{c}", .{std.ascii.toLower(c)}),
+            .meta => |c| try std.fmt.allocPrint(allocator, "A+{c}", .{std.ascii.toLower(c)}),
             .arrow => |arrow| switch (arrow) {
                 .up => try std.fmt.allocPrint(allocator, "up", .{}),
                 .down => try std.fmt.allocPrint(allocator, "down", .{}),

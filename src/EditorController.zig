@@ -8,6 +8,7 @@ const Display = @import("Display.zig");
 const Editor = @import("Editor.zig");
 const Cursor = @import("Cursor.zig");
 const Keyboard = @import("Keyboard.zig");
+const UnicodeString = @import("UnicodeString.zig");
 
 file_edit_view: *EditView,
 method_edit_view: *EditView,
@@ -35,75 +36,86 @@ pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, method_edit
 pub fn deinit(_: *const @This()) void {}
 
 pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
-    switch (key) {
-        .del => {
-            const edit = self.editor.client.active_edit.?;
-            try edit.cursor.moveBackward();
-            try edit.text.deleteChar(edit.cursor.getPosition());
-        },
-        .ctrl => |k| switch (k) {
-            'Q' => return error.Quit,
-            'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
-            'K' => try self.killLine(),
-            'D' => {
-                const edit = self.editor.client.active_edit.?;
-                try edit.text.deleteChar(edit.cursor.getPosition());
-            },
-            'H' => {
+    if (self.editor.key_evaluator.evaluate(key)) |methods| {
+        for (methods) |method| {
+            var u_method = try UnicodeString.init(self.allocator);
+            defer u_method.deinit();
+            try u_method.appendSlice(method);
+            try self.editor.method_evaluator.evaluate(u_method);
+        }
+    } else |err| switch (err) {
+        error.NoKeyMap => switch (key) {
+            .del => {
                 const edit = self.editor.client.active_edit.?;
                 try edit.cursor.moveBackward();
                 try edit.text.deleteChar(edit.cursor.getPosition());
             },
-            'M' => if (self.editor.client.is_method_line_active) {
-                const command = self.editor.client.method_line.rows.items[0];
-                try self.editor.method_evaluator.evaluate(command);
-            } else {
-                try self.breakLine();
+            .ctrl => |k| switch (k) {
+                'Q' => return error.Quit,
+                'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
+                'K' => try self.killLine(),
+                'D' => {
+                    const edit = self.editor.client.active_edit.?;
+                    try edit.text.deleteChar(edit.cursor.getPosition());
+                },
+                'H' => {
+                    const edit = self.editor.client.active_edit.?;
+                    try edit.cursor.moveBackward();
+                    try edit.text.deleteChar(edit.cursor.getPosition());
+                },
+                'M' => if (self.editor.client.is_method_line_active) {
+                    const command = self.editor.client.method_line.rows.items[0];
+                    try self.editor.method_evaluator.evaluate(command);
+                    try self.editor.client.toggleMethodLine();
+                } else {
+                    try self.breakLine();
+                },
+                'P' => try self.moveCursor(.up),
+                'N' => try self.moveCursor(.down),
+                'F' => try self.moveCursor(.right),
+                'B' => try self.moveCursor(.left),
+                'J' => {
+                    const edit = self.editor.client.active_edit.?;
+                    try edit.text.joinLine(edit.cursor.getPosition());
+                },
+                'A' => {
+                    const edit = self.editor.client.active_edit.?;
+                    try edit.cursor.moveToBeginningOfLine();
+                    self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
+                },
+                'E' => {
+                    const edit = self.editor.client.active_edit.?;
+                    try edit.cursor.moveToEndOfLine();
+                    self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
+                },
+                'X' => {
+                    try self.editor.client.toggleMethodLine();
+                },
+                'V' => {
+                    self.getCurrentView().scrollDown(self.editor.client.getActiveEdit().?, self.getCurrentView().height);
+                    const buf_pos = self.getCurrentView().getBufferPosition(self.editor.client.getActiveFile().?, self.getCurrentView().getNormalizedCursor(self.editor.client.getActiveFile().?));
+                    const edit = self.editor.client.active_edit.?;
+                    try edit.cursor.setPosition(buf_pos);
+                },
+                else => {},
             },
-            'P' => try self.moveCursor(.up),
-            'N' => try self.moveCursor(.down),
-            'F' => try self.moveCursor(.right),
-            'B' => try self.moveCursor(.left),
-            'J' => {
+            .meta => |k| switch (k) {
+                'v' => {
+                    self.getCurrentView().scrollUp(self.editor.client.getActiveEdit().?, self.getCurrentView().height);
+                    const buf_pos = self.getCurrentView().getBufferPosition(self.editor.client.getActiveFile().?, self.getCurrentView().getNormalizedCursor(self.editor.client.getActiveFile().?));
+                    const edit = self.editor.client.active_edit.?;
+                    try edit.cursor.setPosition(buf_pos);
+                },
+                else => {},
+            },
+            .plain => |k| {
                 const edit = self.editor.client.active_edit.?;
-                try edit.text.joinLine(edit.cursor.getPosition());
-            },
-            'A' => {
-                const edit = self.editor.client.active_edit.?;
-                try edit.cursor.moveToBeginningOfLine();
-                self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
-            },
-            'E' => {
-                const edit = self.editor.client.active_edit.?;
-                try edit.cursor.moveToEndOfLine();
-                self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
-            },
-            'X' => {
-                try self.editor.client.toggleMethodLine();
-            },
-            'V' => {
-                self.getCurrentView().scrollDown(self.editor.client.getActiveEdit().?, self.getCurrentView().height);
-                const buf_pos = self.getCurrentView().getBufferPosition(self.editor.client.getActiveFile().?, self.getCurrentView().getNormalizedCursor(self.editor.client.getActiveFile().?));
-                const edit = self.editor.client.active_edit.?;
-                try edit.cursor.setPosition(buf_pos);
+                try edit.text.insertChar(edit.cursor.getPosition(), k);
+                try edit.cursor.moveForward();
             },
             else => {},
         },
-        .meta => |k| switch (k) {
-            'v' => {
-                self.getCurrentView().scrollUp(self.editor.client.getActiveEdit().?, self.getCurrentView().height);
-                const buf_pos = self.getCurrentView().getBufferPosition(self.editor.client.getActiveFile().?, self.getCurrentView().getNormalizedCursor(self.editor.client.getActiveFile().?));
-                const edit = self.editor.client.active_edit.?;
-                try edit.cursor.setPosition(buf_pos);
-            },
-            else => {},
-        },
-        .plain => |k| {
-            const edit = self.editor.client.active_edit.?;
-            try edit.text.insertChar(edit.cursor.getPosition(), k);
-            try edit.cursor.moveForward();
-        },
-        .arrow => |k| try self.moveCursor(k),
+        else => return err,
     }
 }
 
