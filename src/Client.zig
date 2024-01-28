@@ -2,21 +2,7 @@ const std = @import("std");
 const Text = @import("Text.zig");
 const Cursor = @import("Cursor.zig");
 const Status = @import("Status.zig");
-
-pub const Edit = struct {
-    text: *Text,
-    cursor: Cursor,
-    y_scroll: usize = 0,
-
-    pub fn init(text: *Text) @This() {
-        return .{
-            .text = text,
-            .cursor = .{
-                .text = text,
-            },
-        };
-    }
-};
+const Edit = @import("Edit.zig");
 
 current_file: ?[]const u8 = null,
 scroll_positions: std.StringHashMap(usize),
