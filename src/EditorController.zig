@@ -41,7 +41,10 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
             var u_method = try UnicodeString.init(self.allocator);
             defer u_method.deinit();
             try u_method.appendSlice(method);
-            try self.editor.command_evaluator.evaluate(u_method);
+            self.editor.command_evaluator.evaluate(u_method) catch |e| switch (e) {
+                error.InvalidArguments => break,
+                else => return e,
+            };
         }
     } else |err| switch (err) {
         error.NoKeyMap => switch (key) {
