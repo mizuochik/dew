@@ -54,7 +54,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                 try edit.text.deleteChar(edit.cursor.getPosition());
             },
             .ctrl => |k| switch (k) {
-                'Q' => return error.Quit,
                 'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
                 'K' => try self.killLine(),
                 'D' => {

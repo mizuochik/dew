@@ -32,6 +32,7 @@ pub fn evaluate(self: *@This(), key: Keyboard.Key) ![][]const u8 {
 }
 
 pub fn installDefaultKeyMap(self: *@This()) !void {
+    try self.putBuiltinKeyMap("C+q", .{"editor.quit"});
     try self.putBuiltinKeyMap("C+f", .{"cursors.move-to forward-character"});
     try self.putBuiltinKeyMap("C+b", .{"cursors.move-to backward-character"});
     try self.putBuiltinKeyMap("C+p", .{"cursors.move-to previous-line"});
