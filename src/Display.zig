@@ -5,6 +5,7 @@ const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const Client = @import("Client.zig");
 const Terminal = @import("Terminal.zig");
+const Position = @import("Position.zig");
 
 pub const Color = enum {
     default,
@@ -102,6 +103,7 @@ command_edit_view: *EditView,
 allocator: std.mem.Allocator,
 client: *Client,
 size: *DisplaySize,
+active_cursor_position: ?Position = null,
 
 pub const Area = struct {
     rows: [][]u8,
@@ -173,6 +175,7 @@ pub fn render(self: *@This()) !void {
     try self.file_edit_view.render(&self.buffer, self.client.getActiveFile().?);
     try self.command_edit_view.render(&self.buffer, &self.client.command_line_edit);
     try self.status_view.render(&self.buffer, &self.client.status);
+    self.updateActiveCursorPosition();
     try self.drawBuffer();
 }
 
@@ -192,6 +195,16 @@ fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 
         }
     }
     return new_buffer;
+}
+
+fn updateActiveCursorPosition(self: *@This()) void {
+    if (self.file_edit_view.viewCursor(self.client.getActiveFile().?)) |position|
+        self.active_cursor_position = position;
+    if (self.command_edit_view.viewCursor(&self.client.command_line_edit)) |position|
+        self.active_cursor_position = .{
+            .x = position.x,
+            .y = position.y + self.size.rows - 1,
+        };
 }
 
 fn drawBuffer(self: *const @This()) !void {
@@ -220,6 +233,9 @@ fn drawBuffer(self: *const @This()) !void {
                 try tmp.appendSlice(character[0..size]);
             }
         }
+    }
+    if (self.active_cursor_position) |position| {
+        try self.moveTerminalCursor(arena.allocator(), &tmp, position.x, position.y);
     }
     try std.io.getStdOut().writeAll(tmp.items);
 }
