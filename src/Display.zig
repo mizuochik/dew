@@ -225,10 +225,12 @@ fn drawBuffer(self: *const @This()) !void {
 }
 
 pub fn initTerminalCursor(_: *const @This()) !void {
+    // Hide terminal cursor
     _ = try std.io.getStdOut().write("\x1b[?25l");
 }
 
 pub fn deinitTerminalCursor(_: *const @This()) void {
+    // Show terminal cursor
     _ = std.io.getStdOut().write("\x1b[?25h") catch unreachable;
 }
 
