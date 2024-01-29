@@ -3,6 +3,7 @@ const Text = @import("Text.zig");
 const Cursor = @import("Cursor.zig");
 const Status = @import("Status.zig");
 const TextRef = @import("TextRef.zig");
+const Edit = @import("Edit.zig");
 
 current_file: ?[]const u8 = null,
 command_line: *Text,
@@ -12,6 +13,7 @@ file_refs: std.StringHashMap(TextRef),
 active_ref: ?*TextRef = null,
 allocator: std.mem.Allocator,
 is_command_line_active: bool = false,
+edit: Edit,
 
 pub fn init(allocator: std.mem.Allocator) !@This() {
     var command_line = try Text.init(allocator);
@@ -26,6 +28,7 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
         .status = st,
         .allocator = allocator,
         .command_line_ref = TextRef.init(command_line),
+        .edit = .{},
     };
 }
 
