@@ -64,7 +64,7 @@ pub fn viewCursor(self: *const @This(), edit: *TextRef) ?Position {
 
 pub fn getCursor(self: *const @This(), edit: *TextRef) Position {
     const cursor = switch (self.mode) {
-        .command => self.editor.client.command_line_edit.cursor,
+        .command => self.editor.client.command_line_ref.cursor,
         else => self.editor.client.getActiveFile().?.cursor,
     };
     const c_y = cursor.y;

@@ -7,5 +7,5 @@ active_ref: *TextRef,
 client: *const Client,
 
 pub fn isCommandLineActive(self: *const @This()) bool {
-    return self.active_ref == &self.client.command_line_edit;
+    return self.active_ref == &self.client.command_line_ref;
 }

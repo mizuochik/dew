@@ -10,7 +10,7 @@ const Cursor = @import("Cursor.zig");
 const Keyboard = @import("Keyboard.zig");
 const UnicodeString = @import("UnicodeString.zig");
 
-file_edit_view: *TextView,
+file_view: *TextView,
 command_ref_view: *TextView,
 file_path: ?[]const u8 = null,
 buffer_selector: *BufferSelector,
@@ -20,10 +20,10 @@ allocator: std.mem.Allocator,
 editor: *Editor,
 cursors: [1]*Cursor,
 
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *TextView, command_ref_view: *TextView, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
+pub fn init(allocator: std.mem.Allocator, file_view: *TextView, command_ref_view: *TextView, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
     return @This(){
         .allocator = allocator,
-        .file_edit_view = file_edit_view,
+        .file_view = file_view,
         .command_ref_view = command_ref_view,
         .buffer_selector = buffer_selector,
         .display = display,
@@ -113,7 +113,7 @@ fn getCurrentView(self: *const @This()) *TextView {
     return if (self.editor.client.is_command_line_active)
         self.command_ref_view
     else
-        self.file_edit_view;
+        self.file_view;
 }
 
 pub fn openFile(self: *@This(), path: []const u8) !void {

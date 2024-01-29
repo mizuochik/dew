@@ -6,7 +6,7 @@ const TextRef = @import("TextRef.zig");
 
 current_file: ?[]const u8 = null,
 command_line: *Text,
-command_line_edit: TextRef,
+command_line_ref: TextRef,
 status: Status,
 file_refs: std.StringHashMap(TextRef),
 active_ref: ?*TextRef = null,
@@ -25,7 +25,7 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
         .file_refs = file_refs,
         .status = st,
         .allocator = allocator,
-        .command_line_edit = TextRef.init(command_line),
+        .command_line_ref = TextRef.init(command_line),
     };
 }
 
@@ -40,12 +40,12 @@ pub fn deinit(self: *@This()) void {
 pub fn toggleCommandLine(self: *@This()) !void {
     if (self.is_command_line_active) {
         try self.command_line.clear();
-        self.command_line_edit.cursor.x = 0;
+        self.command_line_ref.cursor.x = 0;
         self.is_command_line_active = false;
         self.active_ref = self.getActiveFile();
     } else {
         self.is_command_line_active = true;
-        self.active_ref = &self.command_line_edit;
+        self.active_ref = &self.command_line_ref;
     }
 }
 
@@ -58,7 +58,7 @@ pub fn getActiveFile(self: *@This()) ?*TextRef {
 
 pub fn getActiveEdit(self: *@This()) ?*TextRef {
     if (self.is_command_line_active) {
-        return &self.command_line_edit;
+        return &self.command_line_ref;
     }
     return self.getActiveFile();
 }
