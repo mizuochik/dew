@@ -17,7 +17,7 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor) !@This() {
     errdefer allocator.free(default_key);
     try file_texts.put(default_key, file_text);
 
-    try editor.client.putFileEdit("default", file_text);
+    try editor.client.putFileRef("default", file_text);
 
     return .{
         .allocator = allocator,
@@ -37,7 +37,7 @@ pub fn deinit(self: *@This()) void {
 
 pub fn openFileBuffer(self: *@This(), name: []const u8) !void {
     if (self.file_buffers.getEntry(name)) |entry| {
-        try self.editor.client.putFileEdit(entry.key_ptr.*, entry.value_ptr.*);
+        try self.editor.client.putFileRef(entry.key_ptr.*, entry.value_ptr.*);
         return;
     }
     var text = try Text.init(self.allocator);
@@ -50,7 +50,7 @@ pub fn openFileBuffer(self: *@This(), name: []const u8) !void {
     errdefer self.allocator.free(key);
     try self.file_buffers.put(key, text);
     errdefer _ = self.file_buffers.remove(key);
-    try self.editor.client.putFileEdit(key, text);
+    try self.editor.client.putFileRef(key, text);
 }
 
 pub fn saveFileBuffer(self: *@This(), name: []const u8) !void {
@@ -68,7 +68,7 @@ pub fn saveFileBuffer(self: *@This(), name: []const u8) !void {
         result.value_ptr.*.deinit();
     }
     result.value_ptr.* = text;
-    try self.editor.client.putFileEdit(name, text);
+    try self.editor.client.putFileRef(name, text);
 }
 
 test {

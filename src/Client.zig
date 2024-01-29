@@ -63,7 +63,7 @@ pub fn getActiveEdit(self: *@This()) ?*TextRef {
     return self.getActiveFile();
 }
 
-pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Text) !void {
+pub fn putFileRef(self: *@This(), file_name: []const u8, text: *Text) !void {
     const result = try self.file_refs.getOrPut(file_name);
     errdefer if (!result.found_existing) {
         _ = self.file_refs.remove(file_name);
@@ -79,7 +79,7 @@ pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Text) !void {
     self.active_ref = result.value_ptr;
 }
 
-pub fn removeFileEdit(self: *@This(), file_name: []const u8) void {
+pub fn removeFileRef(self: *@This(), file_name: []const u8) void {
     if (self.current_file) |current_file| {
         if (std.mem.eql(u8, file_name, current_file)) {
             self.current_file = null;
