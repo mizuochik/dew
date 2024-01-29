@@ -5,7 +5,6 @@ const Status = @import("Status.zig");
 const TextRef = @import("TextRef.zig");
 
 current_file: ?[]const u8 = null,
-scroll_positions: std.StringHashMap(usize),
 command_line: *Text,
 command_line_edit: TextRef,
 status: Status,
@@ -22,7 +21,6 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
     const file_refs = std.StringHashMap(TextRef).init(allocator);
     errdefer file_refs.deinit();
     return .{
-        .scroll_positions = std.StringHashMap(usize).init(allocator),
         .command_line = command_line,
         .file_refs = file_refs,
         .status = st,
@@ -34,7 +32,6 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
 pub fn deinit(self: *@This()) void {
     self.command_line.deinit();
     self.status.deinit();
-    self.scroll_positions.deinit();
     var editing_file_keys = self.file_refs.keyIterator();
     while (editing_file_keys.next()) |key| self.allocator.free(key.*);
     self.file_refs.deinit();
