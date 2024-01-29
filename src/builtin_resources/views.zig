@@ -1,7 +1,7 @@
 const std = @import("std");
 const Editor = @import("../Editor.zig");
 const Resource = @import("../Resource.zig");
-const EditView = @import("../EditView.zig");
+const TextView = @import("../TextView.zig");
 
 pub fn init(allocator: std.mem.Allocator) !Resource {
     var views = Resource.init(allocator);
@@ -24,23 +24,23 @@ fn scroll(editor: *Editor, params: [][]const u8) anyerror!void {
     if (std.mem.eql(u8, direction, "up")) {
         view.scrollUp(editor.client.getActiveEdit().?, view.height);
         const buf_pos = view.getBufferPosition(editor.client.getActiveFile().?, view.getNormalizedCursor(editor.client.getActiveFile().?));
-        const edit = editor.client.active_edit.?;
+        const edit = editor.client.active_ref.?;
         try edit.cursor.setPosition(buf_pos);
         return;
     }
     if (std.mem.eql(u8, direction, "down")) {
         view.scrollDown(editor.client.getActiveEdit().?, view.height);
         const buf_pos = view.getBufferPosition(editor.client.getActiveFile().?, view.getNormalizedCursor(editor.client.getActiveFile().?));
-        const edit = editor.client.active_edit.?;
+        const edit = editor.client.active_ref.?;
         try edit.cursor.setPosition(buf_pos);
         return;
     }
     return error.UnknownLocation;
 }
 
-fn getCurrentView(editor: *Editor) *EditView {
+fn getCurrentView(editor: *Editor) *TextView {
     return if (editor.client.is_command_line_active)
-        &editor.command_edit_view
+        &editor.command_ref_view
     else
         &editor.edit_view;
 }

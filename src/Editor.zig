@@ -7,7 +7,7 @@ const KeyEvaluator = @import("KeyEvaluator.zig");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
 const Client = @import("Client.zig");
-const EditView = @import("EditView.zig");
+const TextView = @import("TextView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const ResourceRegistry = @import("ResourceRegistry.zig");
@@ -18,8 +18,8 @@ pub const Options = struct {
 };
 
 allocator: std.mem.Allocator,
-edit_view: EditView,
-command_edit_view: EditView,
+edit_view: TextView,
+command_ref_view: TextView,
 buffer_selector: BufferSelector,
 status_view: StatusView,
 display_size: DisplaySize,
@@ -44,23 +44,23 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     editor.buffer_selector = try BufferSelector.init(allocator, editor);
     errdefer editor.buffer_selector.deinit();
 
-    editor.edit_view = EditView.init(allocator, editor, .file);
+    editor.edit_view = TextView.init(allocator, editor, .file);
     errdefer editor.edit_view.deinit();
 
-    editor.command_edit_view = EditView.init(allocator, editor, .command);
-    errdefer editor.command_edit_view.deinit();
+    editor.command_ref_view = TextView.init(allocator, editor, .command);
+    errdefer editor.command_ref_view.deinit();
 
     editor.status_view = StatusView.init();
     errdefer editor.status_view.deinit();
 
     editor.display_size = DisplaySize.init();
-    editor.display = try Display.init(allocator, &editor.edit_view, &editor.status_view, &editor.command_edit_view, &editor.client, &editor.display_size);
+    editor.display = try Display.init(allocator, &editor.edit_view, &editor.status_view, &editor.command_ref_view, &editor.client, &editor.display_size);
     errdefer editor.display.deinit();
 
     editor.controller = try EditorController.init(
         allocator,
         &editor.edit_view,
-        &editor.command_edit_view,
+        &editor.command_ref_view,
         &editor.buffer_selector,
         &editor.display,
         &editor.display_size,
@@ -88,7 +88,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
 
 pub fn deinit(self: *@This()) void {
     self.edit_view.deinit();
-    self.command_edit_view.deinit();
+    self.command_ref_view.deinit();
     self.buffer_selector.deinit();
     self.status_view.deinit();
     self.display.deinit();

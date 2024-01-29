@@ -1,6 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const EditView = @import("EditView.zig");
+const TextView = @import("TextView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const Client = @import("Client.zig");
@@ -97,9 +97,9 @@ pub const Buffer = struct {
 };
 
 buffer: Buffer,
-file_edit_view: *EditView,
+file_edit_view: *TextView,
 status_view: *StatusView,
-command_edit_view: *EditView,
+command_ref_view: *TextView,
 allocator: std.mem.Allocator,
 client: *Client,
 size: *DisplaySize,
@@ -133,14 +133,14 @@ pub const Area = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, status_view: *StatusView, command_edit_view: *EditView, client: *Client, size: *DisplaySize) !@This() {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *TextView, status_view: *StatusView, command_ref_view: *TextView, client: *Client, size: *DisplaySize) !@This() {
     const buffer = try Buffer.init(allocator, size.cols, size.rows);
     errdefer buffer.deinit();
     return .{
         .buffer = buffer,
         .file_edit_view = file_edit_view,
         .status_view = status_view,
-        .command_edit_view = command_edit_view,
+        .command_ref_view = command_ref_view,
         .allocator = allocator,
         .client = client,
         .size = size,
@@ -166,14 +166,14 @@ pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
     self.buffer.deinit();
     self.buffer = new_buffer;
 
-    try self.command_edit_view.setSize(self.size.cols, 1);
+    try self.command_ref_view.setSize(self.size.cols, 1);
     try self.status_view.setSize(self.size.cols);
 }
 
 pub fn render(self: *@This()) !void {
     self.buffer.clear();
     try self.file_edit_view.render(&self.buffer, self.client.getActiveFile().?);
-    try self.command_edit_view.render(&self.buffer, &self.client.command_line_edit);
+    try self.command_ref_view.render(&self.buffer, &self.client.command_line_edit);
     try self.status_view.render(&self.buffer, &self.client.status);
     self.updateActiveCursorPosition();
     try self.drawBuffer();
@@ -200,7 +200,7 @@ fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 
 fn updateActiveCursorPosition(self: *@This()) void {
     if (self.file_edit_view.viewCursor(self.client.getActiveFile().?)) |position|
         self.active_cursor_position = position;
-    if (self.command_edit_view.viewCursor(&self.client.command_line_edit)) |position|
+    if (self.command_ref_view.viewCursor(&self.client.command_line_edit)) |position|
         self.active_cursor_position = .{
             .x = position.x,
             .y = position.y + self.size.rows - 1,

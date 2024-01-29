@@ -2,15 +2,15 @@ const std = @import("std");
 const Text = @import("Text.zig");
 const Cursor = @import("Cursor.zig");
 const Status = @import("Status.zig");
-const Edit = @import("Edit.zig");
+const TextRef = @import("TextRef.zig");
 
 current_file: ?[]const u8 = null,
 scroll_positions: std.StringHashMap(usize),
 command_line: *Text,
-command_line_edit: Edit,
+command_line_edit: TextRef,
 status: Status,
-file_edits: std.StringHashMap(Edit),
-active_edit: ?*Edit = null,
+file_refs: std.StringHashMap(TextRef),
+active_ref: ?*TextRef = null,
 allocator: std.mem.Allocator,
 is_command_line_active: bool = false,
 
@@ -19,15 +19,15 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
     errdefer command_line.deinit();
     var st = try Status.init(allocator);
     errdefer st.deinit();
-    const file_edits = std.StringHashMap(Edit).init(allocator);
-    errdefer file_edits.deinit();
+    const file_refs = std.StringHashMap(TextRef).init(allocator);
+    errdefer file_refs.deinit();
     return .{
         .scroll_positions = std.StringHashMap(usize).init(allocator),
         .command_line = command_line,
-        .file_edits = file_edits,
+        .file_refs = file_refs,
         .status = st,
         .allocator = allocator,
-        .command_line_edit = Edit.init(command_line),
+        .command_line_edit = TextRef.init(command_line),
     };
 }
 
@@ -35,9 +35,9 @@ pub fn deinit(self: *@This()) void {
     self.command_line.deinit();
     self.status.deinit();
     self.scroll_positions.deinit();
-    var editing_file_keys = self.file_edits.keyIterator();
+    var editing_file_keys = self.file_refs.keyIterator();
     while (editing_file_keys.next()) |key| self.allocator.free(key.*);
-    self.file_edits.deinit();
+    self.file_refs.deinit();
 }
 
 pub fn toggleCommandLine(self: *@This()) !void {
@@ -45,21 +45,21 @@ pub fn toggleCommandLine(self: *@This()) !void {
         try self.command_line.clear();
         self.command_line_edit.cursor.x = 0;
         self.is_command_line_active = false;
-        self.active_edit = self.getActiveFile();
+        self.active_ref = self.getActiveFile();
     } else {
         self.is_command_line_active = true;
-        self.active_edit = &self.command_line_edit;
+        self.active_ref = &self.command_line_edit;
     }
 }
 
-pub fn getActiveFile(self: *@This()) ?*Edit {
+pub fn getActiveFile(self: *@This()) ?*TextRef {
     if (self.current_file) |current_file| {
-        return self.file_edits.getPtr(current_file);
+        return self.file_refs.getPtr(current_file);
     }
     return null;
 }
 
-pub fn getActiveEdit(self: *@This()) ?*Edit {
+pub fn getActiveEdit(self: *@This()) ?*TextRef {
     if (self.is_command_line_active) {
         return &self.command_line_edit;
     }
@@ -67,9 +67,9 @@ pub fn getActiveEdit(self: *@This()) ?*Edit {
 }
 
 pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Text) !void {
-    const result = try self.file_edits.getOrPut(file_name);
+    const result = try self.file_refs.getOrPut(file_name);
     errdefer if (!result.found_existing) {
-        _ = self.file_edits.remove(file_name);
+        _ = self.file_refs.remove(file_name);
     };
     if (!result.found_existing) {
         result.key_ptr.* = try self.allocator.dupe(u8, file_name);
@@ -77,19 +77,19 @@ pub fn putFileEdit(self: *@This(), file_name: []const u8, text: *Text) !void {
     errdefer if (!result.found_existing) {
         self.allocator.free(result.key_ptr.*);
     };
-    result.value_ptr.* = Edit.init(text);
+    result.value_ptr.* = TextRef.init(text);
     self.current_file = result.key_ptr.*;
-    self.active_edit = result.value_ptr;
+    self.active_ref = result.value_ptr;
 }
 
 pub fn removeFileEdit(self: *@This(), file_name: []const u8) void {
     if (self.current_file) |current_file| {
         if (std.mem.eql(u8, file_name, current_file)) {
             self.current_file = null;
-            self.active_edit = null;
+            self.active_ref = null;
         }
     }
-    if (self.file_edits.fetchRemove(file_name)) |file| {
+    if (self.file_refs.fetchRemove(file_name)) |file| {
         self.allocator.free(file.key);
     }
 }

@@ -1,6 +1,6 @@
 const std = @import("std");
 const Text = @import("Text.zig");
-const EditView = @import("EditView.zig");
+const TextView = @import("TextView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const Status = @import("Status.zig");
 const BufferSelector = @import("BufferSelector.zig");
@@ -10,8 +10,8 @@ const Cursor = @import("Cursor.zig");
 const Keyboard = @import("Keyboard.zig");
 const UnicodeString = @import("UnicodeString.zig");
 
-file_edit_view: *EditView,
-command_edit_view: *EditView,
+file_edit_view: *TextView,
+command_ref_view: *TextView,
 file_path: ?[]const u8 = null,
 buffer_selector: *BufferSelector,
 display_size: *DisplaySize,
@@ -20,11 +20,11 @@ allocator: std.mem.Allocator,
 editor: *Editor,
 cursors: [1]*Cursor,
 
-pub fn init(allocator: std.mem.Allocator, file_edit_view: *EditView, command_edit_view: *EditView, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
+pub fn init(allocator: std.mem.Allocator, file_edit_view: *TextView, command_ref_view: *TextView, buffer_selector: *BufferSelector, display: *Display, display_size: *DisplaySize, editor: *Editor) !@This() {
     return @This(){
         .allocator = allocator,
         .file_edit_view = file_edit_view,
-        .command_edit_view = command_edit_view,
+        .command_ref_view = command_ref_view,
         .buffer_selector = buffer_selector,
         .display = display,
         .display_size = display_size,
@@ -49,7 +49,7 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
     } else |err| switch (err) {
         error.NoKeyMap => switch (key) {
             .del => {
-                const edit = self.editor.client.active_edit.?;
+                const edit = self.editor.client.active_ref.?;
                 try edit.cursor.moveBackward();
                 try edit.text.deleteChar(edit.cursor.getPosition());
             },
@@ -57,11 +57,11 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                 'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
                 'K' => try self.killLine(),
                 'D' => {
-                    const edit = self.editor.client.active_edit.?;
+                    const edit = self.editor.client.active_ref.?;
                     try edit.text.deleteChar(edit.cursor.getPosition());
                 },
                 'H' => {
-                    const edit = self.editor.client.active_edit.?;
+                    const edit = self.editor.client.active_ref.?;
                     try edit.cursor.moveBackward();
                     try edit.text.deleteChar(edit.cursor.getPosition());
                 },
@@ -73,7 +73,7 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                     try self.breakLine();
                 },
                 'J' => {
-                    const edit = self.editor.client.active_edit.?;
+                    const edit = self.editor.client.active_ref.?;
                     try edit.text.joinLine(edit.cursor.getPosition());
                 },
                 'X' => {
@@ -82,7 +82,7 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                 else => {},
             },
             .plain => |k| {
-                const edit = self.editor.client.active_edit.?;
+                const edit = self.editor.client.active_ref.?;
                 try edit.text.insertChar(edit.cursor.getPosition(), k);
                 try edit.cursor.moveForward();
             },
@@ -97,21 +97,21 @@ pub fn changeDisplaySize(self: *const @This(), cols: usize, rows: usize) !void {
 }
 
 fn breakLine(self: *@This()) !void {
-    const edit = self.editor.client.active_edit.?;
+    const edit = self.editor.client.active_ref.?;
     try edit.text.breakLine(edit.cursor.getPosition());
     try edit.cursor.moveForward();
     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
 fn killLine(self: *@This()) !void {
-    const edit = self.editor.client.active_edit.?;
+    const edit = self.editor.client.active_ref.?;
     try edit.text.killLine(edit.cursor.getPosition());
     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
-fn getCurrentView(self: *const @This()) *EditView {
+fn getCurrentView(self: *const @This()) *TextView {
     return if (self.editor.client.is_command_line_active)
-        self.command_edit_view
+        self.command_ref_view
     else
         self.file_edit_view;
 }

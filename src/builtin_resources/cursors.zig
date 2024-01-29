@@ -1,7 +1,7 @@
 const std = @import("std");
 const Editor = @import("../Editor.zig");
 const Resource = @import("../Resource.zig");
-const EditView = @import("../EditView.zig");
+const TextView = @import("../TextView.zig");
 
 pub fn init(allocator: std.mem.Allocator) !Resource {
     var cursors = Resource.init(allocator);
@@ -58,9 +58,9 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
     return error.UnknownLocation;
 }
 
-fn getCurrentView(editor: *Editor) *EditView {
+fn getCurrentView(editor: *Editor) *TextView {
     return if (editor.client.is_command_line_active)
-        &editor.command_edit_view
+        &editor.command_ref_view
     else
         &editor.edit_view;
 }
