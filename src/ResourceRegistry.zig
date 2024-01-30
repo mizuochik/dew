@@ -35,9 +35,9 @@ pub fn registerBuiltinResources(self: *@This()) !void {
     const cursors = try builtin_resources.cursors.init(self.allocator);
     try self.resources.putNoClobber("cursors", cursors);
     errdefer _ = self.resources.remove("cursors");
-    const views = try builtin_resources.views.init(self.allocator);
-    try self.resources.putNoClobber("views", views);
-    errdefer _ = self.resources.remove("views");
+    const view = try builtin_resources.view.init(self.allocator);
+    try self.resources.putNoClobber("view", view);
+    errdefer _ = self.resources.remove("view");
 }
 
 pub fn deinit(self: *@This()) void {

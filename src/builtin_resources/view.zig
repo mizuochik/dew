@@ -4,10 +4,10 @@ const Resource = @import("../Resource.zig");
 const TextView = @import("../TextView.zig");
 
 pub fn init(allocator: std.mem.Allocator) !Resource {
-    var views = Resource.init(allocator);
-    errdefer views.deinit();
-    try views.putMethod("scroll", scroll);
-    return views;
+    var view = Resource.init(allocator);
+    errdefer view.deinit();
+    try view.putMethod("scroll", scroll);
+    return view;
 }
 
 fn scroll(editor: *Editor, params: [][]const u8) anyerror!void {
