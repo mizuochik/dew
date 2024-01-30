@@ -38,6 +38,9 @@ pub fn registerBuiltinResources(self: *@This()) !void {
     const view = try builtin_resources.view.init(self.allocator);
     try self.resources.putNoClobber("view", view);
     errdefer _ = self.resources.remove("view");
+    const text = try builtin_resources.text.init(self.allocator);
+    try self.resources.putNoClobber("text", text);
+    errdefer _ = self.resources.remove("text");
 }
 
 pub fn deinit(self: *@This()) void {

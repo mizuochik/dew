@@ -55,7 +55,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
             },
             .ctrl => |k| switch (k) {
                 'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
-                'K' => try self.killLine(),
                 'D' => {
                     const edit = self.editor.client.active_ref.?;
                     try edit.text.deleteChar(edit.cursor.getPosition());
@@ -100,12 +99,6 @@ fn breakLine(self: *@This()) !void {
     const edit = self.editor.client.active_ref.?;
     try edit.text.breakLine(edit.cursor.getPosition());
     try edit.cursor.moveForward();
-    self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
-}
-
-fn killLine(self: *@This()) !void {
-    const edit = self.editor.client.active_ref.?;
-    try edit.text.killLine(edit.cursor.getPosition());
     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
