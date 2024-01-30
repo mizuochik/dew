@@ -49,21 +49,21 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
     } else |err| switch (err) {
         error.NoKeyMap => switch (key) {
             .del => {
-                const edit = self.editor.client.active_ref.?;
-                try edit.cursor.moveBackward();
-                try edit.text.deleteChar(edit.cursor.getPosition());
+                const ref = self.editor.client.edit.active_ref.?;
+                try ref.cursor.moveBackward();
+                try ref.text.deleteChar(ref.cursor.getPosition());
             },
             .ctrl => |k| switch (k) {
                 'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
                 'K' => try self.killLine(),
                 'D' => {
-                    const edit = self.editor.client.active_ref.?;
-                    try edit.text.deleteChar(edit.cursor.getPosition());
+                    const ref = self.editor.client.edit.active_ref.?;
+                    try ref.text.deleteChar(ref.cursor.getPosition());
                 },
                 'H' => {
-                    const edit = self.editor.client.active_ref.?;
-                    try edit.cursor.moveBackward();
-                    try edit.text.deleteChar(edit.cursor.getPosition());
+                    const ref = self.editor.client.edit.active_ref.?;
+                    try ref.cursor.moveBackward();
+                    try ref.text.deleteChar(ref.cursor.getPosition());
                 },
                 'M' => if (self.editor.client.isCommandLineActive()) {
                     const command = self.editor.client.command_line.rows.items[0];
@@ -73,8 +73,8 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                     try self.breakLine();
                 },
                 'J' => {
-                    const edit = self.editor.client.active_ref.?;
-                    try edit.text.joinLine(edit.cursor.getPosition());
+                    const ref = self.editor.client.edit.active_ref.?;
+                    try ref.text.joinLine(ref.cursor.getPosition());
                 },
                 'X' => {
                     try self.editor.client.toggleCommandLine();
@@ -82,9 +82,9 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                 else => {},
             },
             .plain => |k| {
-                const edit = self.editor.client.active_ref.?;
-                try edit.text.insertChar(edit.cursor.getPosition(), k);
-                try edit.cursor.moveForward();
+                const ref = self.editor.client.edit.active_ref.?;
+                try ref.text.insertChar(ref.cursor.getPosition(), k);
+                try ref.cursor.moveForward();
             },
             else => {},
         },
@@ -97,15 +97,15 @@ pub fn changeDisplaySize(self: *const @This(), cols: usize, rows: usize) !void {
 }
 
 fn breakLine(self: *@This()) !void {
-    const edit = self.editor.client.active_ref.?;
-    try edit.text.breakLine(edit.cursor.getPosition());
-    try edit.cursor.moveForward();
+    const ref = self.editor.client.edit.active_ref.?;
+    try ref.text.breakLine(ref.cursor.getPosition());
+    try ref.cursor.moveForward();
     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
 fn killLine(self: *@This()) !void {
-    const edit = self.editor.client.active_ref.?;
-    try edit.text.killLine(edit.cursor.getPosition());
+    const ref = self.editor.client.edit.active_ref.?;
+    try ref.text.killLine(ref.cursor.getPosition());
     self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
