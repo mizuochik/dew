@@ -39,7 +39,7 @@ fn scroll(editor: *Editor, params: [][]const u8) anyerror!void {
 }
 
 fn getCurrentView(editor: *Editor) *TextView {
-    return if (editor.client.is_command_line_active)
+    return if (editor.client.isCommandLineActive())
         &editor.command_ref_view
     else
         &editor.edit_view;

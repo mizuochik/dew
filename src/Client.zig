@@ -12,7 +12,6 @@ status: Status,
 file_refs: std.StringHashMap(TextRef),
 active_ref: ?*TextRef = null,
 allocator: std.mem.Allocator,
-is_command_line_active: bool = false,
 edit: Edit,
 
 pub fn init(allocator: std.mem.Allocator) !@This() {
@@ -41,13 +40,11 @@ pub fn deinit(self: *@This()) void {
 }
 
 pub fn toggleCommandLine(self: *@This()) !void {
-    if (self.is_command_line_active) {
+    if (self.isCommandLineActive()) {
         try self.command_line.clear();
         self.command_line_ref.cursor.x = 0;
-        self.is_command_line_active = false;
         self.active_ref = self.getActiveFile();
     } else {
-        self.is_command_line_active = true;
         self.active_ref = &self.command_line_ref;
     }
 }
@@ -60,7 +57,7 @@ pub fn getActiveFile(self: *@This()) ?*TextRef {
 }
 
 pub fn getActiveEdit(self: *@This()) ?*TextRef {
-    if (self.is_command_line_active) {
+    if (self.isCommandLineActive()) {
         return &self.command_line_ref;
     }
     return self.getActiveFile();
@@ -79,19 +76,25 @@ pub fn putFileRef(self: *@This(), file_name: []const u8, text: *Text) !void {
     };
     result.value_ptr.* = TextRef.init(text);
     self.current_file = result.key_ptr.*;
-    self.active_ref = result.value_ptr;
+    if (!self.isCommandLineActive())
+        self.active_ref = result.value_ptr;
 }
 
 pub fn removeFileRef(self: *@This(), file_name: []const u8) void {
     if (self.current_file) |current_file| {
         if (std.mem.eql(u8, file_name, current_file)) {
             self.current_file = null;
-            self.active_ref = null;
+            if (!self.isCommandLineActive())
+                self.active_ref = null;
         }
     }
     if (self.file_refs.fetchRemove(file_name)) |file| {
         self.allocator.free(file.key);
     }
+}
+
+pub fn isCommandLineActive(self: *const @This()) bool {
+    return self.active_ref == &self.command_line_ref;
 }
 
 test {

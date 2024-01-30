@@ -65,7 +65,7 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                     try edit.cursor.moveBackward();
                     try edit.text.deleteChar(edit.cursor.getPosition());
                 },
-                'M' => if (self.editor.client.is_command_line_active) {
+                'M' => if (self.editor.client.isCommandLineActive()) {
                     const command = self.editor.client.command_line.rows.items[0];
                     try self.editor.command_evaluator.evaluate(command);
                     try self.editor.client.toggleCommandLine();
@@ -110,7 +110,7 @@ fn killLine(self: *@This()) !void {
 }
 
 fn getCurrentView(self: *const @This()) *TextView {
-    return if (self.editor.client.is_command_line_active)
+    return if (self.editor.client.isCommandLineActive())
         self.command_ref_view
     else
         self.file_view;
