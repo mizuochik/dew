@@ -59,11 +59,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                     const edit = self.editor.client.active_ref.?;
                     try edit.text.deleteChar(edit.cursor.getPosition());
                 },
-                'H' => {
-                    const edit = self.editor.client.active_ref.?;
-                    try edit.cursor.moveBackward();
-                    try edit.text.deleteChar(edit.cursor.getPosition());
-                },
                 'J' => {
                     const edit = self.editor.client.active_ref.?;
                     try edit.text.joinLine(edit.cursor.getPosition());
@@ -86,13 +81,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
 
 pub fn changeDisplaySize(self: *const @This(), cols: usize, rows: usize) !void {
     try self.display.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
-}
-
-fn breakLine(self: *@This()) !void {
-    const edit = self.editor.client.active_ref.?;
-    try edit.text.breakLine(edit.cursor.getPosition());
-    try edit.cursor.moveForward();
-    self.getCurrentView().updateLastCursorX(self.editor.client.getActiveEdit().?);
 }
 
 fn getCurrentView(self: *const @This()) *TextView {
