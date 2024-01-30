@@ -48,6 +48,7 @@ pub fn installDefaultKeyMap(self: *@This()) !void {
     try self.putBuiltinKeyMap("C+k", .{"text.kill-line"});
     try self.putBuiltinKeyMap("C+m", .{"text.break-line"});
     try self.putBuiltinKeyMap("C+h", .{"text.delete-backward-character"});
+    try self.putBuiltinKeyMap("del", .{"text.delete-backward-character"});
 }
 
 pub fn putBuiltinKeyMap(self: *@This(), key_name: []const u8, commands: anytype) !void {

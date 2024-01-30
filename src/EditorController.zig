@@ -48,11 +48,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
         }
     } else |err| switch (err) {
         error.NoKeyMap => switch (key) {
-            .del => {
-                const edit = self.editor.client.active_ref.?;
-                try edit.cursor.moveBackward();
-                try edit.text.deleteChar(edit.cursor.getPosition());
-            },
             .ctrl => |k| switch (k) {
                 'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
                 'D' => {
