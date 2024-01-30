@@ -46,6 +46,7 @@ pub fn installDefaultKeyMap(self: *@This()) !void {
     try self.putBuiltinKeyMap("C+v", .{"view.scroll . down"});
     try self.putBuiltinKeyMap("A+v", .{"view.scroll . up"});
     try self.putBuiltinKeyMap("C+k", .{"text.kill-line"});
+    try self.putBuiltinKeyMap("C+m", .{"text.break-line"});
 }
 
 pub fn putBuiltinKeyMap(self: *@This(), key_name: []const u8, commands: anytype) !void {

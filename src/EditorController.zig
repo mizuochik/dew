@@ -64,13 +64,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
                     try edit.cursor.moveBackward();
                     try edit.text.deleteChar(edit.cursor.getPosition());
                 },
-                'M' => if (self.editor.client.isCommandLineActive()) {
-                    const command = self.editor.client.command_line.rows.items[0];
-                    try self.editor.command_evaluator.evaluate(command);
-                    try self.editor.client.toggleCommandLine();
-                } else {
-                    try self.breakLine();
-                },
                 'J' => {
                     const edit = self.editor.client.active_ref.?;
                     try edit.text.joinLine(edit.cursor.getPosition());
