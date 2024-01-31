@@ -113,6 +113,15 @@ fn parseAnyLetter(self: *@This()) ![]const u8 {
     return r;
 }
 
+fn parseAnyCharacter(self: *@This()) ![]const u8 {
+    if (self.index >= self.input.len) {
+        return ParseError.EOL;
+    }
+    const r = self.input[self.index];
+    self.index += 1;
+    return r;
+}
+
 fn parseSpaces(self: *@This()) !void {
     if (self.index >= self.input.len) {
         return ParseError.EOL;
@@ -134,7 +143,7 @@ fn parseArgument(self: *@This()) ![]const u8 {
             if (self.parseCharacter("\"")) {
                 break;
             } else |_| {}
-            const l = self.parseAnyLetter() catch break;
+            const l = self.parseAnyCharacter() catch break;
             try cmd.appendSlice(l);
         }
     } else |_| {
