@@ -48,12 +48,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
         }
     } else |err| switch (err) {
         error.NoKeyMap => switch (key) {
-            .ctrl => |k| switch (k) {
-                'X' => {
-                    try self.editor.client.toggleCommandLine();
-                },
-                else => {},
-            },
             .plain => |k| {
                 const edit = self.editor.client.active_ref.?;
                 try edit.text.insertChar(edit.cursor.getPosition(), k);

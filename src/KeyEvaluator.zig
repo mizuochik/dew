@@ -52,6 +52,7 @@ pub fn installDefaultKeyMap(self: *@This()) !void {
     try self.putBuiltinKeyMap("C+h", .{"text.delete-backward-character"});
     try self.putBuiltinKeyMap("del", .{"text.delete-backward-character"});
     try self.putBuiltinKeyMap("C+s", .{"files.save"});
+    try self.putBuiltinKeyMap("C+x", .{"command-line.toggle"});
 }
 
 pub fn putBuiltinKeyMap(self: *@This(), key_name: []const u8, commands: anytype) !void {
