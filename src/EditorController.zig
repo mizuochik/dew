@@ -50,10 +50,6 @@ pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
         error.NoKeyMap => switch (key) {
             .ctrl => |k| switch (k) {
                 'S' => try self.buffer_selector.saveFileBuffer(self.editor.client.current_file.?),
-                'J' => {
-                    const edit = self.editor.client.active_ref.?;
-                    try edit.text.joinLine(edit.cursor.getPosition());
-                },
                 'X' => {
                     try self.editor.client.toggleCommandLine();
                 },
