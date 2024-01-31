@@ -8,7 +8,7 @@ test "scroll down/up" {
     try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/line-numbers.txt");
     try editor.display.render();
     {
-        try editor.controller.processKeypress(.{ .ctrl = 'V' });
+        try editor.key_evaluator.evaluate(.{ .ctrl = 'V' });
         try editor.display.render();
         const area = try editor.display.getArea(0, 10, 0, 10);
         defer area.deinit();
@@ -26,7 +26,7 @@ test "scroll down/up" {
         );
     }
     {
-        try editor.controller.processKeypress(.{ .ctrl = 'V' });
+        try editor.key_evaluator.evaluate(.{ .ctrl = 'V' });
         try editor.display.render();
         const area = try editor.display.getArea(0, 10, 0, 10);
         defer area.deinit();
@@ -44,7 +44,7 @@ test "scroll down/up" {
         );
     }
     {
-        try editor.controller.processKeypress(.{ .meta = 'v' });
+        try editor.key_evaluator.evaluate(.{ .meta = 'v' });
         try editor.display.render();
         const area = try editor.display.getArea(0, 10, 0, 10);
         defer area.deinit();
@@ -62,7 +62,7 @@ test "scroll down/up" {
         );
     }
     {
-        try editor.controller.processKeypress(.{ .meta = 'v' });
+        try editor.key_evaluator.evaluate(.{ .meta = 'v' });
         try editor.display.render();
         const area = try editor.display.getArea(0, 10, 0, 10);
         defer area.deinit();

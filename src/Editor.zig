@@ -72,7 +72,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
         .editor = editor,
     };
 
-    editor.key_evaluator = KeyEvaluator.init(allocator);
+    editor.key_evaluator = KeyEvaluator.init(allocator, editor);
     errdefer editor.key_evaluator.deinit();
     try editor.key_evaluator.installDefaultKeyMap();
 

@@ -2,13 +2,16 @@ const std = @import("std");
 const Keyboard = @import("Keyboard.zig");
 const ResourceRegistry = @import("ResourceRegistry.zig");
 const UnicodeString = @import("UnicodeString.zig");
+const Editor = @import("Editor.zig");
 
 allocator: std.mem.Allocator,
+editor: *Editor,
 key_map: std.StringHashMap([][]const u8), // Key Name -> Method Lines
 
-pub fn init(allocator: std.mem.Allocator) @This() {
+pub fn init(allocator: std.mem.Allocator, editor: *Editor) @This() {
     return .{
         .allocator = allocator,
+        .editor = editor,
         .key_map = std.StringHashMap([][]const u8).init(allocator),
     };
 }
@@ -25,10 +28,30 @@ pub fn deinit(self: *@This()) void {
     self.key_map.deinit();
 }
 
-pub fn evaluate(self: *@This(), key: Keyboard.Key) ![][]const u8 {
+pub fn evaluate(self: *@This(), key: Keyboard.Key) !void {
     const key_name = try key.toName(self.allocator);
     defer self.allocator.free(key_name);
-    return self.key_map.get(key_name) orelse error.NoKeyMap;
+    if (self.key_map.get(key_name)) |commands| {
+        for (commands) |command| {
+            var u_command = try UnicodeString.init(self.allocator);
+            defer u_command.deinit();
+            try u_command.appendSlice(command);
+            self.editor.command_evaluator.evaluate(u_command) catch |e| switch (e) {
+                error.InvalidArguments => break,
+                else => return e,
+            };
+        }
+        return;
+    }
+    switch (key) {
+        .plain => |k| {
+            const ref = self.editor.client.active_ref.?;
+            try ref.text.insertChar(ref.cursor.getPosition(), k);
+            try ref.cursor.moveForward();
+            return;
+        },
+        else => return error.NoKeyMap,
+    }
 }
 
 pub fn installDefaultKeyMap(self: *@This()) !void {

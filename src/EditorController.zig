@@ -35,30 +35,6 @@ pub fn init(allocator: std.mem.Allocator, file_view: *TextView, command_ref_view
 
 pub fn deinit(_: *const @This()) void {}
 
-pub fn processKeypress(self: *@This(), key: Keyboard.Key) !void {
-    if (self.editor.key_evaluator.evaluate(key)) |methods| {
-        for (methods) |method| {
-            var u_method = try UnicodeString.init(self.allocator);
-            defer u_method.deinit();
-            try u_method.appendSlice(method);
-            self.editor.command_evaluator.evaluate(u_method) catch |e| switch (e) {
-                error.InvalidArguments => break,
-                else => return e,
-            };
-        }
-    } else |err| switch (err) {
-        error.NoKeyMap => switch (key) {
-            .plain => |k| {
-                const edit = self.editor.client.active_ref.?;
-                try edit.text.insertChar(edit.cursor.getPosition(), k);
-                try edit.cursor.moveForward();
-            },
-            else => {},
-        },
-        else => return err,
-    }
-}
-
 pub fn changeDisplaySize(self: *const @This(), cols: usize, rows: usize) !void {
     try self.display.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
 }

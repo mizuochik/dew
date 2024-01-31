@@ -22,11 +22,11 @@ test "open new file" {
     // Open a file first
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
-    try editor.controller.processKeypress(.{ .ctrl = 'X' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'X' });
     for ("files.new") |c| {
-        try editor.controller.processKeypress(.{ .plain = c });
+        try editor.key_evaluator.evaluate(.{ .plain = c });
     }
-    try editor.controller.processKeypress(.{ .ctrl = 'M' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'M' });
 
     try editor.display.render();
     const top_area = try editor.display.getArea(0, 99, 0, 20);

@@ -6,9 +6,9 @@ test "input characters" {
     defer editor.deinit();
     try editor.controller.changeDisplaySize(10, 10);
 
-    try editor.controller.processKeypress(.{ .plain = 'a' });
-    try editor.controller.processKeypress(.{ .plain = 'b' });
-    try editor.controller.processKeypress(.{ .plain = 'c' });
+    try editor.key_evaluator.evaluate(.{ .plain = 'a' });
+    try editor.key_evaluator.evaluate(.{ .plain = 'b' });
+    try editor.key_evaluator.evaluate(.{ .plain = 'c' });
 
     try editor.display.render();
 
@@ -26,10 +26,10 @@ test "insert characters" {
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     for (0..5) |_| {
-        try editor.controller.processKeypress(.{ .arrow = .right });
+        try editor.key_evaluator.evaluate(.{ .arrow = .right });
     }
     for (" Bye") |c| {
-        try editor.controller.processKeypress(.{ .plain = c });
+        try editor.key_evaluator.evaluate(.{ .plain = c });
     }
 
     try editor.display.render();
@@ -47,10 +47,10 @@ test "delete characters" {
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     for (0..5) |_| {
-        try editor.controller.processKeypress(.{ .arrow = .right });
+        try editor.key_evaluator.evaluate(.{ .arrow = .right });
     }
     for (0..5) |_| {
-        try editor.controller.processKeypress(.{ .ctrl = 'D' });
+        try editor.key_evaluator.evaluate(.{ .ctrl = 'D' });
     }
 
     try editor.display.render();
@@ -68,10 +68,10 @@ test "delete backward characters" {
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     for (0..10) |_| {
-        try editor.controller.processKeypress(.{ .arrow = .right });
+        try editor.key_evaluator.evaluate(.{ .arrow = .right });
     }
     for (0..5) |_| {
-        try editor.controller.processKeypress(.{ .ctrl = 'H' });
+        try editor.key_evaluator.evaluate(.{ .ctrl = 'H' });
     }
 
     try editor.display.render();
@@ -89,9 +89,9 @@ test "break lines" {
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     for (0..5) |_| {
-        try editor.controller.processKeypress(.{ .arrow = .right });
+        try editor.key_evaluator.evaluate(.{ .arrow = .right });
     }
-    try editor.controller.processKeypress(.{ .ctrl = 'M' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'M' });
 
     try editor.display.render();
     const area = try editor.display.getArea(0, 2, 0, 20);
@@ -109,9 +109,9 @@ test "join lines" {
     try editor.controller.openFile("src/e2e/hello-world-folded.txt");
 
     for (0..5) |_| {
-        try editor.controller.processKeypress(.{ .arrow = .right });
+        try editor.key_evaluator.evaluate(.{ .arrow = .right });
     }
-    try editor.controller.processKeypress(.{ .ctrl = 'J' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'J' });
 
     try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 20);
@@ -127,8 +127,8 @@ test "kill lines" {
     try editor.controller.changeDisplaySize(20, 20);
     try editor.controller.openFile("src/e2e/hello-world-folded.txt");
 
-    try editor.controller.processKeypress(.{ .arrow = .right });
-    try editor.controller.processKeypress(.{ .ctrl = 'K' });
+    try editor.key_evaluator.evaluate(.{ .arrow = .right });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'K' });
     {
         try editor.display.render();
         const area = try editor.display.getArea(0, 2, 0, 20);
@@ -139,7 +139,7 @@ test "kill lines" {
         );
     }
 
-    try editor.controller.processKeypress(.{ .ctrl = 'K' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'K' });
     {
         try editor.display.render();
         const area = try editor.display.getArea(0, 2, 0, 20);

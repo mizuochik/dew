@@ -7,16 +7,16 @@ test "save existing buffer" {
     try editor.controller.changeDisplaySize(10, 10);
     try std.fs.cwd().copyFile("src/e2e/hello-world.txt", std.fs.cwd(), "src/e2e/hello-world.tmp.txt", .{});
     defer std.fs.cwd().deleteFile("src/e2e/hello-world.tmp.txt") catch {};
-    try editor.controller.processKeypress(.{ .ctrl = 'X' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'X' });
     for ("files.open src/e2e/hello-world.tmp.txt") |c| {
-        try editor.controller.processKeypress(.{ .plain = c });
+        try editor.key_evaluator.evaluate(.{ .plain = c });
     }
-    try editor.controller.processKeypress(.{ .ctrl = 'M' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'M' });
 
     for ("Hello World ") |c| {
-        try editor.controller.processKeypress(.{ .plain = c });
+        try editor.key_evaluator.evaluate(.{ .plain = c });
     }
-    try editor.controller.processKeypress(.{ .ctrl = 'S' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'S' });
 
     var buf: [100]u8 = undefined;
     const actual = try std.fs.cwd().readFile("src/e2e/hello-world.tmp.txt", &buf);
@@ -29,20 +29,20 @@ test "save file as a new buffer" {
     try editor.controller.changeDisplaySize(100, 100);
     try std.fs.cwd().copyFile("src/e2e/hello-world.txt", std.fs.cwd(), "src/e2e/hello-world.tmp.txt", .{});
     defer std.fs.cwd().deleteFile("src/e2e/hello-world.tmp.txt") catch {};
-    try editor.controller.processKeypress(.{ .ctrl = 'X' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'X' });
     for ("files.open src/e2e/hello-world.tmp.txt") |c| {
-        try editor.controller.processKeypress(.{ .plain = c });
+        try editor.key_evaluator.evaluate(.{ .plain = c });
     }
-    try editor.controller.processKeypress(.{ .ctrl = 'M' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'M' });
 
     for ("Hello World ") |c| {
-        try editor.controller.processKeypress(.{ .plain = c });
+        try editor.key_evaluator.evaluate(.{ .plain = c });
     }
-    try editor.controller.processKeypress(.{ .ctrl = 'X' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'X' });
     for ("files.save src/e2e/hello-world-renamed.tmp.txt") |c| {
-        try editor.controller.processKeypress(.{ .plain = c });
+        try editor.key_evaluator.evaluate(.{ .plain = c });
     }
-    try editor.controller.processKeypress(.{ .ctrl = 'M' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'M' });
 
     defer std.fs.cwd().deleteFile("src/e2e/hello-world-renamed.tmp.txt") catch {};
     var buf: [100]u8 = undefined;

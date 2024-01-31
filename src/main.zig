@@ -47,7 +47,7 @@ pub fn main() !void {
 
     while (true) {
         const key = try editor.keyboard.inputKey();
-        editor.controller.processKeypress(key) catch |err| switch (err) {
+        editor.key_evaluator.evaluate(key) catch |err| switch (err) {
             error.Quit => return,
             else => return err,
         };

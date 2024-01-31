@@ -40,9 +40,9 @@ test "open file via command" {
     defer editor.deinit();
     try editor.controller.changeDisplaySize(100, 100);
 
-    try editor.controller.processKeypress(.{ .ctrl = 'X' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'X' });
     for ("files.open src/e2e/hello-world.txt") |c| {
-        try editor.controller.processKeypress(.{ .plain = c });
+        try editor.key_evaluator.evaluate(.{ .plain = c });
     }
 
     try editor.display.render();
@@ -52,7 +52,7 @@ test "open file via command" {
         \\files.open src/e2e/hello-world.txt
     );
 
-    try editor.controller.processKeypress(.{ .ctrl = 'M' });
+    try editor.key_evaluator.evaluate(.{ .ctrl = 'M' });
 
     try editor.display.render();
     const top_area = try editor.display.getArea(0, 99, 0, 20);
