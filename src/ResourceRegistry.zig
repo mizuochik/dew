@@ -41,6 +41,9 @@ pub fn registerBuiltinResources(self: *@This()) !void {
     const text = try builtin_resources.text.init(self.allocator);
     try self.resources.putNoClobber("text", text);
     errdefer _ = self.resources.remove("text");
+    const command_line = try builtin_resources.command_line.init(self.allocator);
+    try self.resources.putNoClobber("command-line", command_line);
+    errdefer _ = self.resources.remove("command-line");
 }
 
 pub fn deinit(self: *@This()) void {
