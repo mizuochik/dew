@@ -9,9 +9,9 @@ index: usize,
 buffer_selector: *BufferSelector,
 status: *Status,
 
-const Error = error{
+const ParseError = error{
     EOL,
-    Error,
+    Unexpected,
 };
 
 pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status: *Status) !@This() {
@@ -93,10 +93,10 @@ fn parseMethodName(self: *@This()) ![]const u8 {
 
 fn parseAnyLetter(self: *@This()) ![]const u8 {
     if (self.index >= self.input.len) {
-        return Error.EOL;
+        return ParseError.EOL;
     }
     if (std.mem.eql(u8, " ", self.input[self.index])) {
-        return Error.Error;
+        return ParseError.Unexpected;
     }
     const r = self.input[self.index];
     self.index += 1;
@@ -105,10 +105,10 @@ fn parseAnyLetter(self: *@This()) ![]const u8 {
 
 fn parseSpaces(self: *@This()) !void {
     if (self.index >= self.input.len) {
-        return Error.EOL;
+        return ParseError.EOL;
     }
     if (!std.mem.eql(u8, " ", self.input[self.index])) {
-        return Error.Error;
+        return ParseError.Unexpected;
     }
     self.index += 1;
     while (self.index < self.input.len and std.mem.eql(u8, " ", self.input[self.index])) {
