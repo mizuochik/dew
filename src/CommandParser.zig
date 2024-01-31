@@ -91,6 +91,16 @@ fn parseMethodName(self: *@This()) ![]const u8 {
     return try method_name_al.toOwnedSlice();
 }
 
+fn parseCharacter(self: *@This(), character: []const u8) !void {
+    if (self.index >= self.input.len) {
+        return ParseError.EOL;
+    }
+    if (!std.mem.eql(u8, self.input[self.index], character)) {
+        return ParseError.Unexpected;
+    }
+    self.index += 1;
+}
+
 fn parseAnyLetter(self: *@This()) ![]const u8 {
     if (self.index >= self.input.len) {
         return ParseError.EOL;
@@ -119,9 +129,19 @@ fn parseSpaces(self: *@This()) !void {
 fn parseArgument(self: *@This()) ![]const u8 {
     var cmd = std.ArrayList(u8).init(self.allocator);
     errdefer cmd.deinit();
-    try cmd.appendSlice(try self.parseAnyLetter());
-    while (self.parseAnyLetter()) |letter| {
-        try cmd.appendSlice(letter);
-    } else |_| {}
+    if (self.parseCharacter("\"")) {
+        while (true) {
+            if (self.parseCharacter("\"")) {
+                break;
+            } else |_| {}
+            const l = self.parseAnyLetter() catch break;
+            try cmd.appendSlice(l);
+        }
+    } else |_| {
+        while (true) {
+            const l = self.parseAnyLetter() catch break;
+            try cmd.appendSlice(l);
+        }
+    }
     return cmd.toOwnedSlice();
 }
