@@ -47,6 +47,7 @@ pub fn installDefaultKeyMap(self: *@This()) !void {
     try self.putBuiltinKeyMap("A+v", .{"view.scroll . up"});
     try self.putBuiltinKeyMap("C+k", .{"text.kill-line"});
     try self.putBuiltinKeyMap("C+m", .{"text.break-line"});
+    try self.putBuiltinKeyMap("C+d", .{"text.delete-character"});
     try self.putBuiltinKeyMap("C+h", .{"text.delete-backward-character"});
     try self.putBuiltinKeyMap("del", .{"text.delete-backward-character"});
 }

@@ -8,6 +8,7 @@ pub fn init(allocator: std.mem.Allocator) !Resource {
     errdefer cursors.deinit();
     try cursors.putMethod("break-line", breakLine);
     try cursors.putMethod("kill-line", killLine);
+    try cursors.putMethod("delete-character", deleteCharacter);
     try cursors.putMethod("delete-backward-character", deleteBackwardCharacter);
     return cursors;
 }
@@ -29,6 +30,11 @@ fn breakLine(editor: *Editor, _: [][]const u8) !void {
     try edit.text.breakLine(edit.cursor.getPosition());
     try edit.cursor.moveForward();
     getCurrentView(editor).updateLastCursorX(editor.client.getActiveEdit().?);
+}
+
+fn deleteCharacter(editor: *Editor, _: [][]const u8) !void {
+    const edit = editor.client.active_ref.?;
+    try edit.text.deleteChar(edit.cursor.getPosition());
 }
 
 fn deleteBackwardCharacter(editor: *Editor, _: [][]const u8) !void {
