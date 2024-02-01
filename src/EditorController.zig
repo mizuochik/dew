@@ -41,10 +41,3 @@ fn getCurrentView(self: *const @This()) *TextView {
     else
         self.file_view;
 }
-
-pub fn openFile(self: *@This(), path: []const u8) !void {
-    try self.buffer_selector.openFileBuffer(path);
-    const new_message = try std.fmt.allocPrint(self.allocator, "{s}", .{path});
-    errdefer self.allocator.free(new_message);
-    try self.editor.client.status.setMessage(new_message);
-}

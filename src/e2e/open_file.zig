@@ -26,7 +26,7 @@ test "show the opened file" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.display.setSize(100, 100);
-    try editor.controller.openFile("src/e2e/hello-world.txt");
+    try editor.command_evaluator.evaluateFormat("files.open src/e2e/hello-world.txt", .{});
     try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 11);
     defer area.deinit();

@@ -37,7 +37,9 @@ pub fn main() !void {
     try editor.display.initTerminalCursor();
     defer editor.display.deinitTerminalCursor();
 
-    try editor.controller.openFile(res.positionals[0]);
+    try editor.command_evaluator.evaluateFormat(
+        \\files.open "{s}"
+    , .{res.positionals[0]});
     {
         const msg = try std.fmt.allocPrint(gpa.allocator(), "Initialized", .{});
         errdefer gpa.allocator().free(msg);

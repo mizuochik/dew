@@ -23,7 +23,7 @@ test "insert characters" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.display.setSize(20, 20);
-    try editor.controller.openFile("src/e2e/hello-world.txt");
+    try editor.command_evaluator.evaluateFormat("files.open src/e2e/hello-world.txt", .{});
 
     for (0..5) |_| {
         try editor.key_evaluator.evaluate(.{ .arrow = .right });
@@ -44,7 +44,7 @@ test "delete characters" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.display.setSize(20, 20);
-    try editor.controller.openFile("src/e2e/hello-world.txt");
+    try editor.command_evaluator.evaluateFormat("files.open src/e2e/hello-world.txt", .{});
 
     for (0..5) |_| {
         try editor.key_evaluator.evaluate(.{ .arrow = .right });
@@ -65,7 +65,7 @@ test "delete backward characters" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.display.setSize(20, 20);
-    try editor.controller.openFile("src/e2e/hello-world.txt");
+    try editor.command_evaluator.evaluateFormat("files.open src/e2e/hello-world.txt", .{});
 
     for (0..10) |_| {
         try editor.key_evaluator.evaluate(.{ .arrow = .right });
@@ -86,7 +86,7 @@ test "break lines" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.display.setSize(20, 20);
-    try editor.controller.openFile("src/e2e/hello-world.txt");
+    try editor.command_evaluator.evaluateFormat("files.open src/e2e/hello-world.txt", .{});
 
     for (0..5) |_| {
         try editor.key_evaluator.evaluate(.{ .arrow = .right });
@@ -106,7 +106,7 @@ test "join lines" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.display.setSize(20, 20);
-    try editor.controller.openFile("src/e2e/hello-world-folded.txt");
+    try editor.command_evaluator.evaluateFormat("files.open src/e2e/hello-world-folded.txt", .{});
 
     for (0..5) |_| {
         try editor.key_evaluator.evaluate(.{ .arrow = .right });
@@ -125,7 +125,7 @@ test "kill lines" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.display.setSize(20, 20);
-    try editor.controller.openFile("src/e2e/hello-world-folded.txt");
+    try editor.command_evaluator.evaluateFormat("files.open src/e2e/hello-world-folded.txt", .{});
 
     try editor.key_evaluator.evaluate(.{ .arrow = .right });
     try editor.key_evaluator.evaluate(.{ .ctrl = 'K' });

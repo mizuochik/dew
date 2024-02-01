@@ -13,3 +13,12 @@ pub fn evaluate(self: *@This(), raw_command_line: UnicodeString) !void {
     const command = try self.editor.resource_registry.get(command_line.method_name);
     try command(self.editor, command_line.params);
 }
+
+pub fn evaluateFormat(self: *@This(), comptime fmt: []const u8, args: anytype) !void {
+    const command = try std.fmt.allocPrint(self.editor.allocator, fmt, args);
+    defer self.editor.allocator.free(command);
+    var command_u = try UnicodeString.init(self.editor.allocator);
+    defer command_u.deinit();
+    try command_u.appendSlice(command);
+    try self.evaluate(command_u);
+}
