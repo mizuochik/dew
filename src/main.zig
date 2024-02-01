@@ -33,7 +33,7 @@ pub fn main() !void {
     defer editor.terminal.disableRawMode() catch unreachable;
 
     const win_size = try editor.terminal.getWindowSize();
-    try editor.controller.changeDisplaySize(win_size.cols, win_size.rows);
+    try editor.display.setSize(win_size.cols, win_size.rows);
     try editor.display.initTerminalCursor();
     defer editor.display.deinitTerminalCursor();
 

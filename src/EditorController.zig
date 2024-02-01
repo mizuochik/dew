@@ -35,10 +35,6 @@ pub fn init(allocator: std.mem.Allocator, file_view: *TextView, command_ref_view
 
 pub fn deinit(_: *const @This()) void {}
 
-pub fn changeDisplaySize(self: *const @This(), cols: usize, rows: usize) !void {
-    try self.display.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
-}
-
 fn getCurrentView(self: *const @This()) *TextView {
     return if (self.editor.client.isCommandLineActive())
         self.command_ref_view

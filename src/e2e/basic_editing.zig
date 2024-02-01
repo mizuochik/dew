@@ -4,7 +4,7 @@ const Editor = @import("../Editor.zig");
 test "input characters" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(10, 10);
+    try editor.display.setSize(10, 10);
 
     try editor.key_evaluator.evaluate(.{ .plain = 'a' });
     try editor.key_evaluator.evaluate(.{ .plain = 'b' });
@@ -22,7 +22,7 @@ test "input characters" {
 test "insert characters" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(20, 20);
+    try editor.display.setSize(20, 20);
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     for (0..5) |_| {
@@ -43,7 +43,7 @@ test "insert characters" {
 test "delete characters" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(20, 20);
+    try editor.display.setSize(20, 20);
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     for (0..5) |_| {
@@ -64,7 +64,7 @@ test "delete characters" {
 test "delete backward characters" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(20, 20);
+    try editor.display.setSize(20, 20);
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     for (0..10) |_| {
@@ -85,7 +85,7 @@ test "delete backward characters" {
 test "break lines" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(20, 20);
+    try editor.display.setSize(20, 20);
     try editor.controller.openFile("src/e2e/hello-world.txt");
 
     for (0..5) |_| {
@@ -105,7 +105,7 @@ test "break lines" {
 test "join lines" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(20, 20);
+    try editor.display.setSize(20, 20);
     try editor.controller.openFile("src/e2e/hello-world-folded.txt");
 
     for (0..5) |_| {
@@ -124,7 +124,7 @@ test "join lines" {
 test "kill lines" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(20, 20);
+    try editor.display.setSize(20, 20);
     try editor.controller.openFile("src/e2e/hello-world-folded.txt");
 
     try editor.key_evaluator.evaluate(.{ .arrow = .right });

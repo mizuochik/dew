@@ -5,7 +5,7 @@ const Position = @import("../Position.zig");
 test "move cursor to any directions" {
     const editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(100, 100);
+    try editor.display.setSize(100, 100);
     const cursor = &editor.client.getActiveFile().?.cursor;
     try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/100x100.txt");
 
@@ -32,7 +32,7 @@ test "move cursor to any directions" {
 test "move to the beginning or end of line" {
     const editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(100, 100);
+    try editor.display.setSize(100, 100);
     const cursor = &editor.client.getActiveFile().?.cursor;
     try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/100x100.txt");
 
@@ -55,7 +55,7 @@ test "move vertically considering double bytes" {
     {
         const editor = try Editor.init(std.testing.allocator, .{});
         defer editor.deinit();
-        try editor.controller.changeDisplaySize(100, 100);
+        try editor.display.setSize(100, 100);
         const cursor = &editor.client.getActiveFile().?.cursor;
         try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/mixed-byte-lines.txt");
         try editor.display.render();
@@ -74,7 +74,7 @@ test "move vertically considering double bytes" {
     {
         const editor = try Editor.init(std.testing.allocator, .{});
         defer editor.deinit();
-        try editor.controller.changeDisplaySize(100, 100);
+        try editor.display.setSize(100, 100);
         const cursor = &editor.client.getActiveFile().?.cursor;
         try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/mixed-byte-lines.txt");
         try editor.display.render();

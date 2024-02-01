@@ -170,6 +170,10 @@ pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
     try self.status_view.setSize(self.size.cols);
 }
 
+pub fn setSize(self: *@This(), cols: usize, rows: usize) !void {
+    try self.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
+}
+
 pub fn render(self: *@This()) !void {
     self.buffer.clear();
     try self.file_view.render(&self.buffer, self.client.getActiveFile().?);

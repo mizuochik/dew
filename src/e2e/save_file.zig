@@ -4,7 +4,7 @@ const Editor = @import("../Editor.zig");
 test "save existing buffer" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(10, 10);
+    try editor.display.setSize(10, 10);
     try std.fs.cwd().copyFile("src/e2e/hello-world.txt", std.fs.cwd(), "src/e2e/hello-world.tmp.txt", .{});
     defer std.fs.cwd().deleteFile("src/e2e/hello-world.tmp.txt") catch {};
     try editor.key_evaluator.evaluate(.{ .ctrl = 'X' });
@@ -26,7 +26,7 @@ test "save existing buffer" {
 test "save file as a new buffer" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(100, 100);
+    try editor.display.setSize(100, 100);
     try std.fs.cwd().copyFile("src/e2e/hello-world.txt", std.fs.cwd(), "src/e2e/hello-world.tmp.txt", .{});
     defer std.fs.cwd().deleteFile("src/e2e/hello-world.tmp.txt") catch {};
     try editor.key_evaluator.evaluate(.{ .ctrl = 'X' });

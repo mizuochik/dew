@@ -4,7 +4,7 @@ const Editor = @import("../Editor.zig");
 test "show the opened file" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(100, 100);
+    try editor.display.setSize(100, 100);
     try editor.controller.openFile("src/e2e/hello-world.txt");
     try editor.display.render();
     const area = try editor.display.getArea(0, 1, 0, 11);
@@ -17,7 +17,7 @@ test "show the opened file" {
 test "open new file" {
     var editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(100, 100);
+    try editor.display.setSize(100, 100);
 
     // Open a file first
     try editor.controller.openFile("src/e2e/hello-world.txt");

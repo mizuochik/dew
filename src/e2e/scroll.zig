@@ -4,7 +4,7 @@ const Editor = @import("../Editor.zig");
 test "scroll down/up" {
     const editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
-    try editor.controller.changeDisplaySize(10, 11); // 11 lines = 10 lines (file content) + one line (status bar)
+    try editor.display.setSize(10, 11); // 11 lines = 10 lines (file content) + one line (status bar)
     try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/line-numbers.txt");
     try editor.display.render();
     {
