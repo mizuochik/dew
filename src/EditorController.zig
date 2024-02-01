@@ -34,10 +34,3 @@ pub fn init(allocator: std.mem.Allocator, file_view: *TextView, command_ref_view
 }
 
 pub fn deinit(_: *const @This()) void {}
-
-fn getCurrentView(self: *const @This()) *TextView {
-    return if (self.editor.client.isCommandLineActive())
-        self.command_ref_view
-    else
-        self.file_view;
-}
