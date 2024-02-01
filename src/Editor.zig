@@ -11,7 +11,6 @@ const TextView = @import("TextView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const ResourceRegistry = @import("ResourceRegistry.zig");
-const EditorController = @import("EditorController.zig");
 
 pub const Options = struct {
     is_debug: bool = false,
@@ -23,7 +22,6 @@ command_ref_view: TextView,
 buffer_selector: BufferSelector,
 status_view: StatusView,
 display_size: DisplaySize,
-controller: EditorController,
 command_evaluator: CommandEvaluator,
 key_evaluator: KeyEvaluator,
 resource_registry: ResourceRegistry,
@@ -57,17 +55,6 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     editor.display = try Display.init(allocator, &editor.edit_view, &editor.status_view, &editor.command_ref_view, &editor.client, &editor.display_size);
     errdefer editor.display.deinit();
 
-    editor.controller = try EditorController.init(
-        allocator,
-        &editor.edit_view,
-        &editor.command_ref_view,
-        &editor.buffer_selector,
-        &editor.display,
-        &editor.display_size,
-        editor,
-    );
-    errdefer editor.controller.deinit();
-
     editor.command_evaluator = .{
         .editor = editor,
     };
@@ -94,7 +81,6 @@ pub fn deinit(self: *@This()) void {
     self.display.deinit();
     self.resource_registry.deinit();
     self.key_evaluator.deinit();
-    self.controller.deinit();
     self.client.deinit();
     self.allocator.destroy(self);
 }
