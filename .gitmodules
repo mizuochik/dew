@@ -1,0 +1,3 @@
+[submodule "lib/ziglyph"]
+	path = lib/ziglyph
+	url = https://codeberg.org/dude_the_builder/ziglyph.git
