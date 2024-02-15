@@ -4,12 +4,20 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const ziglyph = b.addStaticLibrary(.{
+        .name = "ziglyph",
+        .root_source_file = .{ .path = "lib/ziglyph/src/ziglyph.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+
     const exe = b.addExecutable(.{
         .name = "dew",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,
     });
+    exe.root_module.addImport("ziglyph", &ziglyph.root_module);
     exe.root_module.addImport("clap", b.dependency("clap", .{
         .target = target,
         .optimize = optimize,
