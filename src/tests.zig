@@ -12,6 +12,7 @@ test {
         pub const ResourceRegistry = @import("ResourceRegistry.zig");
         pub const CommandEvaluator = @import("CommandEvaluator.zig");
         pub const KeyEvaluator = @import("KeyEvaluator.zig");
+        pub const Module = @import("Module.zig");
         pub const keyboard = @import("keyboard.zig");
         pub const builtin_resources = @import("builtin_resources.zig");
         pub const e2e = @import("e2e.zig");
