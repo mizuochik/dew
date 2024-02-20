@@ -16,12 +16,19 @@ const darwin_CS8: std.os.tcflag_t = 0x300;
 orig_termios: ?std.os.termios = null,
 
 pub fn enableRawMode(self: *@This()) !void {
-    const orig = try std.os.tcgetattr(std.os.STDIN_FILENO);
+    const orig = try std.posix.tcgetattr(std.os.STDIN_FILENO);
     var term = orig;
-    term.iflag &= ~(darwin_BRKINT | darwin_IXON | darwin_ICRNL | darwin_INPCK | darwin_ISTRIP);
-    term.oflag &= ~darwin_OPOST;
-    term.cflag |= darwin_CS8;
-    term.lflag &= ~(darwin_ECHO | darwin_ICANON | darwin_IEXTEN | darwin_ISIG);
+    term.iflag.BRKINT = false;
+    term.iflag.IXON = false;
+    term.iflag.ICRNL = false;
+    term.iflag.INPCK = false;
+    term.iflag.ISTRIP = false;
+    term.oflag.OPOST = false;
+    term.cflag.CSIZE = .CS8;
+    term.lflag.ECHO = false;
+    term.lflag.ICANON = false;
+    term.lflag.IEXTEN = false;
+    term.lflag.ISIG = false;
     try std.os.tcsetattr(std.os.STDIN_FILENO, std.os.TCSA.FLUSH, term);
     self.orig_termios = orig;
 }
