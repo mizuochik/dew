@@ -85,7 +85,7 @@ test "move vertically considering double bytes" {
         try std.testing.expectEqual(Position{ .x = 5, .y = 0 }, cursor.getPosition());
         try editor.key_evaluator.evaluate(.{ .arrow = .down });
         try editor.display.render();
-        try std.testing.expectFmt("(2, 1)", "{}", .{cursor.getPosition()});
+        try std.testing.expectFmt("2:3", "{}", .{cursor.getPosition()});
         try std.testing.expectEqual(Position{ .x = 2, .y = 1 }, cursor.getPosition());
         try editor.key_evaluator.evaluate(.{ .arrow = .up });
         try editor.display.render();
