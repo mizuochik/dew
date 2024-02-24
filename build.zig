@@ -1,8 +1,19 @@
 const std = @import("std");
 
+const Options = struct {
+    name: []const u8 = "",
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+};
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
+
+    const options = .{
+        .target = target,
+        .optimize = optimize,
+    };
 
     const ziglyph = b.addStaticLibrary(.{
         .name = "ziglyph",
@@ -40,5 +51,23 @@ pub fn build(b: *std.Build) void {
     });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run tests");
+    test_step.dependOn(&run_tests.step);
+
+    addTest(b, "parser", options);
+}
+
+fn addTest(b: *std.Build, comptime name: []const u8, options: Options) void {
+    const clap = b.dependency("clap", .{
+        .target = options.target,
+        .optimize = options.optimize,
+    });
+    const tests = b.addTest(.{
+        .root_source_file = .{ .path = "src/" ++ name ++ ".zig" },
+        .target = options.target,
+        .optimize = options.optimize,
+    });
+    tests.root_module.addImport("clap", clap.module("clap"));
+    const run_tests = b.addRunArtifact(tests);
+    const test_step = b.step("test-" ++ name, "");
     test_step.dependOn(&run_tests.step);
 }
