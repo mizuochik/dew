@@ -22,6 +22,16 @@ pub fn anyCharacter(input: []const u8) Error!Result(u8) {
     };
 }
 
+pub fn character(input: []const u8, c: u8) Error!Result(u8) {
+    const ac = try anyCharacter(input);
+    if (ac.value != c)
+        return Error.InvalidInput;
+    return .{
+        .value = ac.value,
+        .rest = ac.rest,
+    };
+}
+
 pub fn singleNumber(input: []const u8) Error!Result(u8) {
     const l = try anyCharacter(input);
     const c = l.value;
@@ -46,6 +56,17 @@ pub fn number(input: []const u8) Error!Result(i32) {
             .rest = rest,
         },
         else => return e,
+    }
+}
+
+test "parse a character" {
+    {
+        const actual = try character("abc", 'a');
+        try std.testing.expectEqual('a', actual.value);
+    }
+    {
+        const actual = character("abc", 'b');
+        try std.testing.expectError(Error.InvalidInput, actual);
     }
 }
 
