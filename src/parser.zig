@@ -1,5 +1,16 @@
 const std = @import("std");
 
+pub const State = struct {
+    input: []const u8,
+    allocator: std.mem.Allocator,
+    errorMessage: ?[]const u8 = null,
+
+    pub fn deinit(self: *const State) void {
+        if (self.errorMessage) |message|
+            self.allocator.free(message);
+    }
+};
+
 pub const Error = error{
     EndOfInput,
     InvalidInput,
@@ -8,83 +19,99 @@ pub const Error = error{
 pub fn Result(comptime Value: type) type {
     return struct {
         value: Value,
-        rest: []const u8,
     };
 }
 
-pub fn anyCharacter(input: []const u8) Error!Result(u8) {
-    if (input.len <= 0)
+pub fn anyCharacter(state: *State) Error!u8 {
+    if (state.input.len <= 0)
         return Error.EndOfInput;
-    const c = input[0];
-    return .{
-        .value = c,
-        .rest = input[1..],
-    };
+    const c = state.input[0];
+    state.input = state.input[1..];
+    return c;
 }
 
-pub fn character(input: []const u8, c: u8) Error!Result(u8) {
-    const ac = try anyCharacter(input);
-    if (ac.value != c)
+pub fn character(state: *State, c: u8) Error!u8 {
+    const in = state.input;
+    errdefer state.input = in;
+    const ac = try anyCharacter(state);
+    if (ac != c) {
         return Error.InvalidInput;
-    return .{
-        .value = ac.value,
-        .rest = ac.rest,
-    };
+    }
+    return ac;
 }
 
-pub fn singleNumber(input: []const u8) Error!Result(u8) {
-    const l = try anyCharacter(input);
-    const c = l.value;
+pub fn singleNumber(state: *State) Error!u8 {
+    const in = state.input;
+    errdefer state.input = in;
+    const c = try anyCharacter(state);
     if (c < '0' or '9' < c)
         return Error.EndOfInput;
-    return .{
-        .value = c - '0',
-        .rest = l.rest,
-    };
+    return c - '0';
 }
 
-pub fn number(input: []const u8) Error!Result(i32) {
-    const first = try singleNumber(input);
-    var accum = first.value;
-    var rest = first.rest;
-    while (singleNumber(rest)) |result| {
-        accum = accum * 10 + result.value;
-        rest = result.rest;
+pub fn number(state: *State) Error!i32 {
+    const in = state.input;
+    errdefer state.input = in;
+    var accum = try singleNumber(state);
+    while (singleNumber(state)) |value| {
+        accum = accum * 10 + value;
     } else |e| switch (e) {
-        Error.EndOfInput, Error.InvalidInput => return .{
-            .value = accum,
-            .rest = rest,
-        },
+        Error.EndOfInput, Error.InvalidInput => return accum,
         else => return e,
     }
 }
 
-pub fn endOfInput(input: []const u8) Error!Result(void) {
-    if (input.len > 0)
+pub fn endOfInput(state: *const State) Error!void {
+    if (state.input.len > 0)
         return Error.InvalidInput;
-    return .{
-        .value = undefined,
-        .rest = input,
-    };
 }
 
 test "parse a character" {
     {
-        const actual = try character("abc", 'a');
-        try std.testing.expectEqual('a', actual.value);
+        var state: State = .{
+            .input = "abc",
+            .allocator = std.testing.allocator,
+        };
+        defer state.deinit();
+        const actual = try character(&state, 'a');
+        try std.testing.expectEqual('a', actual);
     }
     {
-        const actual = character("abc", 'b');
+        var state: State = .{
+            .input = "abc",
+            .allocator = std.testing.allocator,
+        };
+        defer state.deinit();
+        const actual = character(&state, 'b');
         try std.testing.expectError(Error.InvalidInput, actual);
     }
 }
 
 test "parser a number" {
-    const actual = try number("123");
-    try std.testing.expectEqual(123, actual.value);
+    var state: State = .{
+        .input = "123",
+        .allocator = std.testing.allocator,
+    };
+    defer state.deinit();
+    const actual = try number(&state);
+    try std.testing.expectEqual(123, actual);
 }
 
 test "parse end of input" {
-    _ = try endOfInput("");
-    try std.testing.expectError(Error.InvalidInput, endOfInput(" "));
+    {
+        var state: State = .{
+            .input = "",
+            .allocator = std.testing.allocator,
+        };
+        defer state.deinit();
+        _ = try endOfInput(&state);
+    }
+    {
+        var state: State = .{
+            .input = " ",
+            .allocator = std.testing.allocator,
+        };
+        defer state.deinit();
+        try std.testing.expectError(Error.InvalidInput, endOfInput(&state));
+    }
 }
