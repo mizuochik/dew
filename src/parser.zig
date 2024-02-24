@@ -12,15 +12,24 @@ pub fn Result(comptime Value: type) type {
     };
 }
 
-pub fn singleNumber(input: []const u8) Error!Result(u8) {
+pub fn anyCharacter(input: []const u8) Error!Result(u8) {
     if (input.len <= 0)
         return Error.EndOfStream;
     const c = input[0];
+    return .{
+        .value = c,
+        .rest = input[1..],
+    };
+}
+
+pub fn singleNumber(input: []const u8) Error!Result(u8) {
+    const l = try anyCharacter(input);
+    const c = l.value;
     if (c < '0' or '9' < c)
         return Error.InvalidInput;
     return .{
         .value = c - '0',
-        .rest = input[1..],
+        .rest = l.rest,
     };
 }
 
