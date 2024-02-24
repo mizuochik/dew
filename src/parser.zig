@@ -59,6 +59,15 @@ pub fn number(input: []const u8) Error!Result(i32) {
     }
 }
 
+pub fn endOfInput(input: []const u8) Error!Result(void) {
+    if (input.len > 0)
+        return Error.InvalidInput;
+    return .{
+        .value = undefined,
+        .rest = input,
+    };
+}
+
 test "parse a character" {
     {
         const actual = try character("abc", 'a');
@@ -73,4 +82,9 @@ test "parse a character" {
 test "parser a number" {
     const actual = try number("123");
     try std.testing.expectEqual(123, actual.value);
+}
+
+test "parse end of input" {
+    _ = try endOfInput("");
+    try std.testing.expectError(Error.InvalidInput, endOfInput(" "));
 }
