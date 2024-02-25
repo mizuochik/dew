@@ -40,6 +40,12 @@ pub fn character(state: *State, c: u8) Error!u8 {
     return ac;
 }
 
+pub fn spaces(state: *State) Error!void {
+    _ = try character(state, ' ');
+    while (true)
+        _ = character(state, ' ') catch return;
+}
+
 pub fn singleNumber(state: *State) Error!u8 {
     const in = state.input;
     errdefer state.input = in;
@@ -114,4 +120,14 @@ test "parse end of input" {
         defer state.deinit();
         try std.testing.expectError(Error.InvalidInput, endOfInput(&state));
     }
+}
+
+test "parse spaces" {
+    var state: State = .{
+        .input = "  abc",
+        .allocator = std.testing.allocator,
+    };
+    defer state.deinit();
+    _ = try spaces(&state);
+    try std.testing.expectEqualStrings("abc", state.input);
 }
