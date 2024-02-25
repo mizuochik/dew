@@ -54,6 +54,9 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_tests.step);
 
     addTest(b, "parser", options);
+    if (std.fs.cwd().access("src/tmp.zig", .{})) |_|
+        addTest(b, "tmp", options)
+    else |_| {}
 }
 
 fn addTest(b: *std.Build, comptime name: []const u8, options: Options) void {
