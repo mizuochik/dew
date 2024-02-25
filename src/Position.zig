@@ -18,8 +18,8 @@ pub fn parse(allocator: std.mem.Allocator, input: []const u8) !@This() {
     _ = try parser.character(&state, ':');
     const character: usize = @intCast(try parser.number(&state));
     return .{
-        .x = line - 1,
-        .y = character - 1,
+        .x = character - 1,
+        .y = line - 1,
     };
 }
 
