@@ -36,6 +36,15 @@ pub fn character(state: *State, c: u8) Error!u8 {
     return try anyCharacter(state, &[_]u8{c});
 }
 
+pub fn letter(state: *State) Error!u8 {
+    const in = state.input;
+    errdefer state.input = in;
+    const c = try anyCharacter(state, null);
+    if ('A' <= c and c <= 'Z' or 'a' <= c and c <= 'z')
+        return c;
+    return Error.InvalidInput;
+}
+
 pub fn spaces(state: *State) Error!void {
     _ = try character(state, ' ');
     while (true)
@@ -126,4 +135,29 @@ test "parse spaces" {
     defer state.deinit();
     _ = try spaces(&state);
     try std.testing.expectEqualStrings("abc", state.input);
+}
+
+test "parse a letter" {
+    const Case = struct {
+        char: u8,
+        expected: Error!u8,
+    };
+    const cases = [_]Case{
+        .{ .char = '@', .expected = Error.InvalidInput },
+        .{ .char = 'A', .expected = 'A' },
+        .{ .char = 'Z', .expected = 'Z' },
+        .{ .char = '[', .expected = Error.InvalidInput },
+        .{ .char = '`', .expected = Error.InvalidInput },
+        .{ .char = 'a', .expected = 'a' },
+        .{ .char = 'z', .expected = 'z' },
+        .{ .char = '{', .expected = Error.InvalidInput },
+    };
+    inline for (cases) |case| {
+        var state: State = .{
+            .input = &[_]u8{case.char},
+            .allocator = std.testing.allocator,
+        };
+        const actual = letter(&state);
+        try std.testing.expectEqual(case.expected, actual);
+    }
 }
