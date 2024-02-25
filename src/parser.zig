@@ -45,6 +45,10 @@ pub fn letter(state: *State) Error!u8 {
     return Error.InvalidInput;
 }
 
+pub fn digit(state: *State) Error!u8 {
+    return anyCharacter(state, "0123456789");
+}
+
 pub fn spaces(state: *State) Error!void {
     _ = try character(state, ' ');
     while (true)
