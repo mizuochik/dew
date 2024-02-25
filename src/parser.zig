@@ -22,22 +22,18 @@ pub fn Result(comptime Value: type) type {
     };
 }
 
-pub fn anyCharacter(state: *State) Error!u8 {
+pub fn anyCharacter(state: *State, characters: ?[]const u8) Error!u8 {
     if (state.input.len <= 0)
         return Error.EndOfInput;
     const c = state.input[0];
+    if (characters) |cs|
+        _ = std.mem.indexOfScalar(u8, cs, c) orelse return Error.InvalidInput;
     state.input = state.input[1..];
     return c;
 }
 
 pub fn character(state: *State, c: u8) Error!u8 {
-    const in = state.input;
-    errdefer state.input = in;
-    const ac = try anyCharacter(state);
-    if (ac != c) {
-        return Error.InvalidInput;
-    }
-    return ac;
+    return try anyCharacter(state, &[_]u8{c});
 }
 
 pub fn spaces(state: *State) Error!void {
@@ -49,7 +45,7 @@ pub fn spaces(state: *State) Error!void {
 pub fn singleNumber(state: *State) Error!u8 {
     const in = state.input;
     errdefer state.input = in;
-    const c = try anyCharacter(state);
+    const c = try anyCharacter(state, null);
     if (c < '0' or '9' < c)
         return Error.EndOfInput;
     return c - '0';
