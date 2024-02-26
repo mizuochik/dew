@@ -28,7 +28,7 @@ fn addMain(b: *std.Build, options: Options) void {
         .target = options.target,
         .optimize = options.optimize,
     });
-    addImports(b, &exe.root_module, options);
+    addImports(b, &exe.root_module);
     b.installArtifact(exe);
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
@@ -45,21 +45,17 @@ fn addTest(b: *std.Build, comptime name: []const u8, options: Options) void {
         .target = options.target,
         .optimize = options.optimize,
     });
-    addImports(b, &tests.root_module, options);
+    addImports(b, &tests.root_module);
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test-" ++ name, "");
     test_step.dependOn(&run_tests.step);
 }
 
-fn addImports(b: *std.Build, module: *std.Build.Module, options: Options) void {
-    module.addImport("ziglyph", &b.addStaticLibrary(.{
-        .name = "ziglyph",
-        .root_source_file = .{ .path = "lib/ziglyph/src/ziglyph.zig" },
-        .target = options.target,
-        .optimize = options.optimize,
-    }).root_module);
-    module.addImport("clap", b.dependency("clap", .{
-        .target = options.target,
-        .optimize = options.optimize,
-    }).module("clap"));
+fn addImports(b: *std.Build, module: *std.Build.Module) void {
+    module.addImport("ziglyph", b.addModule("ziglyph", .{
+        .root_source_file = .{
+            .path = "lib/ziglyph/src/ziglyph.zig",
+        },
+    }));
+    module.addImport("clap", b.dependency("clap", .{}).module("clap"));
 }
