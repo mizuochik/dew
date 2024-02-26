@@ -52,6 +52,11 @@ fn addTest(b: *std.Build, comptime name: []const u8, options: Options) void {
 }
 
 fn addImports(b: *std.Build, module: *std.Build.Module) void {
+    module.addImport("yaml", b.addModule("yaml", .{
+        .root_source_file = .{
+            .path = "lib/zig-yaml/src/yaml.zig",
+        },
+    }));
     module.addImport("ziglyph", b.addModule("ziglyph", .{
         .root_source_file = .{
             .path = "lib/ziglyph/src/ziglyph.zig",
