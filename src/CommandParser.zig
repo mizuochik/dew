@@ -65,6 +65,11 @@ const Parser = struct {
             .allocator = state.allocator,
             .method_name = method_name,
             .params = try params.toOwnedSlice(),
+            .arguments = &.{
+                .allocator = state.allocator,
+                .optionals = std.StringHashMap([]const u8).init(state.allocator),
+                .positionals = &[_][]const u8{},
+            },
         };
     }
 
