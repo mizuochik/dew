@@ -16,9 +16,10 @@ pub fn build(b: *std.Build) void {
 
     addTest(b, "all", options);
     addTest(b, "parser", options);
-    if (std.fs.cwd().access("src/tmp.zig", .{})) |_|
-        addTest(b, "tmp", options)
-    else |_| {}
+    if (std.fs.cwd().access("src/tmp.zig", .{})) |_| {
+        addRun(b, "tmp", options);
+        addTest(b, "tmp", options);
+    } else |_| {}
 }
 
 fn addMain(b: *std.Build, options: Options) void {
@@ -37,6 +38,19 @@ fn addMain(b: *std.Build, options: Options) void {
     }
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+}
+
+fn addRun(b: *std.Build, comptime name: []const u8, options: Options) void {
+    const exe = b.addExecutable(.{
+        .name = name,
+        .root_source_file = .{ .path = "src/" ++ name ++ ".zig" },
+        .target = options.target,
+        .optimize = options.optimize,
+    });
+    addImports(b, &exe.root_module);
+    const run = b.addRunArtifact(exe);
+    const run_step = b.step("run-" ++ name, "");
+    run_step.dependOn(&run.step);
 }
 
 fn addTest(b: *std.Build, comptime name: []const u8, options: Options) void {
