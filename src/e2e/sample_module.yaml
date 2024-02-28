@@ -1,0 +1,21 @@
+manifest_version: "0.1"
+name: sample
+description: sample
+options:
+  - key: option-key-1
+    description: sample
+    type: string
+    default: option-value-1
+command:
+  options:
+    - short: i
+      type: int
+      default: 0
+      description: i
+  subcommands:
+    - name: get
+      description: get
+      positionals:
+        - name: file
+          type: string
+          description: file
