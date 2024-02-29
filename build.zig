@@ -14,11 +14,13 @@ pub fn build(b: *std.Build) void {
 
     addMain(b, options);
 
-    addTest(b, "all", options);
-    addTest(b, "parser", options);
+    _ = addTest(b, "unit", options);
+    _ = addTest(b, "parser", options);
+    _ = addTest(b, "e2e", options);
+
     if (std.fs.cwd().access("src/tmp.zig", .{})) |_| {
         addRun(b, "tmp", options);
-        addTest(b, "tmp", options);
+        _ = addTest(b, "tmp", options);
     } else |_| {}
 }
 
@@ -53,7 +55,7 @@ fn addRun(b: *std.Build, comptime name: []const u8, options: Options) void {
     run_step.dependOn(&run.step);
 }
 
-fn addTest(b: *std.Build, comptime name: []const u8, options: Options) void {
+fn addTest(b: *std.Build, comptime name: []const u8, options: Options) *std.Build.Step {
     const tests = b.addTest(.{
         .root_source_file = .{ .path = "src/" ++ name ++ ".zig" },
         .target = options.target,
@@ -63,6 +65,7 @@ fn addTest(b: *std.Build, comptime name: []const u8, options: Options) void {
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test-" ++ name, "");
     test_step.dependOn(&run_tests.step);
+    return test_step;
 }
 
 fn addImports(b: *std.Build, module: *std.Build.Module) void {
