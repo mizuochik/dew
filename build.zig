@@ -22,7 +22,8 @@ pub fn build(b: *std.Build) void {
 
     if (std.fs.cwd().access("src/tmp.zig", .{})) |_| {
         addRun(b, "tmp", options);
-        _ = addTest(b, "tmp", options);
+        const test_tmp_step = addTest(b, "tmp", options);
+        b.getInstallStep().dependOn(test_tmp_step);
     } else |_| {}
 }
 
