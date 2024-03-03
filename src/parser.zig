@@ -36,6 +36,17 @@ pub fn character(state: *State, c: u8) Error!u8 {
     return try anyCharacter(state, &[_]u8{c});
 }
 
+pub fn string(state: *State, s: []const u8) Error![]const u8 {
+    if (state.input.len < s.len)
+        return Error.EndOfInput;
+    const head = state.input[0..s.len];
+    if (std.mem.eql(u8, head, s)) {
+        state.input = state.input[s.len..];
+        return head;
+    }
+    return Error.InvalidInput;
+}
+
 pub fn letter(state: *State) Error!u8 {
     const in = state.input;
     errdefer state.input = in;
@@ -110,6 +121,17 @@ test "parser a number" {
     defer state.deinit();
     const actual = try number(&state);
     try std.testing.expectEqual(123, actual);
+}
+
+test "parse a string" {
+    var state: State = .{
+        .input = "abc def",
+        .allocator = std.testing.allocator,
+    };
+    defer state.deinit();
+    const actual = try string(&state, "abc");
+    try std.testing.expectEqualStrings("abc", actual);
+    try std.testing.expectEqualStrings(" def", state.input);
 }
 
 test "parse end of input" {
