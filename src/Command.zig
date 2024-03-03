@@ -2,9 +2,16 @@ const std = @import("std");
 
 allocator: std.mem.Allocator,
 name: []const u8,
-options: std.StringArrayHashMap([]const u8),
-positionals: []const []const u8,
+options: std.StringArrayHashMap(?Value),
+positionals: []Value,
 subcommand: ?*@This(),
+
+pub const Value = union(enum) {
+    int: i64,
+    float: f64,
+    str: []const u8,
+    bool_: bool,
+};
 
 pub fn deinit(self: *@This()) void {
     self.allocator.free(self.name);
@@ -12,12 +19,21 @@ pub fn deinit(self: *@This()) void {
     var options = self.options.iterator();
     while (options.next()) |option| {
         self.allocator.free(option.key_ptr.*);
-        self.allocator.free(option.value_ptr.*);
+        if (option.value_ptr.*) |value| {
+            switch (value) {
+                .str => |s| self.allocator.free(s),
+                else => {},
+            }
+        }
     }
     self.options.deinit();
 
-    for (self.positionals) |positional|
-        self.allocator.free(positional);
+    for (self.positionals) |positional| {
+        switch (positional) {
+            .str => |s| self.allocator.free(s),
+            else => {},
+        }
+    }
     self.allocator.free(self.positionals);
 
     if (self.subcommand) |subcommand|
