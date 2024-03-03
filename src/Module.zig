@@ -1,14 +1,14 @@
 const std = @import("std");
 const Keyboard = @import("Keyboard.zig");
 const CommandLine = @import("CommandLine.zig");
+const ModuleDefinition = @import("ModuleDefinition.zig");
 
 pub const Error = error{
     InvalidCommand,
 };
 
 ptr: *anyopaque,
-name: []const u8,
-keys: std.AutoHashMap(Keyboard.Key, []const u8),
+definition: ModuleDefinition,
 vtable: *const VTable,
 
 pub fn runCommand(self: *@This(), arguments: [][]const u8, input: std.io.AnyReader, output: std.io.AnyWriter) anyerror!void {
@@ -22,5 +22,5 @@ pub const VTable = struct {
 
 pub fn deinit(self: *@This()) void {
     self.vtable.deinit(self.ptr);
-    self.keys.deinit();
+    self.definition.deinit();
 }
