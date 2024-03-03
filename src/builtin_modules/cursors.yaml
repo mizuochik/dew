@@ -1,0 +1,22 @@
+manifest_version: "0.1"
+name: cursors
+description: Cursors in an editor
+command:
+  description: Control cursors
+  options:
+    cursor:
+      short: c
+      description: Cursor id
+  subcommands:
+    get:
+      description: Get cursor info
+    move:
+      description: Move specified cursors
+      options:
+        select:
+          type: bool
+          description: Enable selecting
+      positionals:
+        - name: position
+          type: string
+          description: Target position
