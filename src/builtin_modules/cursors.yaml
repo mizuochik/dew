@@ -6,7 +6,9 @@ command:
   options:
     cursor:
       short: c
+      type: str
       description: Cursor id
+      default: "*"
   subcommands:
     get:
       description: Get cursor info
@@ -18,5 +20,5 @@ command:
           description: Enable selecting
       positionals:
         - name: position
-          type: string
+          type: str
           description: Target position

@@ -57,7 +57,7 @@ pub const ValueType = enum {
             .int
         else if (std.mem.eql(u8, source, "float"))
             .float
-        else if (std.mem.eql(u8, source, "string"))
+        else if (std.mem.eql(u8, source, "str"))
             .str
         else if (std.mem.eql(u8, source, "bool"))
             .bool_
@@ -73,10 +73,17 @@ pub const OptionArgument = struct {
     default: DefaultValue,
 
     pub fn fromValue(value: yaml.Value) !@This() {
+        const value_type = try ValueType.from(value.map.get("type").?.string);
         return .{
-            .short = value.map.get("short").?.string,
-            .type = try ValueType.from(value.map.get("type").?.string),
-            .default = try DefaultValue.from(value.map.get("default").?),
+            .short = if (value.map.get("short")) |v|
+                v.string
+            else
+                null,
+            .type = value_type,
+            .default = switch (value_type) {
+                .bool_ => .{ .bool_ = false },
+                else => try DefaultValue.from(value.map.get("default").?),
+            },
             .description = value.map.get("description").?.string,
         };
     }
@@ -128,13 +135,15 @@ pub fn fromValue(y: *yaml.Yaml, value: yaml.Value) !@This() {
     var definition: @This() = .{
         .yaml = undefined,
         .manifest_version = value.map.get("manifest_version").?.string,
-        .name = value.map.get("description").?.string,
+        .name = value.map.get("name").?.string,
         .description = value.map.get("description").?.string,
         .options = b: {
             var options = std.StringArrayHashMap(ModuleOption).init(y.arena.allocator());
-            var src_options = value.map.get("options").?.map.iterator();
-            while (src_options.next()) |src_option|
-                try options.putNoClobber(src_option.key_ptr.*, try ModuleOption.fromValue(src_option.value_ptr.*));
+            if (value.map.get("options")) |src_options| {
+                var src_options_it = src_options.map.iterator();
+                while (src_options_it.next()) |src_option|
+                    try options.putNoClobber(src_option.key_ptr.*, try ModuleOption.fromValue(src_option.value_ptr.*));
+            }
             break :b options;
         },
         .command = try Command.fromValue(y.arena.allocator(), value.map.get("command").?),
