@@ -36,13 +36,13 @@ pub fn character(state: *State, c: u8) Error!u8 {
     return try anyCharacter(state, &[_]u8{c});
 }
 
-pub fn string(state: *State, s: []const u8) Error![]const u8 {
+pub fn string(state: *State, s: []const u8) ![]const u8 {
     if (state.input.len < s.len)
         return Error.EndOfInput;
     const head = state.input[0..s.len];
     if (std.mem.eql(u8, head, s)) {
         state.input = state.input[s.len..];
-        return head;
+        return try state.allocator.dupe(u8, head);
     }
     return Error.InvalidInput;
 }
@@ -130,6 +130,7 @@ test "parse a string" {
     };
     defer state.deinit();
     const actual = try string(&state, "abc");
+    defer std.testing.allocator.free(actual);
     try std.testing.expectEqualStrings("abc", actual);
     try std.testing.expectEqualStrings(" def", state.input);
 }
