@@ -2,22 +2,22 @@ manifest_version: "0.1"
 name: sample
 description: sample
 options:
-  option-key:
+  - name: option-key
     description: sample
-    type: string
+    type: str
     default: option-value-1
 command:
   description: xxx
   options:
-    cursor:
+    - name: cursor
       short: c
       type: int
       default: 0
       description: i
   subcommands:
-    get:
+    - name: get
       description: get
       positionals:
         - name: file
-          type: string
+          type: str
           description: file

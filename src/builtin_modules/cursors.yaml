@@ -1,21 +1,26 @@
 manifest_version: "0.1"
 name: cursors
 description: Cursors in an editor
+options:
+  - name: hello
+    type: str
+    description: foo
+    default: '*'
 command:
   description: Control cursors
   options:
-    cursor:
+    - long: cursor
       short: c
       type: str
       description: Cursor id
       default: "*"
   subcommands:
-    get:
+    - name: get
       description: Get cursor info
-    move:
+    - name: move
       description: Move specified cursors
       options:
-        select:
+        - name: select
           type: bool
           description: Enable selecting
       positionals:

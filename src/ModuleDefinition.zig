@@ -5,26 +5,28 @@ manifest_version: []const u8,
 name: []const u8,
 description: []const u8,
 command: Command,
-options: std.StringArrayHashMap(ModuleOption),
+options: []ModuleOption,
 yaml: yaml.Yaml,
 
 pub const Command = struct {
+    name: []const u8,
     description: []const u8,
-    options: std.StringArrayHashMap(OptionArgument),
+    options: []OptionArgument,
     positionals: []PositionalArgument,
-    subcommands: std.StringArrayHashMap(Command),
+    subcommands: []Command,
 
-    pub fn fromValue(allocator: std.mem.Allocator, value: yaml.Value) !@This() {
+    pub fn fromValue(allocator: std.mem.Allocator, value: yaml.Value, module_name: ?[]const u8) !@This() {
         return .{
+            .name = module_name orelse value.map.get("name").?.string,
             .description = value.map.get("description").?.string,
             .options = b: {
-                var options = std.StringArrayHashMap(OptionArgument).init(allocator);
+                var options = std.ArrayList(OptionArgument).init(allocator);
+                errdefer options.deinit();
                 if (value.map.get("options")) |src_options| {
-                    var it = src_options.map.iterator();
-                    while (it.next()) |src|
-                        try options.putNoClobber(src.key_ptr.*, try OptionArgument.fromValue(src.value_ptr.*));
+                    for (src_options.list) |src|
+                        try options.append(try OptionArgument.fromValue(src));
                 }
-                break :b options;
+                break :b try options.toOwnedSlice();
             },
             .positionals = b: {
                 var positionals = std.ArrayList(PositionalArgument).init(allocator);
@@ -34,13 +36,12 @@ pub const Command = struct {
                 break :b try positionals.toOwnedSlice();
             },
             .subcommands = b: {
-                var subcommands = std.StringArrayHashMap(Command).init(allocator);
-                if (value.map.get("subcommands")) |src_subcommands| {
-                    var it = src_subcommands.map.iterator();
-                    while (it.next()) |src|
-                        try subcommands.putNoClobber(src.key_ptr.*, try Command.fromValue(allocator, src.value_ptr.*));
-                }
-                break :b subcommands;
+                var subcommands = std.ArrayList(Command).init(allocator);
+                errdefer subcommands.deinit();
+                if (value.map.get("subcommands")) |src_subcommands|
+                    for (src_subcommands.list) |src|
+                        try subcommands.append(try Command.fromValue(allocator, src, null));
+                break :b try subcommands.toOwnedSlice();
             },
         };
     }
@@ -67,6 +68,7 @@ pub const ValueType = enum {
 };
 
 pub const OptionArgument = struct {
+    long: ?[]const u8,
     short: ?[]const u8,
     type: ValueType,
     description: []const u8,
@@ -75,6 +77,10 @@ pub const OptionArgument = struct {
     pub fn fromValue(value: yaml.Value) !@This() {
         const value_type = try ValueType.from(value.map.get("type").?.string);
         return .{
+            .long = if (value.map.get("long")) |v|
+                v.string
+            else
+                null,
             .short = if (value.map.get("short")) |v|
                 v.string
             else
@@ -120,11 +126,13 @@ pub const PositionalArgument = struct {
 };
 
 pub const ModuleOption = struct {
+    name: []const u8,
     type: ValueType,
     description: []const u8,
 
     pub fn fromValue(value: yaml.Value) !@This() {
         return .{
+            .name = value.map.get("name").?.string,
             .description = value.map.get("description").?.string,
             .type = try ValueType.from(value.map.get("type").?.string),
         };
@@ -138,15 +146,14 @@ pub fn fromValue(y: *yaml.Yaml, value: yaml.Value) !@This() {
         .name = value.map.get("name").?.string,
         .description = value.map.get("description").?.string,
         .options = b: {
-            var options = std.StringArrayHashMap(ModuleOption).init(y.arena.allocator());
-            if (value.map.get("options")) |src_options| {
-                var src_options_it = src_options.map.iterator();
-                while (src_options_it.next()) |src_option|
-                    try options.putNoClobber(src_option.key_ptr.*, try ModuleOption.fromValue(src_option.value_ptr.*));
-            }
-            break :b options;
+            var options = std.ArrayList(ModuleOption).init(y.arena.allocator());
+            errdefer options.deinit();
+            if (value.map.get("options")) |src_options|
+                for (src_options.list) |src_option|
+                    try options.append(try ModuleOption.fromValue(src_option));
+            break :b try options.toOwnedSlice();
         },
-        .command = try Command.fromValue(y.arena.allocator(), value.map.get("command").?),
+        .command = try Command.fromValue(y.arena.allocator(), value.map.get("command").?, value.map.get("name").?.string),
     };
     definition.yaml = y.*;
     return definition;
