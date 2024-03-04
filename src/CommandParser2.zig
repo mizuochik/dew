@@ -75,11 +75,18 @@ fn commandOptions(state: *parser.State, definition: ModuleDefinition.Command) !s
                     const key = try state.allocator.dupe(u8, long);
                     errdefer state.allocator.free(key);
                     try options.putNoClobber(key, value);
-                } else |_| {
-                    continue;
-                }
-                _ = parser.spaces(state) catch
-                    try parser.endOfInput(state);
+                    _ = parser.spaces(state) catch
+                        try parser.endOfInput(state);
+                } else |_| {}
+            }
+            if (option_definition.short) |short| {
+                if (shortOption(state, option_definition)) |value| {
+                    const key = try state.allocator.dupe(u8, short);
+                    errdefer state.allocator.free(key);
+                    try options.putNoClobber(key, value);
+                    _ = parser.spaces(state) catch
+                        try parser.endOfInput(state);
+                } else |_| {}
             }
         }
         if (before.ptr == state.input.ptr)
@@ -98,6 +105,16 @@ fn longOption(state: *parser.State, definition: ModuleDefinition.OptionArgument)
     state.allocator.free(name);
     _ = parser.spaces(state) catch
         try parser.character(state, '=');
+    return typedValue(state, definition.type);
+}
+
+fn shortOption(state: *parser.State, definition: ModuleDefinition.OptionArgument) !Command.Value {
+    const in = state.input;
+    errdefer state.input = in;
+    _ = try parser.character(state, '-');
+    const name = try parser.string(state, definition.short.?);
+    state.allocator.free(name);
+    _ = parser.spaces(state) catch {}; // Allow no space
     return typedValue(state, definition.type);
 }
 
@@ -133,10 +150,13 @@ fn nameCharacter(state: *parser.State) !u8 {
 test "parse command" {
     var definition = try ModuleDefinition.parse(std.testing.allocator, @embedFile("builtin_modules/cursors.yaml"));
     defer definition.deinit();
-
-    var actual = try @This().parse(std.testing.allocator, definition.command, "cursors --cursor 1 move --select 10:5");
-    defer actual.deinit();
-
-    try std.testing.expectEqualStrings("cursors", actual.name);
-    try std.testing.expectFmt("1", "{s}", .{actual.options.get("cursor").?.str});
+    inline for (.{
+        .{ .option = "cursor", .given = "cursors --cursor 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1" } },
+        .{ .option = "c", .given = "cursors -c 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1" } },
+    }) |case| {
+        var actual = try @This().parse(std.testing.allocator, definition.command, case.given);
+        defer actual.deinit();
+        try std.testing.expectEqualStrings(case.expected.name, actual.name);
+        try std.testing.expectEqualStrings(case.expected.cursor, actual.options.get(case.option).?.str);
+    }
 }
