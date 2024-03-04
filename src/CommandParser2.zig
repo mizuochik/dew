@@ -3,43 +3,54 @@ const parser = @import("parser.zig");
 const ModuleDefinition = @import("ModuleDefinition.zig");
 const Command = @import("Command.zig");
 
-pub fn parse(allocator: std.mem.Allocator, name: []const u8, definition: ModuleDefinition.Command, input: []const u8) !Command {
+pub fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, input: []const u8) !Command {
     var state: parser.State = .{
         .allocator = allocator,
         .input = input,
     };
     parser.spaces(&state) catch {};
-    return command(&state, name, definition);
+    return command(&state, definition);
 }
 
-fn command(state: *parser.State, name: []const u8, definition: ModuleDefinition.Command) !Command {
-    std.debug.print("# definition = {s}\n", .{name});
-    std.debug.print("# state.input = {s}\n", .{state.input});
+fn command(state: *parser.State, definition: ModuleDefinition.Command) !Command {
+    const command_name = try parser.string(state, definition.name);
+    errdefer state.allocator.free(command_name);
 
-    const options = try command_options(state, definition);
+    _ = try parser.spaces(state);
+
+    const options = try commandOptions(state, definition);
     errdefer {
         var options_it = options.iterator();
         while (options_it.next()) |option| {
             state.allocator.free(option.key_ptr.*);
-            if (option.value_ptr.*) |value| {
-                switch (value) {
-                    .str => |s| state.allocator.free(s),
-                    else => {},
-                }
+            switch (option.value_ptr.*) {
+                .str => |s| state.allocator.free(s),
+                else => {},
             }
         }
     }
 
+    var positionals = std.ArrayList(Command.Value).init(state.allocator);
+    errdefer {
+        for (positionals.items) |value| {
+            switch (value) {
+                .str => |s| state.allocator.free(s),
+                else => {},
+            }
+        }
+        positionals.deinit();
+    }
+
     return .{
         .allocator = state.allocator,
-        .name = name,
+        .name = command_name,
         .options = options,
-        .positionals = undefined,
+        .positionals = try positionals.toOwnedSlice(),
         .subcommand = null,
     };
 }
 
-fn command_options(state: *parser.State, definition: ModuleDefinition.Command) !std.StringArrayHashMap(Command.Value) {
+fn commandOptions(state: *parser.State, definition: ModuleDefinition.Command) !std.StringArrayHashMap(Command.Value) {
     const in = state.input;
     errdefer state.input = in;
 
@@ -56,55 +67,63 @@ fn command_options(state: *parser.State, definition: ModuleDefinition.Command) !
         options.deinit();
     }
 
-    outer: while (true) {
-        var option_definitions = definition.options.iterator();
-        while (option_definitions.next()) |option_definition| {
-            _ = parser.string(state, "--") catch continue;
-            const key = try parser.string(state, option_definition.key_ptr.*);
-            errdefer state.allocator.free(key);
-            switch (option_definition.value_ptr.*.type) {
-                .bool_ => {
-                    try options.putNoClobber(key, .{ .bool_ = true });
-                    continue :outer;
-                },
-                .int => {
-                    const n = try parser.number(state);
-                    try options.putNoClobber(key, .{ .int = @intCast(n) });
-                    continue :outer;
-                },
-                .str => {
-                    std.debug.print("# parse str option: input = {s}, key = {s}\n", .{ state.input, option_definition.key_ptr.* });
-
-                    const s = try argument(state);
-                    errdefer state.allocator.free(s);
-                    try options.putNoClobber(key, .{ .str = s });
-                    continue :outer;
-                },
-                else => unreachable,
+    while (true) {
+        const before = state.input;
+        for (definition.options) |option_definition| {
+            if (option_definition.long) |long| {
+                if (longOption(state, option_definition)) |value| {
+                    const key = try state.allocator.dupe(u8, long);
+                    errdefer state.allocator.free(key);
+                    try options.putNoClobber(key, value);
+                } else |_| {
+                    continue;
+                }
+                _ = parser.spaces(state) catch
+                    try parser.endOfInput(state);
             }
         }
-        break;
+        if (before.ptr == state.input.ptr)
+            break;
     }
 
     return options;
 }
 
-fn command_option_key(state: *parser.State) ![]const u8 {
-    _ = state;
-    return undefined;
-}
-
-fn argument(state: *parser.State) ![]const u8 {
+fn longOption(state: *parser.State, definition: ModuleDefinition.OptionArgument) !Command.Value {
     const in = state.input;
     errdefer state.input = in;
-    var cs = std.ArrayList(u8).init(state.allocator);
-    errdefer cs.deinit();
-    const head = try nameCharacter(state);
-    try cs.append(head);
-    while (nameCharacter(state)) |c|
-        try cs.append(c)
-    else |_|
-        return cs.toOwnedSlice();
+    const dash = try parser.string(state, "--");
+    state.allocator.free(dash);
+    const name = try parser.string(state, definition.long.?);
+    state.allocator.free(name);
+    _ = parser.spaces(state) catch
+        try parser.character(state, '=');
+    return typedValue(state, definition.type);
+}
+
+fn typedValue(state: *parser.State, value_type: ModuleDefinition.ValueType) !Command.Value {
+    const in = state.input;
+    errdefer state.input = in;
+    switch (value_type) {
+        .bool_ => return .{ .bool_ = true },
+        .int => {
+            const n = try parser.number(state);
+            return .{ .int = @intCast(n) };
+        },
+        .str => {
+            var cs = std.ArrayList(u8).init(state.allocator);
+            errdefer cs.deinit();
+            const head = try nameCharacter(state);
+            try cs.append(head);
+            while (nameCharacter(state)) |c|
+                try cs.append(c)
+            else |_|
+                return .{
+                    .str = try cs.toOwnedSlice(),
+                };
+        },
+        else => unreachable,
+    }
 }
 
 fn nameCharacter(state: *parser.State) !u8 {
@@ -113,11 +132,11 @@ fn nameCharacter(state: *parser.State) !u8 {
 
 test "parse command" {
     var definition = try ModuleDefinition.parse(std.testing.allocator, @embedFile("builtin_modules/cursors.yaml"));
-    errdefer definition.deinit();
+    defer definition.deinit();
 
-    var actual = try @This().parse(std.testing.allocator, definition.name, definition.command, "cursors --cursor 1 move --select 10:5");
-    errdefer actual.deinit();
+    var actual = try @This().parse(std.testing.allocator, definition.command, "cursors --cursor 1 move --select 10:5");
+    defer actual.deinit();
 
     try std.testing.expectEqualStrings("cursors", actual.name);
-    try std.testing.expectFmt("1", "{}", .{actual.options.get("cursor").?});
+    try std.testing.expectFmt("1", "{s}", .{actual.options.get("cursor").?.str});
 }
