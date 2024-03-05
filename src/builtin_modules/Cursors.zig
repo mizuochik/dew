@@ -8,10 +8,12 @@ const Command = @import("../Command.zig");
 const Position = @import("../Position.zig");
 
 editor: *Editor,
+definition: ModuleDefinition,
 
 pub fn init(editor: *Editor) @This() {
     return .{
         .editor = editor,
+        .definition = ModuleDefinition.parse(editor.allocator, @embedFile("cursors.yaml")) catch unreachable,
     };
 }
 
@@ -22,11 +24,14 @@ pub fn module(self: *@This()) Module {
             .runCommand = runCommand,
             .deinit = deinit,
         },
-        .definition = ModuleDefinition.parse(self.editor.allocator, @embedFile("cursors.yaml")) catch unreachable,
+        .definition = &self.definition,
     };
 }
 
-fn deinit(_: *anyopaque) void {}
+fn deinit(ctx: *anyopaque) void {
+    var self: *@This() = @ptrCast(@alignCast(ctx));
+    self.definition.deinit();
+}
 
 fn runCommand(ctx: *anyopaque, command: *const Command, _: std.io.AnyReader, _: std.io.AnyWriter) anyerror!void {
     var self: *@This() = @ptrCast(@alignCast(ctx));

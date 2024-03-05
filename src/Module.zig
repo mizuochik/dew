@@ -14,14 +14,13 @@ pub const VTable = struct {
 };
 
 ptr: *anyopaque,
-definition: ModuleDefinition,
+definition: *const ModuleDefinition,
 vtable: *const VTable,
 
 pub fn runCommand(self: *@This(), command: *const Command, input: std.io.AnyReader, output: std.io.AnyWriter) anyerror!void {
     try self.vtable.runCommand(self.ptr, command, input, output);
 }
 
-pub fn deinit(self: *@This()) void {
+pub fn deinit(self: *const @This()) void {
     self.vtable.deinit(self.ptr);
-    self.definition.deinit();
 }
