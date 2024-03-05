@@ -18,7 +18,7 @@ fn command(state: *parser.State, definition: ModuleDefinition.Command) !Command 
 
     _ = try parser.spaces(state);
 
-    const options = try commandOptions(state, definition);
+    var options = try commandOptions(state, definition);
     errdefer {
         var options_it = options.iterator();
         while (options_it.next()) |option| {
@@ -28,25 +28,41 @@ fn command(state: *parser.State, definition: ModuleDefinition.Command) !Command 
                 else => {},
             }
         }
+        options.deinit();
     }
 
-    var positionals = std.ArrayList(Command.Value).init(state.allocator);
+    const positionals = try commandPositionals(state, definition);
     errdefer {
-        for (positionals.items) |value| {
-            switch (value) {
+        for (positionals) |positional| {
+            switch (positional) {
                 .str => |s| state.allocator.free(s),
                 else => {},
             }
         }
-        positionals.deinit();
+        state.allocator.free(positionals);
     }
+
+    const subcommand = if (definition.subcommands.len > 0) b: {
+        for (definition.subcommands) |subcmd_definition| {
+            var subcommand = command(state, subcmd_definition) catch continue;
+            errdefer subcommand.deinit();
+            const subcommand_ptr = try state.allocator.create(Command);
+            errdefer state.allocator.destroy(subcommand_ptr);
+            subcommand_ptr.* = subcommand;
+            break :b subcommand_ptr;
+        } else return parser.Error.InvalidInput;
+    } else null;
+    errdefer if (subcommand) |sc| {
+        sc.deinit();
+        state.allocator.destroy(sc);
+    };
 
     return .{
         .allocator = state.allocator,
         .name = command_name,
         .options = options,
-        .positionals = try positionals.toOwnedSlice(),
-        .subcommand = null,
+        .positionals = positionals,
+        .subcommand = subcommand,
     };
 }
 
@@ -72,18 +88,30 @@ fn commandOptions(state: *parser.State, definition: ModuleDefinition.Command) !s
         for (definition.options) |option_definition| {
             if (option_definition.long) |long| {
                 if (longOption(state, option_definition)) |value| {
-                    const key = try state.allocator.dupe(u8, long);
-                    errdefer state.allocator.free(key);
-                    try options.putNoClobber(key, value);
+                    {
+                        errdefer switch (value) {
+                            .str => |s| state.allocator.free(s),
+                            else => {},
+                        };
+                        const key = try state.allocator.dupe(u8, long);
+                        errdefer state.allocator.free(key);
+                        try options.putNoClobber(key, value);
+                    }
                     _ = parser.spaces(state) catch
                         try parser.endOfInput(state);
                 } else |_| {}
             }
             if (option_definition.short) |short| {
                 if (shortOption(state, option_definition)) |value| {
-                    const key = try state.allocator.dupe(u8, short);
-                    errdefer state.allocator.free(key);
-                    try options.putNoClobber(key, value);
+                    {
+                        errdefer switch (value) {
+                            .str => |s| state.allocator.free(s),
+                            else => {},
+                        };
+                        const key = try state.allocator.dupe(u8, short);
+                        errdefer state.allocator.free(key);
+                        try options.putNoClobber(key, value);
+                    }
                     _ = parser.spaces(state) catch
                         try parser.endOfInput(state);
                 } else |_| {}
@@ -94,6 +122,36 @@ fn commandOptions(state: *parser.State, definition: ModuleDefinition.Command) !s
     }
 
     return options;
+}
+
+fn commandPositionals(state: *parser.State, definition: ModuleDefinition.Command) ![]Command.Value {
+    const in = state.input;
+    errdefer state.input = in;
+    var positionals = std.ArrayList(Command.Value).init(state.allocator);
+    errdefer {
+        for (positionals.items) |positional| {
+            switch (positional) {
+                .str => |s| state.allocator.free(s),
+                else => {},
+            }
+        }
+        positionals.deinit();
+    }
+    for (definition.positionals) |positional_definition| {
+        {
+            const value = try typedValue(state, positional_definition.type);
+            errdefer {
+                switch (value) {
+                    .str => |s| state.allocator.free(s),
+                    else => {},
+                }
+            }
+            try positionals.append(value);
+        }
+        parser.spaces(state) catch
+            try parser.endOfInput(state);
+    }
+    return positionals.toOwnedSlice();
 }
 
 fn longOption(state: *parser.State, definition: ModuleDefinition.OptionArgument) !Command.Value {
@@ -144,19 +202,21 @@ fn typedValue(state: *parser.State, value_type: ModuleDefinition.ValueType) !Com
 }
 
 fn nameCharacter(state: *parser.State) !u8 {
-    return parser.letter(state) catch parser.digit(state) catch parser.anyCharacter(state, "-_./[]{}");
+    return parser.letter(state) catch parser.digit(state) catch parser.anyCharacter(state, "-_.:/[]{}");
 }
 
 test "parse command" {
     var definition = try ModuleDefinition.parse(std.testing.allocator, @embedFile("builtin_modules/cursors.yaml"));
     defer definition.deinit();
     inline for (.{
-        .{ .option = "cursor", .given = "cursors --cursor 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1" } },
-        .{ .option = "c", .given = "cursors -c 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1" } },
+        .{ .option = "cursor", .given = "cursors --cursor 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
+        .{ .option = "c", .given = "cursors -c 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
     }) |case| {
         var actual = try @This().parse(std.testing.allocator, definition.command, case.given);
         defer actual.deinit();
         try std.testing.expectEqualStrings(case.expected.name, actual.name);
         try std.testing.expectEqualStrings(case.expected.cursor, actual.options.get(case.option).?.str);
+        try std.testing.expectEqualStrings(case.expected.subcommand_name, actual.subcommand.?.name);
+        try std.testing.expectEqualStrings(case.expected.target, actual.subcommand.?.positionals[0].str);
     }
 }
