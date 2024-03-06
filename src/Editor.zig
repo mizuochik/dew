@@ -11,6 +11,7 @@ const TextView = @import("TextView.zig");
 const StatusView = @import("StatusView.zig");
 const DisplaySize = @import("DisplaySize.zig");
 const ResourceRegistry = @import("ResourceRegistry.zig");
+const ModuleRegistry = @import("ModuleRegistry.zig");
 
 pub const Options = struct {
     is_debug: bool = false,
@@ -25,6 +26,7 @@ display_size: DisplaySize,
 command_evaluator: CommandEvaluator,
 key_evaluator: KeyEvaluator,
 resource_registry: ResourceRegistry,
+module_registry: ModuleRegistry,
 keyboard: Keyboard,
 terminal: Terminal,
 client: Client,
@@ -67,6 +69,10 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     errdefer editor.resource_registry.deinit();
     try editor.resource_registry.registerBuiltinResources();
 
+    editor.module_registry = ModuleRegistry.init(editor);
+    errdefer editor.module_registry.deinit();
+    try editor.module_registry.appendBuiltinModules();
+
     editor.keyboard = .{};
     editor.terminal = .{};
 
@@ -80,6 +86,7 @@ pub fn deinit(self: *@This()) void {
     self.status_view.deinit();
     self.display.deinit();
     self.resource_registry.deinit();
+    self.module_registry.deinit();
     self.key_evaluator.deinit();
     self.client.deinit();
     self.allocator.destroy(self);
