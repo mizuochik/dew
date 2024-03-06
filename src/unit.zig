@@ -15,6 +15,7 @@ test {
         pub const CommandEvaluator = @import("CommandEvaluator.zig");
         pub const KeyEvaluator = @import("KeyEvaluator.zig");
         pub const Module = @import("Module.zig");
+        pub const ModuleRegistry = @import("ModuleRegistry.zig");
         pub const keyboard = @import("keyboard.zig");
         pub const Position = @import("Position.zig");
         pub const ModuleDefinition = @import("ModuleDefinition.zig");
