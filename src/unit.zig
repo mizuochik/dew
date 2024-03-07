@@ -11,6 +11,7 @@ test {
         pub const Command = @import("Command.zig");
         pub const CommandParser = @import("CommandParser.zig");
         pub const CommandParser2 = @import("CommandParser2.zig");
+        pub const CommandParser3 = @import("CommandParser3.zig");
         pub const ResourceRegistry = @import("ResourceRegistry.zig");
         pub const CommandEvaluator = @import("CommandEvaluator.zig");
         pub const KeyEvaluator = @import("KeyEvaluator.zig");
