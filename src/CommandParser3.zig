@@ -76,7 +76,7 @@ const ArgumentParser = struct {
         };
     }
 
-    fn commnadOptions(state: *State) !std.StringArrayHashMap(Command.Value) {
+    fn commnadOptions(state: *State, definition: ModuleDefinition.Command) !std.StringArrayHashMap(Command.Value) {
         var options = std.StringArrayHashMap(Command.Value).init(state.allocator);
         errdefer {
             var options_it = options.iterator();
@@ -89,7 +89,90 @@ const ArgumentParser = struct {
             }
             options.deinit();
         }
+
+        while (true) {
+            const before = state.pos;
+            for (definition.options) |option_definition| {
+                if (option_definition.long) |long| {
+                    if (longOption(state, option_definition)) |value| {
+                        {
+                            errdefer switch (value) {
+                                .str => |s| state.allocator.free(s),
+                                else => {},
+                            };
+                            const key = try state.allocator.dupe(u8, long);
+                            errdefer state.allocator.free(key);
+                            try options.putNoClobber(key, value);
+                        }
+                        _ = parser.spaces(state) catch
+                            try parser.endOfInput(state);
+                    } else |_| {}
+                }
+                if (option_definition.short) |short| {
+                    if (shortOption(state, option_definition)) |value| {
+                        {
+                            errdefer switch (value) {
+                                .str => |s| state.allocator.free(s),
+                                else => {},
+                            };
+                            const key = try state.allocator.dupe(u8, short);
+                            errdefer state.allocator.free(key);
+                            try options.putNoClobber(key, value);
+                        }
+                        _ = parser.spaces(state) catch
+                            try parser.endOfInput(state);
+                    } else |_| {}
+                }
+            }
+            if (before == state.pos)
+                break;
+        }
+
         return options;
+    }
+
+    fn longOption(state: *State, definition: ModuleDefinition.OptionArgument) !Command.Value {
+        const pos = state.pos;
+        errdefer state.pos = pos;
+        const expected = try std.fmt.allocPrint(state.allocator, "--{s}", .{definition.long.?});
+        defer state.allocator.free(expected);
+        const matched = try stringArgument(state, expected);
+        state.allocator.free(matched);
+        return typedValue(state, definition.type);
+    }
+
+    // fn shortOption(state: *parser.State, definition: ModuleDefinition.OptionArgument) !Command.Value {
+    //     const in = state.input;
+    //     errdefer state.input = in;
+    //     _ = try parser.character(state, '-');
+    //     const name = try parser.string(state, definition.short.?);
+    //     state.allocator.free(name);
+    //     _ = parser.spaces(state) catch {}; // Allow no space
+    //     return typedValue(state, definition.type);
+    // }
+
+    fn typedValue(state: *State, value_type: ModuleDefinition.ValueType) !Command.Value {
+        const pos = state.pos;
+        errdefer state.pos = pos;
+        switch (value_type) {
+            .bool_ => return .{ .bool_ = true },
+            .int => {
+                unreachable;
+            },
+            .str => {
+                var cs = std.ArrayList(u8).init(state.allocator);
+                errdefer cs.deinit();
+                const head = try nameCharacter(state);
+                try cs.append(head);
+                while (nameCharacter(state)) |c|
+                    try cs.append(c)
+                else |_|
+                    return .{
+                        .str = try cs.toOwnedSlice(),
+                    };
+            },
+            else => unreachable,
+        }
     }
 
     fn commandPositionals(state: *State) ![]Command.Value {
@@ -107,11 +190,22 @@ const ArgumentParser = struct {
     }
 
     fn stringArgument(state: *State, string: []const u8) ![]const u8 {
+        const pos = state.pos;
+        errdefer state.pos = pos;
         if (state.pos >= state.arguments.len)
             return Error.EndOfInput;
-        if (std.mem.eql(u8, state.arguments[state.pos], string))
+        const argument = try anyArgument(state);
+        if (std.mem.eql(u8, argument, string)) {
             return state.allocator.dupe(u8, state.arguments[state.pos]);
+        }
         return Error.InvalidArgument;
+    }
+
+    fn anyArgument(state: *State) ![]const u8 {
+        if (state.pos >= state.arguments.len)
+            return Error.EndOfInput;
+        state.pos += 1;
+        return state.arguments[state.pos];
     }
 };
 
@@ -177,8 +271,8 @@ test "parse command" {
     }) |case| {
         var actual = try @This().parse(std.testing.allocator, definition.command, case.given);
         defer actual.deinit();
-        // try std.testing.expectEqualStrings(case.expected.name, actual.name);
-        // try std.testing.expectEqualStrings(case.expected.cursor, actual.options.get(case.option).?.str);
+        try std.testing.expectEqualStrings(case.expected.name, actual.name);
+        try std.testing.expectEqualStrings(case.expected.cursor, actual.options.get(case.option).?.str);
         // try std.testing.expectEqualStrings(case.expected.subcommand_name, actual.subcommand.?.name);
         // try std.testing.expectEqualStrings(case.expected.target, actual.subcommand.?.positionals[0].str);
     }
