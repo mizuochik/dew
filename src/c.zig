@@ -1,3 +1,4 @@
 pub usingnamespace @cImport({
-    @cInclude("sys/ioctl.h");
+    // FIXME
+    @cInclude("linux/ioctl.h");
 });
