@@ -43,7 +43,7 @@ const ArgumentParser = struct {
         const command_name = try stringArgument(state, definition.name);
         errdefer state.allocator.free(command_name);
 
-        var options = try commnadOptions(state);
+        var options = try commnadOptions(state, definition);
         errdefer {
             var options_it = options.iterator();
             while (options_it.next()) |option| {
@@ -104,24 +104,23 @@ const ArgumentParser = struct {
                             errdefer state.allocator.free(key);
                             try options.putNoClobber(key, value);
                         }
-                        _ = parser.spaces(state) catch
-                            try parser.endOfInput(state);
                     } else |_| {}
                 }
                 if (option_definition.short) |short| {
-                    if (shortOption(state, option_definition)) |value| {
-                        {
-                            errdefer switch (value) {
-                                .str => |s| state.allocator.free(s),
-                                else => {},
-                            };
-                            const key = try state.allocator.dupe(u8, short);
-                            errdefer state.allocator.free(key);
-                            try options.putNoClobber(key, value);
-                        }
-                        _ = parser.spaces(state) catch
-                            try parser.endOfInput(state);
-                    } else |_| {}
+                    _ = short;
+                    // if (shortOption(state, option_definition)) |value| {
+                    //     {
+                    //         errdefer switch (value) {
+                    //             .str => |s| state.allocator.free(s),
+                    //             else => {},
+                    //         };
+                    //         const key = try state.allocator.dupe(u8, short);
+                    //         errdefer state.allocator.free(key);
+                    //         try options.putNoClobber(key, value);
+                    //     }
+                    //     _ = parser.spaces(state) catch
+                    //         try parser.endOfInput(state);
+                    // } else |_| {}
                 }
             }
             if (before == state.pos)
@@ -154,22 +153,14 @@ const ArgumentParser = struct {
     fn typedValue(state: *State, value_type: ModuleDefinition.ValueType) !Command.Value {
         const pos = state.pos;
         errdefer state.pos = pos;
+        defer state.pos += 1;
         switch (value_type) {
             .bool_ => return .{ .bool_ = true },
             .int => {
                 unreachable;
             },
-            .str => {
-                var cs = std.ArrayList(u8).init(state.allocator);
-                errdefer cs.deinit();
-                const head = try nameCharacter(state);
-                try cs.append(head);
-                while (nameCharacter(state)) |c|
-                    try cs.append(c)
-                else |_|
-                    return .{
-                        .str = try cs.toOwnedSlice(),
-                    };
+            .str => return .{
+                .str = try state.allocator.dupe(u8, state.arguments[state.pos]),
             },
             else => unreachable,
         }
