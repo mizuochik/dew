@@ -45,10 +45,11 @@ pub const WindowSize = struct {
 };
 
 pub fn getWindowSize(_: *const @This()) !WindowSize {
-    var ws: c.winsize = undefined;
-    const status = c.ioctl(std.io.getStdOut().handle, c.TIOCGWINSZ, &ws);
-    if (status != 0) {
-        return error.UnknownWinsize;
+    var ws: std.os.linux.winsize = undefined;
+    const fd: usize = std.os.STDIN_FILENO;
+    const rc = std.os.linux.syscall3(.ioctl, fd, std.os.linux.T.IOCGWINSZ, @intFromPtr(&ws));
+    switch (std.os.linux.getErrno(rc)) {
+        else => |no| std.debug.print("result = {}\n", .{no}),
     }
     return WindowSize{
         .rows = ws.ws_row,
