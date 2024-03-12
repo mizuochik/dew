@@ -95,32 +95,25 @@ const ArgumentParser = struct {
             for (definition.options) |option_definition| {
                 if (option_definition.long) |long| {
                     if (longOption(state, option_definition)) |value| {
-                        {
-                            errdefer switch (value) {
-                                .str => |s| state.allocator.free(s),
-                                else => {},
-                            };
-                            const key = try state.allocator.dupe(u8, long);
-                            errdefer state.allocator.free(key);
-                            try options.putNoClobber(key, value);
-                        }
+                        errdefer switch (value) {
+                            .str => |s| state.allocator.free(s),
+                            else => {},
+                        };
+                        const key = try state.allocator.dupe(u8, long);
+                        errdefer state.allocator.free(key);
+                        try options.putNoClobber(key, value);
                     } else |_| {}
                 }
                 if (option_definition.short) |short| {
-                    _ = short;
-                    // if (shortOption(state, option_definition)) |value| {
-                    //     {
-                    //         errdefer switch (value) {
-                    //             .str => |s| state.allocator.free(s),
-                    //             else => {},
-                    //         };
-                    //         const key = try state.allocator.dupe(u8, short);
-                    //         errdefer state.allocator.free(key);
-                    //         try options.putNoClobber(key, value);
-                    //     }
-                    //     _ = parser.spaces(state) catch
-                    //         try parser.endOfInput(state);
-                    // } else |_| {}
+                    if (shortOption(state, option_definition)) |value| {
+                        errdefer switch (value) {
+                            .str => |s| state.allocator.free(s),
+                            else => {},
+                        };
+                        const key = try state.allocator.dupe(u8, short);
+                        errdefer state.allocator.free(key);
+                        try options.putNoClobber(key, value);
+                    } else |_| {}
                 }
             }
             if (before == state.pos)
@@ -140,15 +133,15 @@ const ArgumentParser = struct {
         return typedValue(state, definition.type);
     }
 
-    // fn shortOption(state: *parser.State, definition: ModuleDefinition.OptionArgument) !Command.Value {
-    //     const in = state.input;
-    //     errdefer state.input = in;
-    //     _ = try parser.character(state, '-');
-    //     const name = try parser.string(state, definition.short.?);
-    //     state.allocator.free(name);
-    //     _ = parser.spaces(state) catch {}; // Allow no space
-    //     return typedValue(state, definition.type);
-    // }
+    fn shortOption(state: *State, definition: ModuleDefinition.OptionArgument) !Command.Value {
+        const pos = state.pos;
+        errdefer state.pos = pos;
+        const expected = try std.fmt.allocPrint(state.allocator, "-{s}", .{definition.short.?});
+        defer state.allocator.free(expected);
+        const matched = try stringArgument(state, expected);
+        state.allocator.free(matched);
+        return typedValue(state, definition.type);
+    }
 
     fn typedValue(state: *State, value_type: ModuleDefinition.ValueType) !Command.Value {
         const pos = state.pos;
@@ -259,7 +252,7 @@ test "parse command" {
     defer definition.deinit();
     inline for (.{
         .{ .option = "cursor", .given = "cursors --cursor 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
-        // .{ .option = "c", .given = "cursors -c 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
+        .{ .option = "c", .given = "cursors -c 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
     }) |case| {
         var actual = try @This().parse(std.testing.allocator, definition.command, case.given);
         defer actual.deinit();
