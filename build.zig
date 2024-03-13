@@ -16,7 +16,7 @@ pub fn build(b: *std.Build) void {
 
     const test_unit_step = addTest(b, "unit", options);
     _ = addTest(b, "parser", options);
-    _ = addTest(b, "e2e", options);
+    const test_e2e_step = addTest(b, "e2e", options);
 
     b.getInstallStep().dependOn(test_unit_step);
 
@@ -25,6 +25,10 @@ pub fn build(b: *std.Build) void {
         const test_tmp_step = addTest(b, "tmp", options);
         b.getInstallStep().dependOn(test_tmp_step);
     } else |_| {}
+
+    const test_all_step = b.step("test-all", "");
+    test_all_step.dependOn(test_unit_step);
+    test_all_step.dependOn(test_e2e_step);
 }
 
 fn addMain(b: *std.Build, options: Options) void {
