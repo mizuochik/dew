@@ -34,8 +34,8 @@ pub fn deinit(self: *@This()) void {
     }
     self.allocator.free(self.positionals);
 
-    if (self.subcommand) |subcommand| {
+    if (self.subcommand) |subcommand|
         subcommand.deinit();
-        self.allocator.destroy(subcommand);
-    }
+
+    self.allocator.destroy(self);
 }

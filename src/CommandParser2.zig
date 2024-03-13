@@ -3,7 +3,7 @@ const parser = @import("parser.zig");
 const ModuleDefinition = @import("ModuleDefinition.zig");
 const Command = @import("Command.zig");
 
-pub fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, input: []const u8) !Command {
+pub fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, input: []const u8) !*Command {
     var state: parser.State = .{
         .allocator = allocator,
         .input = input,
@@ -12,7 +12,7 @@ pub fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command,
     return command(&state, definition);
 }
 
-fn command(state: *parser.State, definition: ModuleDefinition.Command) !Command {
+fn command(state: *parser.State, definition: ModuleDefinition.Command) !*Command {
     const command_name = try parser.string(state, definition.name);
     errdefer state.allocator.free(command_name);
 
@@ -42,28 +42,27 @@ fn command(state: *parser.State, definition: ModuleDefinition.Command) !Command 
         state.allocator.free(positionals);
     }
 
-    const subcommand = if (definition.subcommands.len > 0) b: {
-        for (definition.subcommands) |subcmd_definition| {
-            var subcommand = command(state, subcmd_definition) catch continue;
-            errdefer subcommand.deinit();
-            const subcommand_ptr = try state.allocator.create(Command);
-            errdefer state.allocator.destroy(subcommand_ptr);
-            subcommand_ptr.* = subcommand;
-            break :b subcommand_ptr;
-        } else return parser.Error.InvalidInput;
-    } else null;
+    const subcommand = if (definition.subcommands.len > 0)
+        for (definition.subcommands) |subcmd_definition|
+            break command(state, subcmd_definition) catch continue
+        else
+            return parser.Error.InvalidInput
+    else
+        null;
     errdefer if (subcommand) |sc| {
         sc.deinit();
         state.allocator.destroy(sc);
     };
 
-    return .{
+    const cmd = try state.allocator.create(Command);
+    cmd.* = .{
         .allocator = state.allocator,
         .name = command_name,
         .options = options,
         .positionals = positionals,
         .subcommand = subcommand,
     };
+    return cmd;
 }
 
 fn commandOptions(state: *parser.State, definition: ModuleDefinition.Command) !std.StringArrayHashMap(Command.Value) {
