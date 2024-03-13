@@ -20,31 +20,36 @@ const State = struct {
     }
 };
 
-pub fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, input: []const u8) !*Command {
+pub fn parse(allocator: std.mem.Allocator, definitions: []const ModuleDefinition.Command, input: []const u8) !*Command {
     const args = try RawParser.parse(allocator, input);
     defer {
         for (args) |arg|
             std.testing.allocator.free(arg);
         std.testing.allocator.free(args);
     }
-    return ArgumentParser.parse(allocator, definition, args);
+    return ArgumentParser.parse(allocator, definitions, args);
 }
 
 const ArgumentParser = struct {
-    fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, arguments: []const []const u8) !*Command {
+    fn parse(allocator: std.mem.Allocator, definitions: []const ModuleDefinition.Command, arguments: []const []const u8) !*Command {
         var state: State = .{
             .allocator = allocator,
             .arguments = arguments,
         };
-        return command(&state, definition);
+        return command(&state, definitions);
     }
 
-    fn command(state: *State, definition: ModuleDefinition.Command) !*Command {
+    fn command(state: *State, definitions: []const ModuleDefinition.Command) !*Command {
         const pos = state.pos;
         errdefer state.pos = pos;
 
-        const command_name = try stringArgument(state, definition.name);
+        const command_name = try anyArgument(state);
         errdefer state.allocator.free(command_name);
+
+        const definition = for (definitions) |definition| {
+            if (std.mem.eql(u8, command_name, definition.name))
+                break definition;
+        } else return error.UnknownCommand;
 
         var options = try commnadOptions(state, definition);
         errdefer {
@@ -70,18 +75,10 @@ const ArgumentParser = struct {
             state.allocator.free(positionals);
         }
 
-        const subcommand = if (definition.subcommands.len > 0) sc: {
-            var err: ?anyerror = null;
-            for (definition.subcommands) |subcommand_definition|
-                if (command(state, subcommand_definition)) |sc|
-                    break :sc sc
-                else |e| {
-                    err = e;
-                    continue;
-                }
-            else
-                return err.?;
-        } else null;
+        const subcommand = if (definition.subcommands.len > 0)
+            try command(state, definition.subcommands)
+        else
+            null;
 
         const cmd = try state.allocator.create(Command);
         errdefer state.allocator.destroy(cmd);
@@ -208,16 +205,17 @@ const ArgumentParser = struct {
         if (state.pos >= state.arguments.len)
             return Error.EndOfInput;
         const argument = try anyArgument(state);
-        if (std.mem.eql(u8, argument, string)) {
-            return state.allocator.dupe(u8, argument);
-        }
+        errdefer state.allocator.free(argument);
+        if (std.mem.eql(u8, argument, string))
+            return argument;
         return Error.InvalidArgument;
     }
 
     fn anyArgument(state: *State) ![]const u8 {
         if (state.pos >= state.arguments.len)
             return Error.EndOfInput;
-        const argument = state.arguments[state.pos];
+        const argument = try state.allocator.dupe(u8, state.arguments[state.pos]);
+        errdefer state.allocator.free(argument);
         state.pos += 1;
         return argument;
     }
@@ -283,7 +281,7 @@ test "parse command" {
         .{ .option = "cursor", .given = "cursors --cursor 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
         .{ .option = "c", .given = "cursors -c 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
     }) |case| {
-        var actual = try @This().parse(std.testing.allocator, definition.command, case.given);
+        var actual = try @This().parse(std.testing.allocator, &[_]ModuleDefinition.Command{definition.command}, case.given);
         defer actual.deinit();
         try std.testing.expectEqualStrings(case.expected.name, actual.name);
         try std.testing.expectEqualStrings(case.expected.cursor, actual.options.get(case.option).?.str);
