@@ -20,7 +20,7 @@ const State = struct {
     }
 };
 
-pub fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, input: []const u8) !Command {
+pub fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, input: []const u8) !*Command {
     const args = try RawParser.parse(allocator, input);
     defer {
         for (args) |arg|
@@ -31,7 +31,7 @@ pub fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command,
 }
 
 const ArgumentParser = struct {
-    fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, arguments: []const []const u8) !Command {
+    fn parse(allocator: std.mem.Allocator, definition: ModuleDefinition.Command, arguments: []const []const u8) !*Command {
         var state: State = .{
             .allocator = allocator,
             .arguments = arguments,
@@ -39,7 +39,10 @@ const ArgumentParser = struct {
         return command(&state, definition);
     }
 
-    fn command(state: *State, definition: ModuleDefinition.Command) !Command {
+    fn command(state: *State, definition: ModuleDefinition.Command) !*Command {
+        const pos = state.pos;
+        errdefer state.pos = pos;
+
         const command_name = try stringArgument(state, definition.name);
         errdefer state.allocator.free(command_name);
 
@@ -56,7 +59,7 @@ const ArgumentParser = struct {
             options.deinit();
         }
 
-        const positionals = try commandPositionals(state);
+        const positionals = try commandPositionals(state, definition);
         errdefer {
             for (positionals) |positional| {
                 switch (positional) {
@@ -64,16 +67,32 @@ const ArgumentParser = struct {
                     else => {},
                 }
             }
-            positionals.deinit();
+            state.allocator.free(positionals);
         }
 
-        return .{
+        const subcommand = if (definition.subcommands.len > 0) sc: {
+            var err: ?anyerror = null;
+            for (definition.subcommands) |subcommand_definition|
+                if (command(state, subcommand_definition)) |sc|
+                    break :sc sc
+                else |e| {
+                    err = e;
+                    continue;
+                }
+            else
+                return err.?;
+        } else null;
+
+        const cmd = try state.allocator.create(Command);
+        errdefer state.allocator.destroy(cmd);
+        cmd.* = .{
             .allocator = state.allocator,
             .name = command_name,
             .options = options,
             .positionals = positionals,
-            .subcommand = null,
+            .subcommand = subcommand,
         };
+        return cmd;
     }
 
     fn commnadOptions(state: *State, definition: ModuleDefinition.Command) !std.StringArrayHashMap(Command.Value) {
@@ -159,18 +178,28 @@ const ArgumentParser = struct {
         }
     }
 
-    fn commandPositionals(state: *State) ![]Command.Value {
-        var poss = std.ArrayList(Command.Value).init(state.allocator);
+    fn commandPositionals(state: *State, definition: ModuleDefinition.Command) ![]Command.Value {
+        var positionals = std.ArrayList(Command.Value).init(state.allocator);
         errdefer {
-            for (poss.items) |pos| {
+            for (positionals.items) |pos| {
                 switch (pos) {
                     .str => |s| state.allocator.free(s),
                     else => {},
                 }
             }
-            poss.deinit();
+            positionals.deinit();
         }
-        return poss.toOwnedSlice();
+        for (definition.positionals) |positional_definition| {
+            const positional = try typedValue(state, positional_definition.type);
+            errdefer {
+                switch (positional) {
+                    .str => |s| state.allocator.free(s),
+                    else => {},
+                }
+            }
+            try positionals.append(positional);
+        }
+        return positionals.toOwnedSlice();
     }
 
     fn stringArgument(state: *State, string: []const u8) ![]const u8 {
@@ -258,7 +287,7 @@ test "parse command" {
         defer actual.deinit();
         try std.testing.expectEqualStrings(case.expected.name, actual.name);
         try std.testing.expectEqualStrings(case.expected.cursor, actual.options.get(case.option).?.str);
-        // try std.testing.expectEqualStrings(case.expected.subcommand_name, actual.subcommand.?.name);
-        // try std.testing.expectEqualStrings(case.expected.target, actual.subcommand.?.positionals[0].str);
+        try std.testing.expectEqualStrings(case.expected.subcommand_name, actual.subcommand.?.name);
+        try std.testing.expectEqualStrings(case.expected.target, actual.subcommand.?.positionals[0].str);
     }
 }
