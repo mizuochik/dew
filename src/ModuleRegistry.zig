@@ -37,3 +37,7 @@ pub fn appendBuiltinModules(self: *@This()) !void {
     errdefer cursors.module().deinit();
     try self.append(cursors.module());
 }
+
+pub fn iterator(self: *@This()) std.StringHashMap(Module).ValueIterator {
+    return self.modules.valueIterator();
+}
