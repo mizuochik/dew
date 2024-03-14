@@ -2,18 +2,6 @@ const std = @import("std");
 const buildtin = @import("builtin");
 const c = @import("c.zig");
 
-const darwin_ECHO: std.os.tcflag_t = 0x8;
-const darwin_ICANON: std.os.tcflag_t = 0x100;
-const darwin_ISIG: std.os.tcflag_t = 0x80;
-const darwin_IXON: std.os.tcflag_t = 0x200;
-const darwin_IEXTEN: std.os.tcflag_t = 0x400;
-const darwin_ICRNL: std.os.tcflag_t = 0x100;
-const darwin_OPOST: std.os.tcflag_t = 0x1;
-const darwin_BRKINT: std.os.tcflag_t = 0x2;
-const darwin_INPCK: std.os.tcflag_t = 0x10;
-const darwin_ISTRIP: std.os.tcflag_t = 0x20;
-const darwin_CS8: std.os.tcflag_t = 0x300;
-
 orig_termios: ?std.os.termios = null,
 
 pub fn enableRawMode(self: *@This()) !void {
