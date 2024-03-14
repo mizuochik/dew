@@ -24,8 +24,8 @@ pub fn parse(allocator: std.mem.Allocator, definitions: []const ModuleDefinition
     const args = try RawParser.parse(allocator, input);
     defer {
         for (args) |arg|
-            std.testing.allocator.free(arg);
-        std.testing.allocator.free(args);
+            allocator.free(arg);
+        allocator.free(args);
     }
     return ArgumentParser.parse(allocator, definitions, args);
 }
