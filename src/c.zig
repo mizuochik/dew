@@ -1,4 +1,8 @@
+const builtin = @import("builtin");
+
 pub usingnamespace @cImport({
-    // FIXME
-    @cInclude("linux/ioctl.h");
+    @cInclude(switch (builtin.os.tag) {
+        .linux => "linux/ioctl.h",
+        else => "sys/ioctl.h",
+    });
 });

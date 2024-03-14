@@ -1,4 +1,5 @@
 const std = @import("std");
+const buildtin = @import("builtin");
 const c = @import("c.zig");
 
 const darwin_ECHO: std.os.tcflag_t = 0x8;
@@ -45,14 +46,29 @@ pub const WindowSize = struct {
 };
 
 pub fn getWindowSize(_: *const @This()) !WindowSize {
-    var ws: std.os.linux.winsize = undefined;
-    const fd: usize = std.os.STDIN_FILENO;
-    const rc = std.os.linux.syscall3(.ioctl, fd, std.os.linux.T.IOCGWINSZ, @intFromPtr(&ws));
-    switch (std.os.linux.getErrno(rc)) {
-        else => |no| std.debug.print("result = {}\n", .{no}),
+    switch (buildtin.os.tag) {
+        .linux => {
+            var ws: std.os.linux.winsize = undefined;
+            const fd: usize = std.os.STDIN_FILENO;
+            const rc = std.os.linux.syscall3(.ioctl, fd, std.os.linux.T.IOCGWINSZ, @intFromPtr(&ws));
+            switch (std.os.linux.getErrno(rc)) {
+                else => |no| std.debug.print("result = {}\n", .{no}),
+            }
+            return WindowSize{
+                .rows = ws.ws_row,
+                .cols = ws.ws_col,
+            };
+        },
+        else => {
+            var ws: c.winsize = undefined;
+            const status = c.ioctl(std.io.getStdOut().handle, c.TIOCGWINSZ, &ws);
+            if (status != 0) {
+                return error.UnknownWinsize;
+            }
+            return WindowSize{
+                .rows = ws.ws_row,
+                .cols = ws.ws_col,
+            };
+        },
     }
-    return WindowSize{
-        .rows = ws.ws_row,
-        .cols = ws.ws_col,
-    };
 }
