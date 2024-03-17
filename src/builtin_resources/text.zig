@@ -4,20 +4,20 @@ const Resource = @import("../Resource.zig");
 const TextView = @import("../TextView.zig");
 
 pub fn init(allocator: std.mem.Allocator) !Resource {
-    var cursors = Resource.init(allocator);
-    errdefer cursors.deinit();
-    try cursors.putMethod("break-line", breakLine);
-    try cursors.putMethod("join-lines", joinLines);
-    try cursors.putMethod("kill-line", killLine);
-    try cursors.putMethod("delete-character", deleteCharacter);
-    try cursors.putMethod("delete-backward-character", deleteBackwardCharacter);
-    return cursors;
+    var selections = Resource.init(allocator);
+    errdefer selections.deinit();
+    try selections.putMethod("break-line", breakLine);
+    try selections.putMethod("join-lines", joinLines);
+    try selections.putMethod("kill-line", killLine);
+    try selections.putMethod("delete-character", deleteCharacter);
+    try selections.putMethod("delete-backward-character", deleteBackwardCharacter);
+    return selections;
 }
 
 fn killLine(editor: *Editor, _: [][]const u8) !void {
     const edit = editor.client.active_ref.?;
-    try edit.text.killLine(edit.cursor.getPosition());
-    getCurrentView(editor).updateLastCursorX(editor.client.getActiveEdit().?);
+    try edit.text.killLine(edit.selection.getPosition());
+    getCurrentView(editor).updateLastSelectionX(editor.client.getActiveEdit().?);
 }
 
 fn breakLine(editor: *Editor, _: [][]const u8) !void {
@@ -28,25 +28,25 @@ fn breakLine(editor: *Editor, _: [][]const u8) !void {
         return;
     }
     const edit = editor.client.active_ref.?;
-    try edit.text.breakLine(edit.cursor.getPosition());
-    try edit.cursor.moveForward();
-    getCurrentView(editor).updateLastCursorX(editor.client.getActiveEdit().?);
+    try edit.text.breakLine(edit.selection.getPosition());
+    try edit.selection.moveForward();
+    getCurrentView(editor).updateLastSelectionX(editor.client.getActiveEdit().?);
 }
 
 fn joinLines(editor: *Editor, _: [][]const u8) !void {
     const edit = editor.client.active_ref.?;
-    try edit.text.joinLine(edit.cursor.getPosition());
+    try edit.text.joinLine(edit.selection.getPosition());
 }
 
 fn deleteCharacter(editor: *Editor, _: [][]const u8) !void {
     const edit = editor.client.active_ref.?;
-    try edit.text.deleteChar(edit.cursor.getPosition());
+    try edit.text.deleteChar(edit.selection.getPosition());
 }
 
 fn deleteBackwardCharacter(editor: *Editor, _: [][]const u8) !void {
     const edit = editor.client.active_ref.?;
-    try edit.cursor.moveBackward();
-    try edit.text.deleteChar(edit.cursor.getPosition());
+    try edit.selection.moveBackward();
+    try edit.text.deleteChar(edit.selection.getPosition());
 }
 
 fn getCurrentView(editor: *Editor) *TextView {

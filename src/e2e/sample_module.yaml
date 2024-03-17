@@ -9,7 +9,7 @@ options:
 command:
   description: xxx
   options:
-    - name: cursor
+    - name: selection
       short: c
       type: int
       default: 0

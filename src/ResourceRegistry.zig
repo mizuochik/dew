@@ -32,9 +32,9 @@ pub fn registerBuiltinResources(self: *@This()) !void {
     errdefer files.deinit();
     try self.resources.putNoClobber("files", files);
     errdefer _ = self.resources.remove("files");
-    const cursors = try builtin_resources.cursors.init(self.allocator);
-    try self.resources.putNoClobber("cursors", cursors);
-    errdefer _ = self.resources.remove("cursors");
+    const selections = try builtin_resources.selections.init(self.allocator);
+    try self.resources.putNoClobber("selections", selections);
+    errdefer _ = self.resources.remove("selections");
     const view = try builtin_resources.view.init(self.allocator);
     try self.resources.putNoClobber("view", view);
     errdefer _ = self.resources.remove("view");

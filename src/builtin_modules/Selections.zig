@@ -11,13 +11,13 @@ editor: *Editor,
 definition: ModuleDefinition,
 
 pub fn init(editor: *Editor) !*@This() {
-    const cursors = try editor.allocator.create(@This());
-    errdefer editor.allocator.destroy(cursors);
-    cursors.* = .{
+    const selections = try editor.allocator.create(@This());
+    errdefer editor.allocator.destroy(selections);
+    selections.* = .{
         .editor = editor,
         .definition = ModuleDefinition.parse(editor.allocator, @embedFile("selections.yaml")) catch unreachable,
     };
-    return cursors;
+    return selections;
 }
 
 pub fn module(self: *@This()) Module {
@@ -48,7 +48,7 @@ fn runCommand(ctx: *anyopaque, command: *const Command, _: std.io.AnyReader, _: 
             .input = command.subcommand.?.positionals[0].str,
         };
         const position = try parsePosition(&state);
-        try self.editor.client.active_ref.?.cursor.setPosition(position);
+        try self.editor.client.active_ref.?.selection.setPosition(position);
         return;
     }
     unreachable;

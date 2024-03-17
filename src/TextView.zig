@@ -47,28 +47,28 @@ pub fn isActive(self: *const @This(), edit: *TextRef) bool {
     return edit == active_ref;
 }
 
-pub fn viewCursor(self: *const @This(), edit: *TextRef) ?Position {
+pub fn viewSelection(self: *const @This(), edit: *TextRef) ?Position {
     if (!self.isActive(edit)) {
         return null;
     }
-    const cursor = self.getCursor(edit);
-    const y_offset = if (cursor.y >= edit.y_scroll) cursor.y - edit.y_scroll else return null;
+    const selection = self.getSelection(edit);
+    const y_offset = if (selection.y >= edit.y_scroll) selection.y - edit.y_scroll else return null;
     if (y_offset >= self.height) {
         return null;
     }
     return .{
-        .x = cursor.x,
+        .x = selection.x,
         .y = y_offset,
     };
 }
 
-pub fn getCursor(self: *const @This(), edit: *TextRef) Position {
-    const cursor = switch (self.mode) {
-        .command => self.editor.client.command_line_ref.cursor,
-        else => self.editor.client.getActiveFile().?.cursor,
+pub fn getSelection(self: *const @This(), edit: *TextRef) Position {
+    const selection = switch (self.mode) {
+        .command => self.editor.client.command_line_ref.selection,
+        else => self.editor.client.getActiveFile().?.selection,
     };
-    const c_y = cursor.y;
-    const c_x = cursor.x;
+    const c_y = selection.y;
+    const c_x = selection.x;
     if (self.rows.items.len <= 0) {
         return .{
             .x = 0,
@@ -115,21 +115,21 @@ pub fn getBufferPosition(self: *const @This(), edit: *TextRef, view_position: Po
     };
 }
 
-pub fn getNormalizedCursor(self: *@This(), edit: *TextRef) Position {
+pub fn getNormalizedSelection(self: *@This(), edit: *TextRef) Position {
     const upper_limit = edit.y_scroll;
     const bottom_limit = edit.y_scroll + self.height;
-    const cursor = self.getCursor(edit);
-    if (cursor.y < upper_limit) {
-        return .{ .x = cursor.x, .y = upper_limit };
+    const selection = self.getSelection(edit);
+    if (selection.y < upper_limit) {
+        return .{ .x = selection.x, .y = upper_limit };
     }
-    if (cursor.y >= bottom_limit) {
-        return .{ .x = cursor.x, .y = bottom_limit - 1 };
+    if (selection.y >= bottom_limit) {
+        return .{ .x = selection.x, .y = bottom_limit - 1 };
     }
-    return cursor;
+    return selection;
 }
 
-pub fn updateLastCursorX(self: *@This(), edit: *TextRef) void {
-    edit.cursor.last_view_x = self.getCursor(edit).x;
+pub fn updateLastSelectionX(self: *@This(), edit: *TextRef) void {
+    edit.selection.last_view_x = self.getSelection(edit).x;
 }
 
 pub fn setSize(self: *@This(), width: usize, height: usize) !void {
@@ -208,8 +208,8 @@ pub fn render(self: *@This(), buffer: *Display.Buffer, edit: *TextRef) !void {
     }
     self.rows.deinit();
     self.rows = new_rows;
-    if (self.viewCursor(edit)) |cursor| {
-        if (cells[cursor.y * buffer.width + cursor.x]) |*cell| {
+    if (self.viewSelection(edit)) |selection| {
+        if (cells[selection.y * buffer.width + selection.x]) |*cell| {
             cell.background = .gray;
         }
     }

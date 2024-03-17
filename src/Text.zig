@@ -1,6 +1,6 @@
 const std = @import("std");
 const UnicodeString = @import("UnicodeString.zig");
-const Cursor = @import("Cursor.zig");
+const Selection = @import("Selection.zig");
 const Position = @import("Position.zig");
 
 pub const Mode = enum {

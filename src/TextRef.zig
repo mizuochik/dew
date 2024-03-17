@@ -1,14 +1,14 @@
 const Text = @import("Text.zig");
-const Cursor = @import("Cursor.zig");
+const Selection = @import("Selection.zig");
 
 text: *Text,
-cursor: Cursor,
+selection: Selection,
 y_scroll: usize = 0,
 
 pub fn init(text: *Text) @This() {
     return .{
         .text = text,
-        .cursor = .{
+        .selection = .{
             .text = text,
         },
     };

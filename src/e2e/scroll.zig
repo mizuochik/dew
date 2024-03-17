@@ -5,7 +5,7 @@ test "scroll down/up" {
     const editor = try Editor.init(std.testing.allocator, .{});
     defer editor.deinit();
     try editor.display.setSize(10, 11); // 11 lines = 10 lines (file content) + one line (status bar)
-    try editor.client.getActiveFile().?.cursor.text.openFile("src/e2e/line-numbers.txt");
+    try editor.client.getActiveFile().?.selection.text.openFile("src/e2e/line-numbers.txt");
     try editor.display.render();
     {
         try editor.key_evaluator.evaluate(.{ .ctrl = 'V' });

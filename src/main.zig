@@ -34,8 +34,8 @@ pub fn main() !void {
 
     const win_size = try editor.terminal.getWindowSize();
     try editor.display.setSize(win_size.cols, win_size.rows);
-    try editor.display.initTerminalCursor();
-    defer editor.display.deinitTerminalCursor();
+    try editor.display.initTerminalSelection();
+    defer editor.display.deinitTerminalSelection();
 
     try editor.command_evaluator.evaluateFormat(
         \\files.open "{s}"

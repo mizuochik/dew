@@ -103,7 +103,7 @@ command_view: *TextView,
 allocator: std.mem.Allocator,
 client: *Client,
 size: *DisplaySize,
-active_cursor_position: ?Position = null,
+active_selection_position: ?Position = null,
 
 pub const Area = struct {
     rows: [][]u8,
@@ -179,7 +179,7 @@ pub fn render(self: *@This()) !void {
     try self.file_view.render(&self.buffer, self.client.getActiveFile().?);
     try self.command_view.render(&self.buffer, &self.client.command_line_ref);
     try self.status_view.render(&self.buffer, &self.client.status);
-    self.updateActiveCursorPosition();
+    self.updateActiveSelectionPosition();
     try self.drawBuffer();
 }
 
@@ -201,11 +201,11 @@ fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 
     return new_buffer;
 }
 
-fn updateActiveCursorPosition(self: *@This()) void {
-    if (self.file_view.viewCursor(self.client.getActiveFile().?)) |position|
-        self.active_cursor_position = position;
-    if (self.command_view.viewCursor(&self.client.command_line_ref)) |position|
-        self.active_cursor_position = .{
+fn updateActiveSelectionPosition(self: *@This()) void {
+    if (self.file_view.viewSelection(self.client.getActiveFile().?)) |position|
+        self.active_selection_position = position;
+    if (self.command_view.viewSelection(&self.client.command_line_ref)) |position|
+        self.active_selection_position = .{
             .x = position.x,
             .y = position.y + self.size.rows - 1,
         };
@@ -219,7 +219,7 @@ fn drawBuffer(self: *const @This()) !void {
     defer arena.deinit();
     var tmp = std.ArrayList(u8).init(self.allocator);
     defer tmp.deinit();
-    try self.moveTerminalCursor(arena.allocator(), &tmp, 0, 0);
+    try self.moveTerminalSelection(arena.allocator(), &tmp, 0, 0);
     var last_background = Color.default;
     for (0..self.buffer.height) |y| {
         if (y > 0) try tmp.appendSlice("\r\n");
@@ -238,22 +238,22 @@ fn drawBuffer(self: *const @This()) !void {
             }
         }
     }
-    if (self.active_cursor_position) |position| {
-        try self.moveTerminalCursor(arena.allocator(), &tmp, position.x, position.y);
+    if (self.active_selection_position) |position| {
+        try self.moveTerminalSelection(arena.allocator(), &tmp, position.x, position.y);
     }
     try std.io.getStdOut().writeAll(tmp.items);
 }
 
-pub fn initTerminalCursor(_: *const @This()) !void {
-    // Hide terminal cursor
+pub fn initTerminalSelection(_: *const @This()) !void {
+    // Hide terminal selection
     _ = try std.io.getStdOut().write("\x1b[?25l");
 }
 
-pub fn deinitTerminalCursor(_: *const @This()) void {
-    // Show terminal cursor
+pub fn deinitTerminalSelection(_: *const @This()) void {
+    // Show terminal selection
     _ = std.io.getStdOut().write("\x1b[?25h") catch unreachable;
 }
 
-fn moveTerminalCursor(_: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
+fn moveTerminalSelection(_: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
     try buf.appendSlice(try std.fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
 }

@@ -46,8 +46,8 @@ pub fn evaluate(self: *@This(), key: Keyboard.Key) !void {
     switch (key) {
         .plain => |k| {
             const ref = self.editor.client.active_ref.?;
-            try ref.text.insertChar(ref.cursor.getPosition(), k);
-            try ref.cursor.moveForward();
+            try ref.text.insertChar(ref.selection.getPosition(), k);
+            try ref.selection.moveForward();
             return;
         },
         else => return error.NoKeyMap,
@@ -56,16 +56,16 @@ pub fn evaluate(self: *@This(), key: Keyboard.Key) !void {
 
 pub fn installDefaultKeyMap(self: *@This()) !void {
     try self.putBuiltinKeyMap("C+q", .{"editor.quit"});
-    try self.putBuiltinKeyMap("C+f", .{"cursors.move-to forward-character"});
-    try self.putBuiltinKeyMap("C+b", .{"cursors.move-to backward-character"});
-    try self.putBuiltinKeyMap("C+p", .{"cursors.move-to previous-line"});
-    try self.putBuiltinKeyMap("C+n", .{"cursors.move-to next-line"});
-    try self.putBuiltinKeyMap("right", .{"cursors.move-to forward-character"});
-    try self.putBuiltinKeyMap("left", .{"cursors.move-to backward-character"});
-    try self.putBuiltinKeyMap("up", .{"cursors.move-to previous-line"});
-    try self.putBuiltinKeyMap("down", .{"cursors.move-to next-line"});
-    try self.putBuiltinKeyMap("C+a", .{"cursors.move-to beginning-of-line"});
-    try self.putBuiltinKeyMap("C+e", .{"cursors.move-to end-of-line"});
+    try self.putBuiltinKeyMap("C+f", .{"selections.move-to forward-character"});
+    try self.putBuiltinKeyMap("C+b", .{"selections.move-to backward-character"});
+    try self.putBuiltinKeyMap("C+p", .{"selections.move-to previous-line"});
+    try self.putBuiltinKeyMap("C+n", .{"selections.move-to next-line"});
+    try self.putBuiltinKeyMap("right", .{"selections.move-to forward-character"});
+    try self.putBuiltinKeyMap("left", .{"selections.move-to backward-character"});
+    try self.putBuiltinKeyMap("up", .{"selections.move-to previous-line"});
+    try self.putBuiltinKeyMap("down", .{"selections.move-to next-line"});
+    try self.putBuiltinKeyMap("C+a", .{"selections.move-to beginning-of-line"});
+    try self.putBuiltinKeyMap("C+e", .{"selections.move-to end-of-line"});
     try self.putBuiltinKeyMap("C+v", .{"view.scroll . down"});
     try self.putBuiltinKeyMap("A+v", .{"view.scroll . up"});
     try self.putBuiltinKeyMap("C+k", .{"text.kill-line"});

@@ -23,16 +23,16 @@ fn scroll(editor: *Editor, params: [][]const u8) anyerror!void {
     var view = getCurrentView(editor);
     if (std.mem.eql(u8, direction, "up")) {
         view.scrollUp(editor.client.getActiveEdit().?, view.height);
-        const buf_pos = view.getBufferPosition(editor.client.getActiveFile().?, view.getNormalizedCursor(editor.client.getActiveFile().?));
+        const buf_pos = view.getBufferPosition(editor.client.getActiveFile().?, view.getNormalizedSelection(editor.client.getActiveFile().?));
         const edit = editor.client.active_ref.?;
-        try edit.cursor.setPosition(buf_pos);
+        try edit.selection.setPosition(buf_pos);
         return;
     }
     if (std.mem.eql(u8, direction, "down")) {
         view.scrollDown(editor.client.getActiveEdit().?, view.height);
-        const buf_pos = view.getBufferPosition(editor.client.getActiveFile().?, view.getNormalizedCursor(editor.client.getActiveFile().?));
+        const buf_pos = view.getBufferPosition(editor.client.getActiveFile().?, view.getNormalizedSelection(editor.client.getActiveFile().?));
         const edit = editor.client.active_ref.?;
-        try edit.cursor.setPosition(buf_pos);
+        try edit.selection.setPosition(buf_pos);
         return;
     }
     return error.UnknownLocation;

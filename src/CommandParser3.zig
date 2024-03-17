@@ -278,13 +278,13 @@ test "parse command" {
     var definition = try ModuleDefinition.parse(std.testing.allocator, @embedFile("builtin_modules/selections.yaml"));
     defer definition.deinit();
     inline for (.{
-        .{ .option = "cursor", .given = "cursors --cursor 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
-        .{ .option = "c", .given = "cursors -c 1 move 10:5", .expected = .{ .name = "cursors", .cursor = "1", .subcommand_name = "move", .target = "10:5" } },
+        .{ .option = "selection", .given = "selections --selection 1 move 10:5", .expected = .{ .name = "selections", .selection = "1", .subcommand_name = "move", .target = "10:5" } },
+        .{ .option = "c", .given = "selections -c 1 move 10:5", .expected = .{ .name = "selections", .selection = "1", .subcommand_name = "move", .target = "10:5" } },
     }) |case| {
         var actual = try @This().parse(std.testing.allocator, &[_]ModuleDefinition.Command{definition.command}, case.given);
         defer actual.deinit();
         try std.testing.expectEqualStrings(case.expected.name, actual.name);
-        try std.testing.expectEqualStrings(case.expected.cursor, actual.options.get(case.option).?.str);
+        try std.testing.expectEqualStrings(case.expected.selection, actual.options.get(case.option).?.str);
         try std.testing.expectEqualStrings(case.expected.subcommand_name, actual.subcommand.?.name);
         try std.testing.expectEqualStrings(case.expected.target, actual.subcommand.?.positionals[0].str);
     }

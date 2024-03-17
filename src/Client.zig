@@ -1,6 +1,6 @@
 const std = @import("std");
 const Text = @import("Text.zig");
-const Cursor = @import("Cursor.zig");
+const Selection = @import("Selection.zig");
 const Status = @import("Status.zig");
 const TextRef = @import("TextRef.zig");
 
@@ -39,7 +39,7 @@ pub fn deinit(self: *@This()) void {
 pub fn toggleCommandLine(self: *@This()) !void {
     if (self.isCommandLineActive()) {
         try self.command_line.clear();
-        self.command_line_ref.cursor.x = 0;
+        self.command_line_ref.selection.x = 0;
         self.active_ref = self.getActiveFile();
     } else {
         self.active_ref = &self.command_line_ref;

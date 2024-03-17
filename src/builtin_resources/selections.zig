@@ -4,10 +4,10 @@ const Resource = @import("../Resource.zig");
 const TextView = @import("../TextView.zig");
 
 pub fn init(allocator: std.mem.Allocator) !Resource {
-    var cursors = Resource.init(allocator);
-    errdefer cursors.deinit();
-    try cursors.putMethod("move-to", moveTo);
-    return cursors;
+    var selections = Resource.init(allocator);
+    errdefer selections.deinit();
+    try selections.putMethod("move-to", moveTo);
+    return selections;
 }
 
 fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
@@ -20,39 +20,39 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
     const location = params[0];
     var edit = editor.client.getActiveEdit() orelse return;
     if (std.mem.eql(u8, location, "forward-character")) {
-        try edit.cursor.moveForward();
-        getCurrentView(editor).updateLastCursorX(editor.client.getActiveEdit().?);
+        try edit.selection.moveForward();
+        getCurrentView(editor).updateLastSelectionX(editor.client.getActiveEdit().?);
         return;
     }
     if (std.mem.eql(u8, location, "backward-character")) {
-        try edit.cursor.moveBackward();
-        getCurrentView(editor).updateLastCursorX(editor.client.getActiveEdit().?);
+        try edit.selection.moveBackward();
+        getCurrentView(editor).updateLastSelectionX(editor.client.getActiveEdit().?);
         return;
     }
     const view = getCurrentView(editor);
-    const view_y = view.getCursor(edit).y;
+    const view_y = view.getSelection(edit).y;
     if (std.mem.eql(u8, location, "next-line")) {
         if (view_y >= view.getNumberOfLines() - 1) {
             return;
         }
-        const pos = view.getBufferPosition(edit, .{ .x = edit.cursor.last_view_x, .y = view_y + 1 });
-        try edit.cursor.setPosition(pos);
+        const pos = view.getBufferPosition(edit, .{ .x = edit.selection.last_view_x, .y = view_y + 1 });
+        try edit.selection.setPosition(pos);
         return;
     }
     if (std.mem.eql(u8, location, "previous-line")) {
         if (view_y <= 0) {
             return;
         }
-        const pos = view.getBufferPosition(edit, .{ .x = edit.cursor.last_view_x, .y = view_y - 1 });
-        try edit.cursor.setPosition(pos);
+        const pos = view.getBufferPosition(edit, .{ .x = edit.selection.last_view_x, .y = view_y - 1 });
+        try edit.selection.setPosition(pos);
         return;
     }
     if (std.mem.eql(u8, location, "beginning-of-line")) {
-        try edit.cursor.moveToBeginningOfLine();
+        try edit.selection.moveToBeginningOfLine();
         return;
     }
     if (std.mem.eql(u8, location, "end-of-line")) {
-        try edit.cursor.moveToEndOfLine();
+        try edit.selection.moveToEndOfLine();
         return;
     }
     return error.UnknownLocation;

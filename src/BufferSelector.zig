@@ -54,7 +54,7 @@ pub fn openFileBuffer(self: *@This(), name: []const u8) !void {
 }
 
 pub fn saveFileBuffer(self: *@This(), name: []const u8) !void {
-    const text = try self.editor.client.getActiveFile().?.cursor.text.clone();
+    const text = try self.editor.client.getActiveFile().?.selection.text.clone();
     errdefer text.deinit();
     const key = try self.allocator.dupe(u8, name);
     errdefer self.allocator.free(key);
