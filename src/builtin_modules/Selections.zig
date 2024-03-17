@@ -15,7 +15,7 @@ pub fn init(editor: *Editor) !*@This() {
     errdefer editor.allocator.destroy(cursors);
     cursors.* = .{
         .editor = editor,
-        .definition = ModuleDefinition.parse(editor.allocator, @embedFile("cursors.yaml")) catch unreachable,
+        .definition = ModuleDefinition.parse(editor.allocator, @embedFile("selections.yaml")) catch unreachable,
     };
     return cursors;
 }

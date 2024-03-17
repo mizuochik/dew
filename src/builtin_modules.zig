@@ -1,1 +1,1 @@
-pub const Cursors = @import("builtin_modules/Cursors.zig");
+pub const Selections = @import("builtin_modules/Selections.zig");

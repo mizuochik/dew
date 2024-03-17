@@ -33,9 +33,9 @@ pub fn get(self: *const @This(), name: []const u8) ?Module {
 }
 
 pub fn appendBuiltinModules(self: *@This()) !void {
-    var cursors = try builtin_modules.Cursors.init(self.editor);
-    errdefer cursors.module().deinit();
-    try self.append(cursors.module());
+    var selections = try builtin_modules.Selections.init(self.editor);
+    errdefer selections.module().deinit();
+    try self.append(selections.module());
 }
 
 pub fn iterator(self: *@This()) std.StringHashMap(Module).ValueIterator {
