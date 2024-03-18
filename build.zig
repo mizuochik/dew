@@ -38,7 +38,7 @@ fn addMain(b: *std.Build, options: Options) void {
         .target = options.target,
         .optimize = options.optimize,
     });
-    addImports(b, &exe.root_module);
+    linkLibraries(b, exe);
     b.installArtifact(exe);
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
@@ -56,7 +56,7 @@ fn addRun(b: *std.Build, comptime name: []const u8, options: Options) void {
         .target = options.target,
         .optimize = options.optimize,
     });
-    addImports(b, &exe.root_module);
+    linkLibraries(b, exe);
     const run = b.addRunArtifact(exe);
     const run_step = b.step("run-" ++ name, "");
     run_step.dependOn(&run.step);
@@ -68,23 +68,32 @@ fn addTest(b: *std.Build, comptime name: []const u8, options: Options) *std.Buil
         .target = options.target,
         .optimize = options.optimize,
     });
-    addImports(b, &tests.root_module);
+    linkLibraries(b, tests);
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test-" ++ name, "");
     test_step.dependOn(&run_tests.step);
     return test_step;
 }
 
-fn addImports(b: *std.Build, module: *std.Build.Module) void {
-    module.addImport("yaml", b.addModule("yaml", .{
+fn linkLibraries(b: *std.Build, exe: *std.Build.Step.Compile) void {
+    exe.root_module.addImport("yaml", b.addModule("yaml", .{
         .root_source_file = .{
             .path = "lib/zig-yaml/src/yaml.zig",
         },
     }));
-    module.addImport("ziglyph", b.addModule("ziglyph", .{
+    exe.root_module.addImport("ziglyph", b.addModule("ziglyph", .{
         .root_source_file = .{
             .path = "lib/ziglyph/src/ziglyph.zig",
         },
     }));
-    module.addImport("clap", b.dependency("clap", .{}).module("clap"));
+    exe.root_module.addImport("clap", b.dependency("clap", .{}).module("clap"));
+
+    const libyaml_root: []const u8 = std.os.getenv("LIBYAML_ROOT").?;
+    exe.addIncludePath(.{
+        .path = std.fmt.allocPrint(b.allocator, "{s}/include", .{libyaml_root}) catch unreachable,
+    });
+    exe.addLibraryPath(.{
+        .path = std.fmt.allocPrint(b.allocator, "{s}/lib", .{libyaml_root}) catch unreachable,
+    });
+    exe.linkSystemLibrary("yaml-0.2");
 }

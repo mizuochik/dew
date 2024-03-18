@@ -5,4 +5,5 @@ pub usingnamespace @cImport({
         .linux => "linux/ioctl.h",
         else => "sys/ioctl.h",
     });
+    @cInclude("yaml.h");
 });
