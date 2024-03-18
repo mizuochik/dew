@@ -16,33 +16,39 @@ pub const Command = struct {
     subcommands: []Command,
 
     pub fn fromValue(allocator: std.mem.Allocator, value: yaml.Value, module_name: ?[]const u8) !@This() {
+        const options = b: {
+            var options_al = std.ArrayList(OptionArgument).init(allocator);
+            errdefer options_al.deinit();
+            if (value.map.get("options")) |src_options| {
+                for (src_options.list) |src|
+                    try options_al.append(try OptionArgument.fromValue(src));
+            }
+            break :b try options_al.toOwnedSlice();
+        };
+        errdefer allocator.free(options);
+        const positionals = b: {
+            var positionals = std.ArrayList(PositionalArgument).init(allocator);
+            if (value.map.get("positionals")) |src_positionals|
+                for (src_positionals.list) |src|
+                    try positionals.append(try PositionalArgument.fromValue(src));
+            break :b try positionals.toOwnedSlice();
+        };
+        errdefer allocator.free(positionals);
+        const subcommands = b: {
+            var subcommands = std.ArrayList(Command).init(allocator);
+            errdefer subcommands.deinit();
+            if (value.map.get("subcommands")) |src_subcommands|
+                for (src_subcommands.list) |src|
+                    try subcommands.append(try Command.fromValue(allocator, src, null));
+            break :b try subcommands.toOwnedSlice();
+        };
+        errdefer allocator.free(subcommands);
         return .{
             .name = module_name orelse value.map.get("name").?.string,
             .description = value.map.get("description").?.string,
-            .options = b: {
-                var options = std.ArrayList(OptionArgument).init(allocator);
-                errdefer options.deinit();
-                if (value.map.get("options")) |src_options| {
-                    for (src_options.list) |src|
-                        try options.append(try OptionArgument.fromValue(src));
-                }
-                break :b try options.toOwnedSlice();
-            },
-            .positionals = b: {
-                var positionals = std.ArrayList(PositionalArgument).init(allocator);
-                if (value.map.get("positionals")) |src_positionals|
-                    for (src_positionals.list) |src|
-                        try positionals.append(try PositionalArgument.fromValue(src));
-                break :b try positionals.toOwnedSlice();
-            },
-            .subcommands = b: {
-                var subcommands = std.ArrayList(Command).init(allocator);
-                errdefer subcommands.deinit();
-                if (value.map.get("subcommands")) |src_subcommands|
-                    for (src_subcommands.list) |src|
-                        try subcommands.append(try Command.fromValue(allocator, src, null));
-                break :b try subcommands.toOwnedSlice();
-            },
+            .options = options,
+            .positionals = positionals,
+            .subcommands = subcommands,
         };
     }
 };
