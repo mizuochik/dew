@@ -10,7 +10,7 @@ command:
   description: Control selections
   options:
     - long: selection
-      short: c
+      short: s
       type: str
       description: Selection id
       default: "*"
