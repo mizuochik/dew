@@ -86,7 +86,11 @@ fn linkLibraries(b: *std.Build, exe: *std.Build.Step.Compile) void {
             .path = "lib/ziglyph/src/ziglyph.zig",
         },
     }));
-    exe.root_module.addImport("clap", b.dependency("clap", .{}).module("clap"));
+    exe.root_module.addImport("clap", b.addModule("clap", .{
+        .root_source_file = .{
+            .path = "lib/zig-clap/clap.zig",
+        },
+    }));
 
     const libyaml_root: []const u8 = std.os.getenv("LIBYAML_ROOT").?;
     exe.addIncludePath(.{

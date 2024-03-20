@@ -4,3 +4,6 @@
 [submodule "lib/lib/zig-yaml"]
 	path = lib/lib/zig-yaml
 	url = https://github.com/kubkon/zig-yaml.git
+[submodule "lib/zig-clap"]
+	path = lib/zig-clap
+	url = https://github.com/Hejsil/zig-clap.git

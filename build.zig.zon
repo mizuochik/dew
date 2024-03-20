@@ -1,12 +1,6 @@
 .{
     .name = "dew",
     .version = "0.0.0",
-    .dependencies = .{
-        .clap = .{
-            .url = "https://github.com/mizuochik/zig-clap/archive/refs/tags/20240109T072140.tar.gz",
-            .hash = "12209e829da9d7d0bc089e4e0cbc07bb882f6192cd583277277da34df53cd05b8f2a",
-        },
-    },
     .paths = .{
         "build.zig",
         "build.zig.zon",
