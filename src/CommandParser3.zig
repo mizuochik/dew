@@ -164,7 +164,7 @@ const ArgumentParser = struct {
         errdefer state.pos = pos;
         defer state.pos += 1;
         switch (value_type) {
-            .bool_ => return .{ .bool_ = true },
+            .bool => return .{ .bool = true },
             .int => {
                 unreachable;
             },

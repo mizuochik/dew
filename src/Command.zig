@@ -10,7 +10,7 @@ pub const Value = union(enum) {
     int: i64,
     float: f64,
     str: []const u8,
-    bool_: bool,
+    bool: bool,
 };
 
 pub fn deinit(self: *@This()) void {

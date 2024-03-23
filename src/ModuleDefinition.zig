@@ -20,7 +20,7 @@ pub const ValueType = enum {
     int,
     float,
     str,
-    bool_,
+    bool,
 };
 
 pub const OptionArgument = struct {
@@ -46,7 +46,7 @@ pub const PositionalArgument = struct {
 
 pub const ModuleOption = struct {
     name: []const u8,
-    type_: ValueType,
+    type: ValueType,
     description: []const u8,
     default: DefaultValue,
 };
@@ -210,7 +210,7 @@ const Parser = struct {
         }
         return .{
             .name = name orelse return Error.UnexpectedInput,
-            .type_ = type_ orelse return Error.UnexpectedInput,
+            .type = type_ orelse return Error.UnexpectedInput,
             .description = description orelse return Error.UnexpectedInput,
             .default = default orelse return Error.UnexpectedInput,
         };
@@ -235,7 +235,7 @@ const Parser = struct {
         else if (std.mem.eql(u8, s, "str"))
             .str
         else if (std.mem.eql(u8, s, "bool"))
-            .bool_
+            .bool
         else
             Error.UnexpectedInput;
     }
@@ -459,7 +459,7 @@ test "parseByLibYaml" {
         .options = &[_]ModuleOption{
             .{
                 .name = "hello",
-                .type_ = .str,
+                .type = .str,
                 .description = "foo",
                 .default = .{ .str = "*" },
             },
@@ -492,7 +492,7 @@ test "parseByLibYaml" {
                         .{
                             .long = "select",
                             .short = null,
-                            .type = ValueType.bool_,
+                            .type = ValueType.bool,
                             .description = "Enable selecting",
                             .default = null,
                         },
