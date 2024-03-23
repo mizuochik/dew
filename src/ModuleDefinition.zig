@@ -218,6 +218,7 @@ const Parser = struct {
         var name: ?[]const u8 = null;
         var description: ?[]const u8 = null;
         var module_options: ?[]ModuleOption = null;
+        var command_: ?Command = null;
         {
             var event: c.yaml_event_s = undefined;
             if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
@@ -260,6 +261,8 @@ const Parser = struct {
                     description = try self.scalarString()
                 else if (std.mem.eql(u8, key, "options"))
                     module_options = try self.moduleOptions()
+                else if (std.mem.eql(u8, key, "command"))
+                    command_ = try self.command(name orelse return Error.UnexpectedInput)
                 else {
                     break;
                 }
@@ -267,14 +270,15 @@ const Parser = struct {
             }
             break;
         }
-
+        if (command_) |*cmd|
+            cmd.name = name orelse return Error.UnexpectedInput;
         return .{
             .arena = self.arena,
-            .manifest_version = manifest_version orelse unreachable,
-            .name = name orelse unreachable,
-            .description = description orelse unreachable,
-            .command = undefined,
-            .options = module_options orelse unreachable,
+            .manifest_version = manifest_version orelse return Error.UnexpectedInput,
+            .name = name orelse return Error.UnexpectedInput,
+            .description = description orelse return Error.UnexpectedInput,
+            .command = command_ orelse return Error.UnexpectedInput,
+            .options = module_options orelse return Error.UnexpectedInput,
             .yaml = undefined,
         };
     }
@@ -377,4 +381,134 @@ const Parser = struct {
         else |_|
             .{ .str = try self.arena.allocator().dupe(u8, source) };
     }
+
+    fn command(self: *Parser, module_name: ?[]const u8) !Command {
+        {
+            var event: c.yaml_event_s = undefined;
+            if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
+                return Error.YamlParseError;
+            defer c.yaml_event_delete(&event);
+            if (event.type != c.YAML_MAPPING_START_EVENT)
+                return Error.UnexpectedInput;
+        }
+        var description: ?[]const u8 = null;
+        var options: ?[]OptionArgument = null;
+        var name: ?[]const u8 = module_name;
+        while (true) {
+            var event: c.yaml_event_s = undefined;
+            if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
+                return Error.YamlParseError;
+            defer c.yaml_event_delete(&event);
+            if (event.type == c.YAML_MAPPING_END_EVENT)
+                break;
+            if (event.type == c.YAML_SCALAR_EVENT) {
+                const key = event.data.scalar.value[0..event.data.scalar.length];
+                if (std.mem.eql(u8, key, "name")) {
+                    if (module_name) |_|
+                        return Error.UnexpectedInput;
+                    name = try self.scalarString();
+                } else if (std.mem.eql(u8, key, "description"))
+                    description = try self.scalarString()
+                else if (std.mem.eql(u8, key, "options"))
+                    options = try self.optionArguments()
+                else if (std.mem.eql(u8, key, "subcommands"))
+                    break
+                else {
+                    unreachable;
+                }
+                continue;
+            }
+            return Error.UnexpectedInput;
+        }
+        return Command{
+            .name = name orelse return Error.UnexpectedInput,
+            .description = description orelse return Error.UnexpectedInput,
+            .options = options orelse return Error.UnexpectedInput,
+            .positionals = undefined,
+            .subcommands = undefined,
+        };
+    }
+
+    fn optionArguments(self: *Parser) ![]OptionArgument {
+        {
+            var event: c.yaml_event_s = undefined;
+            if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
+                return Error.YamlParseError;
+            defer c.yaml_event_delete(&event);
+            if (event.type != c.YAML_SEQUENCE_START_EVENT)
+                return Error.UnexpectedInput;
+        }
+        var arguments = std.ArrayList(OptionArgument).init(self.arena.allocator());
+        while (true) {
+            var event: c.yaml_event_s = undefined;
+            if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
+                return Error.YamlParseError;
+            defer c.yaml_event_delete(&event);
+            if (event.type == c.YAML_SEQUENCE_END_EVENT)
+                break;
+            if (event.type == c.YAML_MAPPING_START_EVENT)
+                try arguments.append(try self.optionArgument());
+        }
+        return try arguments.toOwnedSlice();
+    }
+
+    fn optionArgument(self: *Parser) !OptionArgument {
+        var long: ?[]const u8 = null;
+        var short: ?[]const u8 = null;
+        var type_: ?ValueType = null;
+        var description: ?[]const u8 = null;
+        var default: ?DefaultValue = null;
+        while (true) {
+            var event: c.yaml_event_s = undefined;
+            if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
+                return Error.YamlParseError;
+            defer c.yaml_event_delete(&event);
+            if (event.type == c.YAML_MAPPING_END_EVENT)
+                break;
+            if (event.type == c.YAML_SCALAR_EVENT) {
+                const key = event.data.scalar.value[0..event.data.scalar.length];
+                if (std.mem.eql(u8, key, "long"))
+                    long = try self.scalarString()
+                else if (std.mem.eql(u8, key, "short"))
+                    short = try self.scalarString()
+                else if (std.mem.eql(u8, key, "type"))
+                    type_ = try self.valueType()
+                else if (std.mem.eql(u8, key, "description"))
+                    description = try self.scalarString()
+                else if (std.mem.eql(u8, key, "default"))
+                    default = try self.defaultValue()
+                else
+                    return Error.UnexpectedInput;
+                continue;
+            }
+            return Error.UnexpectedInput;
+        }
+        return .{
+            .long = long orelse return Error.UnexpectedInput,
+            .short = short orelse return Error.UnexpectedInput,
+            .type = type_ orelse return Error.UnexpectedInput,
+            .description = description orelse return Error.UnexpectedInput,
+            .default = default orelse return Error.UnexpectedInput,
+        };
+    }
 };
+
+test "parseByLibYaml" {
+    var definition = try ModuleDefinition.parseByLibYaml(std.testing.allocator, @embedFile("builtin_modules/cursors.yaml"));
+    defer definition.deinit();
+    try std.testing.expectEqualStrings("0.1", definition.manifest_version);
+    try std.testing.expectEqualStrings("selections", definition.name);
+    try std.testing.expectEqualStrings("Selections in an editor", definition.description);
+    try std.testing.expectEqual(1, definition.options.len);
+    try std.testing.expectEqualStrings("hello", definition.options[0].name);
+    try std.testing.expectEqual(ValueType.str, definition.options[0].type_);
+    try std.testing.expectEqualStrings("foo", definition.options[0].description);
+    try std.testing.expectEqualDeep(DefaultValue{ .str = "*" }, definition.options[0].default);
+    try std.testing.expectEqualStrings("Control selections", definition.command.description);
+    try std.testing.expectEqual(1, definition.command.options.len);
+    try std.testing.expectEqualStrings("selection", definition.command.options[0].long.?);
+    try std.testing.expectEqualStrings("c", definition.command.options[0].short.?);
+    try std.testing.expectEqual(ValueType.str, definition.command.options[0].type);
+    try std.testing.expectEqualStrings("Selection id", definition.command.options[0].description);
+    try std.testing.expectEqualDeep(DefaultValue{ .str = "*" }, definition.command.options[0].default);
+}
