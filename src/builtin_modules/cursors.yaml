@@ -20,7 +20,7 @@ command:
     - name: move
       description: Move specified selections
       options:
-        - name: select
+        - long: select
           type: bool
           description: Enable selecting
       positionals:

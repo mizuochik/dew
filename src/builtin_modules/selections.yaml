@@ -5,7 +5,7 @@ options:
   - name: hello
     type: str
     description: foo
-    default: '*'
+    default: "*"
 command:
   description: Control selections
   options:
@@ -20,7 +20,7 @@ command:
     - name: move
       description: Move specified selections
       options:
-        - name: select
+        - long: select
           type: bool
           description: Enable selecting
       positionals:
