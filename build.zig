@@ -17,8 +17,10 @@ pub fn build(b: *std.Build) void {
     const test_unit_step = addTest(b, "unit", options);
     _ = addTest(b, "parser", options);
     const test_e2e_step = addTest(b, "e2e", options);
+    const test_module_definition_step = addTest(b, "ModuleDefinition", options);
 
     b.getInstallStep().dependOn(test_unit_step);
+    b.getInstallStep().dependOn(test_module_definition_step);
 
     if (std.fs.cwd().access("src/tmp.zig", .{})) |_| {
         addRun(b, "tmp", options);
