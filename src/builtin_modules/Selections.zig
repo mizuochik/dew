@@ -41,6 +41,17 @@ fn deinit(ctx: *anyopaque) void {
 
 fn runCommand(ctx: *anyopaque, command: *const Command, _: std.io.AnyReader, _: std.io.AnyWriter) anyerror!void {
     var self: *Selections = @ptrCast(@alignCast(ctx));
+
+    var edit = if (command.options.get("file").?.bool)
+        self.editor.client.getActiveFile().?
+    else if (command.options.get("command").?.bool)
+        &self.editor.client.command_line_ref
+    else
+        self.editor.client.getActiveEdit().?;
+
+    const view = self.getCurrentView();
+    const view_y = view.getSelection(edit).line;
+
     if (std.mem.eql(u8, command.subcommand.?.name, "list"))
         return;
     if (std.mem.eql(u8, command.subcommand.?.name, "get"))
@@ -49,26 +60,23 @@ fn runCommand(ctx: *anyopaque, command: *const Command, _: std.io.AnyReader, _: 
         const position = b: {
             var state: parser.State = .{
                 .allocator = self.editor.allocator,
-                .input = command.subcommand.?.positionals[1].str,
+                .input = command.subcommand.?.positionals[0].str,
             };
             break :b try parsePosition(&state);
         };
-        try self.editor.client.getActiveFile().?.selection.setPosition(position);
+        try edit.selection.setPosition(position);
         return;
     }
-    var edit = self.editor.client.getActiveFile() orelse return;
     if (std.mem.eql(u8, command.subcommand.?.name, "forward-character")) {
         try edit.selection.moveForward();
-        self.getCurrentView().updateLastSelectionX(self.editor.client.getActiveEdit().?);
+        self.getCurrentView().updateLastSelectionX(edit);
         return;
     }
     if (std.mem.eql(u8, command.subcommand.?.name, "backward-character")) {
         try edit.selection.moveBackward();
-        self.getCurrentView().updateLastSelectionX(self.editor.client.getActiveEdit().?);
+        self.getCurrentView().updateLastSelectionX(edit);
         return;
     }
-    const view = self.getCurrentView();
-    const view_y = view.getSelection(edit).line;
     if (std.mem.eql(u8, command.subcommand.?.name, "next-line")) {
         if (view_y >= view.getNumberOfLines() - 1) {
             return;
