@@ -120,8 +120,7 @@ const ArgumentParser = struct {
                         errdefer state.allocator.free(key);
                         try options.putNoClobber(key, value);
                     } else |_| {}
-                }
-                if (option_definition.short) |short| {
+                } else if (option_definition.short) |short| {
                     if (shortOption(state, option_definition)) |value| {
                         errdefer switch (value) {
                             .str => |s| state.allocator.free(s),
@@ -135,6 +134,28 @@ const ArgumentParser = struct {
             }
             if (before == state.pos)
                 break;
+        }
+
+        for (definition.options) |option_definition| {
+            switch (option_definition.type) {
+                .bool => {
+                    if (option_definition.long) |long| {
+                        if (!options.contains(long)) {
+                            const key = try state.allocator.dupe(u8, long);
+                            errdefer state.allocator.free(key);
+                            try options.putNoClobber(key, .{ .bool = false });
+                        }
+                    }
+                    if (option_definition.short) |short| {
+                        if (options.contains(short)) {
+                            const key = try state.allocator.dupe(u8, short);
+                            errdefer state.allocator.free(key);
+                            try options.putNoClobber(key, .{ .bool = false });
+                        }
+                    }
+                },
+                else => continue,
+            }
         }
 
         return options;
@@ -284,7 +305,7 @@ const RawParser = struct {
 };
 
 test "parse command" {
-    var definition = try ModuleDefinition.parse(std.testing.allocator, @embedFile("builtin_modules/selections.yaml"));
+    var definition = try ModuleDefinition.parse(std.testing.allocator, @embedFile("selections.example.yaml"));
     defer definition.deinit();
     inline for (.{
         .{ .given = "selections move --cursor 1 10:5", .expected = .{ .name = "selections", .subcommand_name = "move", .option = "cursor", .index = 1, .target = "10:5" } },
