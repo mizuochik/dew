@@ -8,22 +8,28 @@ options:
     default: "*"
 command:
   description: Control selections
-  options:
-    - long: selection
-      short: s
-      type: str
-      description: Selection id
-      default: "*"
   subcommands:
+    - name: list
+      description: List selection infos
     - name: get
       description: Get selection info
-    - name: move
-      description: Move specified selections
-      options:
-        - long: select
-          type: bool
-          description: Enable selecting
       positionals:
+        - name: index
+          type: int
+          description: Selection index
+    - name: move
+      description: Move a selection
+      options:
+        - long: cursor
+          type: bool
+          description: Move cursor of the selection
+        - long: anchor
+          type: bool
+          description: Move anchor of the selection
+      positionals:
+        - name: index
+          type: int
+          description: Selection index
         - name: position
           type: str
           description: Target position

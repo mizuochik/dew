@@ -6,14 +6,14 @@ manifest_version: []const u8,
 name: []const u8,
 description: []const u8,
 command: Command,
-options: []const ModuleOption,
+options: []const ModuleOption = &[_]ModuleOption{},
 
 pub const Command = struct {
     name: []const u8,
     description: []const u8,
-    options: []const OptionArgument,
-    positionals: []const PositionalArgument,
-    subcommands: []const Command,
+    options: []const OptionArgument = &[_]OptionArgument{},
+    positionals: []const PositionalArgument = &[_]PositionalArgument{},
+    subcommands: []const Command = &[_]Command{},
 };
 
 pub const ValueType = enum {
@@ -24,11 +24,11 @@ pub const ValueType = enum {
 };
 
 pub const OptionArgument = struct {
-    long: ?[]const u8,
-    short: ?[]const u8,
+    long: ?[]const u8 = null,
+    short: ?[]const u8 = null,
     type: ValueType,
     description: []const u8,
-    default: ?DefaultValue,
+    default: ?DefaultValue = null,
 };
 
 pub const DefaultValue = union(enum) {
@@ -449,7 +449,7 @@ const Parser = struct {
 };
 
 test "parseByLibYaml" {
-    var actual = try @This().parse(std.testing.allocator, @embedFile("builtin_modules/cursors.yaml"));
+    var actual = try @This().parse(std.testing.allocator, @embedFile("builtin_modules/selections.yaml"));
     defer actual.deinit();
     try std.testing.expectEqualDeep(ModuleDefinition{
         .arena = actual.arena,
@@ -467,44 +467,51 @@ test "parseByLibYaml" {
         .command = .{
             .name = "selections",
             .description = "Control selections",
-            .options = &[_]OptionArgument{
-                .{
-                    .long = "selection",
-                    .short = "c",
-                    .type = ValueType.str,
-                    .description = "Selection id",
-                    .default = .{ .str = "*" },
-                },
-            },
+            .options = &[_]OptionArgument{},
             .positionals = &[_]PositionalArgument{},
             .subcommands = &[_]Command{
                 .{
+                    .name = "list",
+                    .description = "List selection infos",
+                },
+                .{
                     .name = "get",
                     .description = "Get selection info",
-                    .options = &[_]OptionArgument{},
-                    .positionals = &[_]PositionalArgument{},
-                    .subcommands = &[_]Command{},
+                    .positionals = &[_]PositionalArgument{
+                        .{
+                            .name = "index",
+                            .type = .int,
+                            .description = "Selection index",
+                        },
+                    },
                 },
                 .{
                     .name = "move",
-                    .description = "Move specified selections",
+                    .description = "Move a selection",
                     .options = &[_]OptionArgument{
                         .{
-                            .long = "select",
-                            .short = null,
-                            .type = ValueType.bool,
-                            .description = "Enable selecting",
-                            .default = null,
+                            .long = "cursor",
+                            .type = .bool,
+                            .description = "Move cursor of the selection",
+                        },
+                        .{
+                            .long = "anchor",
+                            .type = .bool,
+                            .description = "Move anchor of the selection",
                         },
                     },
                     .positionals = &[_]PositionalArgument{
+                        .{
+                            .name = "index",
+                            .type = .int,
+                            .description = "Selection index",
+                        },
                         .{
                             .name = "position",
                             .type = .str,
                             .description = "Target position",
                         },
                     },
-                    .subcommands = &[_]Command{},
                 },
             },
         },
