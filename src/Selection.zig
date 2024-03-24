@@ -39,7 +39,12 @@ pub fn getPosition(self: *const Selection) Position {
 }
 
 pub fn setPosition(self: *Selection, pos: Position) !void {
-    self.cursor = pos;
+    const line = @min(self.text.rows.items.len, pos.line);
+    const character = @min(self.text.rows.items[line].getLen(), pos.character);
+    self.cursor = .{
+        .line = line,
+        .character = character,
+    };
 }
 
 fn getCurrentRow(self: *const Selection) UnicodeString {
