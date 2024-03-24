@@ -448,7 +448,7 @@ const Parser = struct {
 };
 
 test "parseByLibYaml" {
-    var actual = try ModuleDefinition.parse(std.testing.allocator, @embedFile("builtin_modules/selections.yaml"));
+    var actual = try ModuleDefinition.parse(std.testing.allocator, @embedFile("selections.example.yaml"));
     defer actual.deinit();
     try std.testing.expectEqualDeep(ModuleDefinition{
         .arena = actual.arena,

@@ -1,0 +1,35 @@
+manifest_version: "0.1"
+name: selections
+description: Selections in an editor
+options:
+  - name: hello
+    type: str
+    description: foo
+    default: "*"
+command:
+  description: Control selections
+  subcommands:
+    - name: list
+      description: List selection infos
+    - name: get
+      description: Get selection info
+      positionals:
+        - name: index
+          type: int
+          description: Selection index
+    - name: move
+      description: Move a selection
+      options:
+        - long: cursor
+          type: bool
+          description: Move cursor of the selection
+        - long: anchor
+          type: bool
+          description: Move anchor of the selection
+      positionals:
+        - name: index
+          type: int
+          description: Selection index
+        - name: position
+          type: str
+          description: Target position
