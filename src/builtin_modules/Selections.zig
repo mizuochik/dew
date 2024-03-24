@@ -40,16 +40,19 @@ fn deinit(ctx: *anyopaque) void {
 
 fn runCommand(ctx: *anyopaque, command: *const Command, _: std.io.AnyReader, _: std.io.AnyWriter) anyerror!void {
     var self: *Selections = @ptrCast(@alignCast(ctx));
-    if (std.mem.eql(u8, command.subcommand.?.name, "get")) {
+    if (std.mem.eql(u8, command.subcommand.?.name, "list"))
         return;
-    }
+    if (std.mem.eql(u8, command.subcommand.?.name, "get"))
+        return;
     if (std.mem.eql(u8, command.subcommand.?.name, "move")) {
-        var state: parser.State = .{
-            .allocator = self.editor.allocator,
-            .input = command.subcommand.?.positionals[0].str,
+        const position = b: {
+            var state: parser.State = .{
+                .allocator = self.editor.allocator,
+                .input = command.subcommand.?.positionals[1].str,
+            };
+            break :b try parsePosition(&state);
         };
-        const position = try parsePosition(&state);
-        try self.editor.client.active_ref.?.selection.setPosition(position);
+        try self.editor.client.getActiveFile().?.selection.setPosition(position);
         return;
     }
     unreachable;
