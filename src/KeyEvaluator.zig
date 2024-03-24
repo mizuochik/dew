@@ -57,16 +57,16 @@ pub fn evaluate(self: *KeyEvaluator, key: Keyboard.Key) !void {
 
 pub fn installDefaultKeyMap(self: *KeyEvaluator) !void {
     try self.putBuiltinKeyMap("C+q", .{"editor.quit"});
-    try self.putBuiltinKeyMap("C+f", .{"selections.move-to forward-character"});
-    try self.putBuiltinKeyMap("C+b", .{"selections.move-to backward-character"});
-    try self.putBuiltinKeyMap("C+p", .{"selections.move-to previous-line"});
-    try self.putBuiltinKeyMap("C+n", .{"selections.move-to next-line"});
-    try self.putBuiltinKeyMap("right", .{"selections.move-to forward-character"});
-    try self.putBuiltinKeyMap("left", .{"selections.move-to backward-character"});
-    try self.putBuiltinKeyMap("up", .{"selections.move-to previous-line"});
-    try self.putBuiltinKeyMap("down", .{"selections.move-to next-line"});
-    try self.putBuiltinKeyMap("C+a", .{"selections.move-to beginning-of-line"});
-    try self.putBuiltinKeyMap("C+e", .{"selections.move-to end-of-line"});
+    try self.putBuiltinKeyMap("C+f", .{"selections forward-character"});
+    try self.putBuiltinKeyMap("C+b", .{"selections backward-character"});
+    try self.putBuiltinKeyMap("C+p", .{"selections previous-line"});
+    try self.putBuiltinKeyMap("C+n", .{"selections next-line"});
+    try self.putBuiltinKeyMap("right", .{"selections forward-character"});
+    try self.putBuiltinKeyMap("left", .{"selections backward-character"});
+    try self.putBuiltinKeyMap("up", .{"selections previous-line"});
+    try self.putBuiltinKeyMap("down", .{"selections next-line"});
+    try self.putBuiltinKeyMap("C+a", .{"selections beginning-of-line"});
+    try self.putBuiltinKeyMap("C+e", .{"selections end-of-line"});
     try self.putBuiltinKeyMap("C+v", .{"view.scroll . down"});
     try self.putBuiltinKeyMap("A+v", .{"view.scroll . up"});
     try self.putBuiltinKeyMap("C+k", .{"text.kill-line"});

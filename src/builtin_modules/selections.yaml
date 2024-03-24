@@ -33,3 +33,15 @@ command:
         - name: position
           type: str
           description: Target position
+    - name: forward-character
+      description: Forward a selection by a character
+    - name: backward-character
+      description: Backward a selection by a character
+    - name: next-line
+      description: Forward a selection by a character
+    - name: previous-line
+      description: Backward a selection by a character
+    - name: beginning-of-line
+      description: Move a selection to beginning of the line
+    - name: end-of-line
+      description: Move a selection to end of the line

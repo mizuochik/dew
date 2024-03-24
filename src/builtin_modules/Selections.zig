@@ -7,6 +7,7 @@ const Keyboard = @import("../Keyboard.zig");
 const ModuleDefinition = @import("../ModuleDefinition.zig");
 const Command = @import("../Command.zig");
 const Position = @import("../Position.zig");
+const TextView = @import("../TextView.zig");
 
 editor: *Editor,
 definition: ModuleDefinition,
@@ -55,6 +56,43 @@ fn runCommand(ctx: *anyopaque, command: *const Command, _: std.io.AnyReader, _: 
         try self.editor.client.getActiveFile().?.selection.setPosition(position);
         return;
     }
+    var edit = self.editor.client.getActiveFile() orelse return;
+    if (std.mem.eql(u8, command.subcommand.?.name, "forward-character")) {
+        try edit.selection.moveForward();
+        self.getCurrentView().updateLastSelectionX(self.editor.client.getActiveEdit().?);
+        return;
+    }
+    if (std.mem.eql(u8, command.subcommand.?.name, "backward-character")) {
+        try edit.selection.moveBackward();
+        self.getCurrentView().updateLastSelectionX(self.editor.client.getActiveEdit().?);
+        return;
+    }
+    const view = self.getCurrentView();
+    const view_y = view.getSelection(edit).line;
+    if (std.mem.eql(u8, command.subcommand.?.name, "next-line")) {
+        if (view_y >= view.getNumberOfLines() - 1) {
+            return;
+        }
+        const pos = view.getBufferPosition(edit, .{ .character = edit.selection.last_view_x, .line = view_y + 1 });
+        try edit.selection.setPosition(pos);
+        return;
+    }
+    if (std.mem.eql(u8, command.subcommand.?.name, "previous-line")) {
+        if (view_y <= 0) {
+            return;
+        }
+        const pos = view.getBufferPosition(edit, .{ .character = edit.selection.last_view_x, .line = view_y - 1 });
+        try edit.selection.setPosition(pos);
+        return;
+    }
+    if (std.mem.eql(u8, command.subcommand.?.name, "beginning-of-line")) {
+        try edit.selection.moveToBeginningOfLine();
+        return;
+    }
+    if (std.mem.eql(u8, command.subcommand.?.name, "end-of-line")) {
+        try edit.selection.moveToEndOfLine();
+        return;
+    }
     unreachable;
 }
 
@@ -66,4 +104,11 @@ fn parsePosition(state: *parser.State) !Position {
         .character = @intCast(@max(0, character - 1)),
         .line = @intCast(@max(0, line - 1)),
     };
+}
+
+fn getCurrentView(self: *Selections) *TextView {
+    return if (self.editor.client.isCommandLineActive())
+        &self.editor.command_ref_view
+    else
+        &self.editor.edit_view;
 }
