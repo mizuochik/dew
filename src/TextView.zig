@@ -68,8 +68,8 @@ pub fn getSelection(self: *const TextView, edit: *TextRef) Position {
         .command => self.editor.client.command_line_ref.selection,
         else => self.editor.client.getActiveFile().?.selection,
     };
-    const c_y = selection.y;
-    const c_x = selection.x;
+    const c_y = selection.cursor.line;
+    const c_x = selection.cursor.character;
     if (self.rows.items.len <= 0) {
         return .{
             .character = 0,

@@ -40,7 +40,7 @@ pub fn deinit(self: *Client) void {
 pub fn toggleCommandLine(self: *Client) !void {
     if (self.isCommandLineActive()) {
         try self.command_line.clear();
-        self.command_line_ref.selection.x = 0;
+        self.command_line_ref.selection.cursor.character = 0;
         self.active_ref = self.getActiveFile();
     } else {
         self.active_ref = &self.command_line_ref;

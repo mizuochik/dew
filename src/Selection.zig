@@ -5,48 +5,43 @@ const Position = @import("Position.zig");
 const UnicodeString = @import("UnicodeString.zig");
 
 text: *Text,
-x: usize = 0,
-y: usize = 0,
+cursor: Position = .{ .line = 0, .character = 0 },
 last_view_x: usize = 0,
 
 pub fn moveForward(self: *Selection) !void {
-    if (self.x < self.getCurrentRow().getLen()) {
-        self.x += 1;
-    } else if (self.y < self.text.rows.items.len - 1) {
-        self.y += 1;
-        self.x = 0;
+    if (self.cursor.character < self.getCurrentRow().getLen()) {
+        self.cursor.character += 1;
+    } else if (self.cursor.line < self.text.rows.items.len - 1) {
+        self.cursor.line += 1;
+        self.cursor.character = 0;
     }
 }
 
 pub fn moveBackward(self: *Selection) !void {
-    if (self.x > 0) {
-        self.x -= 1;
-    } else if (self.y > 0) {
-        self.y -= 1;
-        self.x = self.getCurrentRow().getLen();
+    if (self.cursor.character > 0) {
+        self.cursor.character -= 1;
+    } else if (self.cursor.line > 0) {
+        self.cursor.line -= 1;
+        self.cursor.character = self.getCurrentRow().getLen();
     }
 }
 
 pub fn moveToBeginningOfLine(self: *Selection) !void {
-    self.x = 0;
+    self.cursor.character = 0;
 }
 
 pub fn moveToEndOfLine(self: *Selection) !void {
-    self.x = self.getCurrentRow().getLen();
+    self.cursor.character = self.getCurrentRow().getLen();
 }
 
 pub fn getPosition(self: *const Selection) Position {
-    return .{
-        .character = self.x,
-        .line = self.y,
-    };
+    return self.cursor;
 }
 
 pub fn setPosition(self: *Selection, pos: Position) !void {
-    self.x = pos.character;
-    self.y = pos.line;
+    self.cursor = pos;
 }
 
 fn getCurrentRow(self: *const Selection) UnicodeString {
-    return self.text.rows.items[self.y];
+    return self.text.rows.items[self.cursor.line];
 }
