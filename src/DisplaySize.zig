@@ -1,3 +1,4 @@
+const DisplaySize = @This();
 const std = @import("std");
 
 cols: usize,
@@ -10,7 +11,7 @@ pub fn init() @This() {
     };
 }
 
-pub fn set(self: *@This(), cols: usize, rows: usize) !void {
+pub fn set(self: *DisplaySize, cols: usize, rows: usize) !void {
     self.cols = cols;
     self.rows = rows;
 }

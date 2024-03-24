@@ -1,3 +1,4 @@
+const Text = @This();
 const std = @import("std");
 const UnicodeString = @import("UnicodeString.zig");
 const Selection = @import("Selection.zig");
@@ -11,8 +12,8 @@ pub const Mode = enum {
 rows: std.ArrayList(UnicodeString),
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator) !*@This() {
-    const text = try allocator.create(@This());
+pub fn init(allocator: std.mem.Allocator) !*Text {
+    const text = try allocator.create(Text);
     errdefer allocator.destroy(text);
     var rows = std.ArrayList(UnicodeString).init(allocator);
     errdefer rows.deinit();
@@ -29,14 +30,14 @@ pub fn init(allocator: std.mem.Allocator) !*@This() {
     return text;
 }
 
-pub fn deinit(self: *const @This()) void {
+pub fn deinit(self: *const Text) void {
     for (self.rows.items) |row| row.deinit();
     self.rows.deinit();
     self.allocator.destroy(self);
 }
 
-pub fn clone(self: *const @This()) !*@This() {
-    var text = try self.allocator.create(@This());
+pub fn clone(self: *const Text) !*Text {
+    var text = try self.allocator.create(Text);
     errdefer self.allocator.destroy(text);
     text.* = self.*;
     text.rows = std.ArrayList(UnicodeString).init(self.allocator);
@@ -54,11 +55,11 @@ pub fn clone(self: *const @This()) !*@This() {
     return text;
 }
 
-pub fn insertChar(self: *@This(), pos: Position, c: u21) !void {
+pub fn insertChar(self: *Text, pos: Position, c: u21) !void {
     try self.rows.items[pos.y].insert(pos.x, c);
 }
 
-pub fn deleteChar(self: *@This(), pos: Position) !void {
+pub fn deleteChar(self: *Text, pos: Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
         try self.joinLine(pos);
@@ -67,12 +68,12 @@ pub fn deleteChar(self: *@This(), pos: Position) !void {
     try row.remove(pos.x);
 }
 
-pub fn deleteBackwardChar(self: *@This()) !void {
+pub fn deleteBackwardChar(self: *Text) !void {
     try self.moveBackward();
     try self.deleteChar();
 }
 
-pub fn joinLine(self: *@This(), pos: Position) !void {
+pub fn joinLine(self: *Text, pos: Position) !void {
     if (pos.y >= self.rows.items.len - 1) {
         return;
     }
@@ -83,7 +84,7 @@ pub fn joinLine(self: *@This(), pos: Position) !void {
     _ = self.rows.orderedRemove(pos.y + 1);
 }
 
-pub fn killLine(self: *@This(), pos: Position) !void {
+pub fn killLine(self: *Text, pos: Position) !void {
     var row = &self.rows.items[pos.y];
     if (pos.x >= row.getLen()) {
         try self.deleteChar(pos);
@@ -94,7 +95,7 @@ pub fn killLine(self: *@This(), pos: Position) !void {
     }
 }
 
-pub fn breakLine(self: *@This(), pos: Position) !void {
+pub fn breakLine(self: *Text, pos: Position) !void {
     var new_row = try UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
     const row = &self.rows.items[pos.y];
@@ -107,12 +108,12 @@ pub fn breakLine(self: *@This(), pos: Position) !void {
     try self.rows.insert(pos.y + 1, new_row);
 }
 
-pub fn clear(self: *@This()) !void {
+pub fn clear(self: *Text) !void {
     std.debug.assert(self.rows.items.len == 1);
     try self.rows.items[0].clear();
 }
 
-pub fn openFile(self: *@This(), path: []const u8) !void {
+pub fn openFile(self: *Text, path: []const u8) !void {
     var f = try std.fs.cwd().openFile(path, .{});
     defer f.close();
     var reader = f.reader();
@@ -143,7 +144,7 @@ pub fn openFile(self: *@This(), path: []const u8) !void {
     self.rows = new_rows;
 }
 
-pub fn saveFile(self: *const @This(), path: []const u8) !void {
+pub fn saveFile(self: *const Text, path: []const u8) !void {
     var f = try std.fs.cwd().createFile(path, .{});
     defer f.close();
     for (self.rows.items, 0..) |row, i| {

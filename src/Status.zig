@@ -1,9 +1,10 @@
+const Status = @This();
 const std = @import("std");
 
 message: []const u8,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator) !@This() {
+pub fn init(allocator: std.mem.Allocator) !Status {
     const empty_message = try allocator.alloc(u8, 0);
     errdefer allocator.free(empty_message);
     return .{
@@ -12,11 +13,11 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
     };
 }
 
-pub fn deinit(self: *const @This()) void {
+pub fn deinit(self: *const Status) void {
     self.allocator.free(self.message);
 }
 
-pub fn setMessage(self: *@This(), message: []const u8) !void {
+pub fn setMessage(self: *Status, message: []const u8) !void {
     self.allocator.free(self.message);
     self.message = message;
 }

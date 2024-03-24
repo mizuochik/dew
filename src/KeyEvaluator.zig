@@ -1,3 +1,4 @@
+const KeyEvaluator = @This();
 const std = @import("std");
 const Keyboard = @import("Keyboard.zig");
 const ResourceRegistry = @import("ResourceRegistry.zig");
@@ -8,7 +9,7 @@ allocator: std.mem.Allocator,
 editor: *Editor,
 key_map: std.StringHashMap([][]const u8), // Key Name -> Method Lines
 
-pub fn init(allocator: std.mem.Allocator, editor: *Editor) @This() {
+pub fn init(allocator: std.mem.Allocator, editor: *Editor) KeyEvaluator {
     return .{
         .allocator = allocator,
         .editor = editor,
@@ -16,7 +17,7 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor) @This() {
     };
 }
 
-pub fn deinit(self: *@This()) void {
+pub fn deinit(self: *KeyEvaluator) void {
     var it = self.key_map.iterator();
     while (it.next()) |entry| {
         self.allocator.free(entry.key_ptr.*);
@@ -28,7 +29,7 @@ pub fn deinit(self: *@This()) void {
     self.key_map.deinit();
 }
 
-pub fn evaluate(self: *@This(), key: Keyboard.Key) !void {
+pub fn evaluate(self: *KeyEvaluator, key: Keyboard.Key) !void {
     const key_name = try key.toName(self.allocator);
     defer self.allocator.free(key_name);
     if (self.key_map.get(key_name)) |commands| {
@@ -54,7 +55,7 @@ pub fn evaluate(self: *@This(), key: Keyboard.Key) !void {
     }
 }
 
-pub fn installDefaultKeyMap(self: *@This()) !void {
+pub fn installDefaultKeyMap(self: *KeyEvaluator) !void {
     try self.putBuiltinKeyMap("C+q", .{"editor.quit"});
     try self.putBuiltinKeyMap("C+f", .{"selections.move-to forward-character"});
     try self.putBuiltinKeyMap("C+b", .{"selections.move-to backward-character"});
@@ -81,7 +82,7 @@ pub fn installDefaultKeyMap(self: *@This()) !void {
     });
 }
 
-pub fn putBuiltinKeyMap(self: *@This(), key_name: []const u8, commands: anytype) !void {
+pub fn putBuiltinKeyMap(self: *KeyEvaluator, key_name: []const u8, commands: anytype) !void {
     var buf: [4][]const u8 = undefined;
     inline for (commands, 0..) |command, i| {
         buf[i] = command;
@@ -89,7 +90,7 @@ pub fn putBuiltinKeyMap(self: *@This(), key_name: []const u8, commands: anytype)
     try self.putKeyMap(key_name, buf[0..commands.len]);
 }
 
-pub fn putKeyMap(self: *@This(), key_name: []const u8, command_lines: [][]const u8) !void {
+pub fn putKeyMap(self: *KeyEvaluator, key_name: []const u8, command_lines: [][]const u8) !void {
     const result = try self.key_map.getOrPut(key_name);
     if (!result.found_existing) {
         const key = try self.allocator.dupe(u8, key_name);
@@ -110,7 +111,7 @@ pub fn putKeyMap(self: *@This(), key_name: []const u8, command_lines: [][]const 
     result.value_ptr.* = command_lines_duped;
 }
 
-pub fn removeKeyMap(self: *@This(), key_name: []const u8) void {
+pub fn removeKeyMap(self: *KeyEvaluator, key_name: []const u8) void {
     if (self.key_map.fetchRemove(key_name)) |removed| {
         self.allocator.free(removed.key);
         for (0..removed.value.len) |i| {

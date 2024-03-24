@@ -1,3 +1,4 @@
+const CommandParser = @This();
 const std = @import("std");
 const BufferSelector = @import("BufferSelector.zig");
 const Status = @import("Status.zig");
@@ -15,7 +16,7 @@ const ParseError = error{
     Unexpected,
 };
 
-pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status: *Status) !@This() {
+pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, status: *Status) !CommandParser {
     const in = try allocator.alloc([]u8, 0);
     errdefer allocator.free(in);
     return .{
@@ -27,14 +28,14 @@ pub fn init(allocator: std.mem.Allocator, buffer_selector: *BufferSelector, stat
     };
 }
 
-pub fn deinit(self: *const @This()) void {
+pub fn deinit(self: *const CommandParser) void {
     for (self.input) |cp| {
         self.allocator.free(cp);
     }
     self.allocator.free(self.input);
 }
 
-pub fn parse(self: *@This(), input: []const u8) !CommandLine {
+pub fn parse(self: *CommandParser, input: []const u8) !CommandLine {
     var state: parser.State = .{
         .input = input,
         .allocator = self.allocator,

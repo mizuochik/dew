@@ -1,3 +1,4 @@
+const TextView = @This();
 const std = @import("std");
 const Text = @import("Text.zig");
 const BufferSelector = @import("BufferSelector.zig");
@@ -25,7 +26,7 @@ mode: Text.Mode,
 editor: *Editor,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Text.Mode) @This() {
+pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Text.Mode) TextView {
     const rows = std.ArrayList(RowSlice).init(allocator);
     errdefer rows.deinit();
     return .{
@@ -38,16 +39,16 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor, mode: Text.Mode) @Thi
     };
 }
 
-pub fn deinit(self: *const @This()) void {
+pub fn deinit(self: *const TextView) void {
     self.rows.deinit();
 }
 
-pub fn isActive(self: *const @This(), edit: *TextRef) bool {
+pub fn isActive(self: *const TextView, edit: *TextRef) bool {
     const active_ref = self.editor.client.getActiveEdit() orelse return false;
     return edit == active_ref;
 }
 
-pub fn viewSelection(self: *const @This(), edit: *TextRef) ?Position {
+pub fn viewSelection(self: *const TextView, edit: *TextRef) ?Position {
     if (!self.isActive(edit)) {
         return null;
     }
@@ -62,7 +63,7 @@ pub fn viewSelection(self: *const @This(), edit: *TextRef) ?Position {
     };
 }
 
-pub fn getSelection(self: *const @This(), edit: *TextRef) Position {
+pub fn getSelection(self: *const TextView, edit: *TextRef) Position {
     const selection = switch (self.mode) {
         .command => self.editor.client.command_line_ref.selection,
         else => self.editor.client.getActiveFile().?.selection,
@@ -94,11 +95,11 @@ pub fn getSelection(self: *const @This(), edit: *TextRef) Position {
     };
 }
 
-pub fn getNumberOfLines(self: *const @This()) usize {
+pub fn getNumberOfLines(self: *const TextView) usize {
     return self.rows.items.len;
 }
 
-pub fn getBufferPosition(self: *const @This(), edit: *TextRef, view_position: Position) Position {
+pub fn getBufferPosition(self: *const TextView, edit: *TextRef, view_position: Position) Position {
     const row_slice = self.rows.items[view_position.y];
     const buffer_row = edit.text.rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
@@ -115,7 +116,7 @@ pub fn getBufferPosition(self: *const @This(), edit: *TextRef, view_position: Po
     };
 }
 
-pub fn getNormalizedSelection(self: *@This(), edit: *TextRef) Position {
+pub fn getNormalizedSelection(self: *TextView, edit: *TextRef) Position {
     const upper_limit = edit.y_scroll;
     const bottom_limit = edit.y_scroll + self.height;
     const selection = self.getSelection(edit);
@@ -128,23 +129,23 @@ pub fn getNormalizedSelection(self: *@This(), edit: *TextRef) Position {
     return selection;
 }
 
-pub fn updateLastSelectionX(self: *@This(), edit: *TextRef) void {
+pub fn updateLastSelectionX(self: *TextView, edit: *TextRef) void {
     edit.selection.last_view_x = self.getSelection(edit).x;
 }
 
-pub fn setSize(self: *@This(), width: usize, height: usize) !void {
+pub fn setSize(self: *TextView, width: usize, height: usize) !void {
     self.width = width;
     self.height = height;
 }
 
-pub fn scrollUp(_: *@This(), edit: *TextRef, diff: usize) void {
+pub fn scrollUp(_: *TextView, edit: *TextRef, diff: usize) void {
     if (edit.y_scroll < diff)
         edit.y_scroll = 0
     else
         edit.y_scroll -= diff;
 }
 
-pub fn scrollDown(self: *@This(), edit: *TextRef, diff: usize) void {
+pub fn scrollDown(self: *TextView, edit: *TextRef, diff: usize) void {
     const max_scroll = if (self.rows.items.len > self.height) self.rows.items.len - self.height else 0;
     if (edit.y_scroll + diff > max_scroll)
         edit.y_scroll = max_scroll
@@ -152,7 +153,7 @@ pub fn scrollDown(self: *@This(), edit: *TextRef, diff: usize) void {
         edit.y_scroll += diff;
 }
 
-pub fn render(self: *@This(), buffer: *Display.Buffer, edit: *TextRef) !void {
+pub fn render(self: *TextView, buffer: *Display.Buffer, edit: *TextRef) !void {
     var new_rows = std.ArrayList(RowSlice).init(self.allocator);
     errdefer new_rows.deinit();
     for (edit.text.rows.items, 0..) |row, y| {

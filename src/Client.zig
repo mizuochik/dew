@@ -1,3 +1,4 @@
+const Client = @This();
 const std = @import("std");
 const Text = @import("Text.zig");
 const Selection = @import("Selection.zig");
@@ -12,7 +13,7 @@ file_refs: std.StringHashMap(TextRef),
 active_ref: ?*TextRef = null,
 allocator: std.mem.Allocator,
 
-pub fn init(allocator: std.mem.Allocator) !@This() {
+pub fn init(allocator: std.mem.Allocator) !Client {
     var command_line = try Text.init(allocator);
     errdefer command_line.deinit();
     var st = try Status.init(allocator);
@@ -28,7 +29,7 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
     };
 }
 
-pub fn deinit(self: *@This()) void {
+pub fn deinit(self: *Client) void {
     self.command_line.deinit();
     self.status.deinit();
     var editing_file_keys = self.file_refs.keyIterator();
@@ -36,7 +37,7 @@ pub fn deinit(self: *@This()) void {
     self.file_refs.deinit();
 }
 
-pub fn toggleCommandLine(self: *@This()) !void {
+pub fn toggleCommandLine(self: *Client) !void {
     if (self.isCommandLineActive()) {
         try self.command_line.clear();
         self.command_line_ref.selection.x = 0;
@@ -46,21 +47,21 @@ pub fn toggleCommandLine(self: *@This()) !void {
     }
 }
 
-pub fn getActiveFile(self: *@This()) ?*TextRef {
+pub fn getActiveFile(self: *Client) ?*TextRef {
     if (self.current_file) |current_file| {
         return self.file_refs.getPtr(current_file);
     }
     return null;
 }
 
-pub fn getActiveEdit(self: *@This()) ?*TextRef {
+pub fn getActiveEdit(self: *Client) ?*TextRef {
     if (self.isCommandLineActive()) {
         return &self.command_line_ref;
     }
     return self.getActiveFile();
 }
 
-pub fn putFileRef(self: *@This(), file_name: []const u8, text: *Text) !void {
+pub fn putFileRef(self: *Client, file_name: []const u8, text: *Text) !void {
     const result = try self.file_refs.getOrPut(file_name);
     errdefer if (!result.found_existing) {
         _ = self.file_refs.remove(file_name);
@@ -77,7 +78,7 @@ pub fn putFileRef(self: *@This(), file_name: []const u8, text: *Text) !void {
         self.active_ref = result.value_ptr;
 }
 
-pub fn removeFileRef(self: *@This(), file_name: []const u8) void {
+pub fn removeFileRef(self: *Client, file_name: []const u8) void {
     if (self.current_file) |current_file| {
         if (std.mem.eql(u8, file_name, current_file)) {
             self.current_file = null;
@@ -90,10 +91,10 @@ pub fn removeFileRef(self: *@This(), file_name: []const u8) void {
     }
 }
 
-pub fn isCommandLineActive(self: *const @This()) bool {
+pub fn isCommandLineActive(self: *const Client) bool {
     return self.active_ref == &self.command_line_ref;
 }
 
 test {
-    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(Client);
 }

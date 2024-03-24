@@ -1,3 +1,4 @@
+const Editor = @This();
 const std = @import("std");
 const Keyboard = @import("Keyboard.zig");
 const Terminal = @import("Terminal.zig");
@@ -32,8 +33,8 @@ terminal: Terminal,
 client: Client,
 display: Display,
 
-pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
-    const editor = try allocator.create(@This());
+pub fn init(allocator: std.mem.Allocator, _: Options) !*Editor {
+    const editor = try allocator.create(Editor);
     errdefer allocator.destroy(editor);
 
     editor.allocator = allocator;
@@ -79,7 +80,7 @@ pub fn init(allocator: std.mem.Allocator, _: Options) !*@This() {
     return editor;
 }
 
-pub fn deinit(self: *@This()) void {
+pub fn deinit(self: *Editor) void {
     self.edit_view.deinit();
     self.command_ref_view.deinit();
     self.buffer_selector.deinit();

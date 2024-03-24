@@ -1,3 +1,4 @@
+const Display = @This();
 const std = @import("std");
 const builtin = @import("builtin");
 const TextView = @import("TextView.zig");
@@ -24,10 +25,10 @@ pub const Buffer = struct {
     height: usize,
     cells: []?Cell,
 
-    pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !@This() {
+    pub fn init(allocator: std.mem.Allocator, width: usize, height: usize) !Buffer {
         const cells = try allocator.alloc(?Cell, width * height);
         errdefer allocator.free(cells);
-        var buffer = @This(){
+        var buffer = Buffer{
             .allocator = allocator,
             .width = width,
             .height = height,
@@ -37,7 +38,7 @@ pub const Buffer = struct {
         return buffer;
     }
 
-    pub fn clear(self: *@This()) void {
+    pub fn clear(self: *Buffer) void {
         for (self.cells) |*cell| {
             cell.* = .{
                 .character = ' ',
@@ -47,14 +48,14 @@ pub const Buffer = struct {
         }
     }
 
-    pub fn deinit(self: *const @This()) void {
+    pub fn deinit(self: *const Buffer) void {
         self.allocator.free(self.cells);
     }
 
-    pub fn view(self: *const @This(), top: usize, bottom: usize, left: usize, right: usize) !@This() {
+    pub fn view(self: *const Buffer, top: usize, bottom: usize, left: usize, right: usize) !Buffer {
         const view_width = right - left;
         const view_height = bottom - top;
-        const view_buffer = try @This().init(self.allocator, view_width, view_height);
+        const view_buffer = try Buffer.init(self.allocator, view_width, view_height);
         errdefer view_buffer.deinit();
         for (0..view_height) |i| {
             for (0..view_width) |j| {
@@ -64,7 +65,7 @@ pub const Buffer = struct {
         return view_buffer;
     }
 
-    pub fn rowSlice(self: *const @This(), y: usize) ![]const u8 {
+    pub fn rowSlice(self: *const Buffer, y: usize) ![]const u8 {
         var s = std.ArrayList(u8).init(self.allocator);
         errdefer s.deinit();
         var buf: [4]u8 = undefined;
@@ -76,7 +77,7 @@ pub const Buffer = struct {
         return s.toOwnedSlice();
     }
 
-    pub fn expectEqualSlice(self: *const @This(), expected: []const u8) !void {
+    pub fn expectEqualSlice(self: *const Buffer, expected: []const u8) !void {
         var expected_it = (try std.unicode.Utf8View.init(expected)).iterator();
         var expected_row_st: usize = 0;
         var y: usize = 0;
@@ -133,7 +134,7 @@ pub const Area = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator, file_view: *TextView, status_view: *StatusView, command_view: *TextView, client: *Client, size: *DisplaySize) !@This() {
+pub fn init(allocator: std.mem.Allocator, file_view: *TextView, status_view: *StatusView, command_view: *TextView, client: *Client, size: *DisplaySize) !Display {
     const buffer = try Buffer.init(allocator, size.cols, size.rows);
     errdefer buffer.deinit();
     return .{
@@ -147,15 +148,15 @@ pub fn init(allocator: std.mem.Allocator, file_view: *TextView, status_view: *St
     };
 }
 
-pub fn deinit(self: *const @This()) void {
+pub fn deinit(self: *const Display) void {
     self.buffer.deinit();
 }
 
-pub fn getArea(self: *const @This(), top: usize, bottom: usize, left: usize, right: usize) !Buffer {
+pub fn getArea(self: *const Display, top: usize, bottom: usize, left: usize, right: usize) !Buffer {
     return self.buffer.view(top, bottom, left, right);
 }
 
-pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
+pub fn changeSize(self: *Display, size: *const Terminal.WindowSize) !void {
     self.size.cols = @intCast(size.cols);
     self.size.rows = @intCast(size.rows);
 
@@ -170,11 +171,11 @@ pub fn changeSize(self: *@This(), size: *const Terminal.WindowSize) !void {
     try self.status_view.setSize(self.size.cols);
 }
 
-pub fn setSize(self: *@This(), cols: usize, rows: usize) !void {
+pub fn setSize(self: *Display, cols: usize, rows: usize) !void {
     try self.changeSize(&.{ .cols = @intCast(cols), .rows = @intCast(rows) });
 }
 
-pub fn render(self: *@This()) !void {
+pub fn render(self: *Display) !void {
     self.buffer.clear();
     try self.file_view.render(&self.buffer, self.client.getActiveFile().?);
     try self.command_view.render(&self.buffer, &self.client.command_line_ref);
@@ -201,7 +202,7 @@ fn initBuffer(allocator: std.mem.Allocator, display_size: *DisplaySize) ![][]u8 
     return new_buffer;
 }
 
-fn updateActiveSelectionPosition(self: *@This()) void {
+fn updateActiveSelectionPosition(self: *Display) void {
     if (self.file_view.viewSelection(self.client.getActiveFile().?)) |position|
         self.active_selection_position = position;
     if (self.command_view.viewSelection(&self.client.command_line_ref)) |position|
@@ -211,7 +212,7 @@ fn updateActiveSelectionPosition(self: *@This()) void {
         };
 }
 
-fn drawBuffer(self: *const @This()) !void {
+fn drawBuffer(self: *const Display) !void {
     if (builtin.is_test) {
         return;
     }
@@ -244,16 +245,16 @@ fn drawBuffer(self: *const @This()) !void {
     try std.io.getStdOut().writeAll(tmp.items);
 }
 
-pub fn initTerminalSelection(_: *const @This()) !void {
+pub fn initTerminalSelection(_: *const Display) !void {
     // Hide terminal selection
     _ = try std.io.getStdOut().write("\x1b[?25l");
 }
 
-pub fn deinitTerminalSelection(_: *const @This()) void {
+pub fn deinitTerminalSelection(_: *const Display) void {
     // Show terminal selection
     _ = std.io.getStdOut().write("\x1b[?25h") catch unreachable;
 }
 
-fn moveTerminalSelection(_: *const @This(), arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
+fn moveTerminalSelection(_: *const Display, arena: std.mem.Allocator, buf: *std.ArrayList(u8), x: usize, y: usize) !void {
     try buf.appendSlice(try std.fmt.allocPrint(arena, "\x1b[{d};{d}H", .{ y + 1, x + 1 }));
 }

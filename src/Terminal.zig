@@ -1,10 +1,11 @@
+const Terminal = @This();
 const std = @import("std");
 const buildtin = @import("builtin");
 const c = @import("c.zig");
 
 orig_termios: ?std.os.termios = null,
 
-pub fn enableRawMode(self: *@This()) !void {
+pub fn enableRawMode(self: *Terminal) !void {
     const orig = try std.posix.tcgetattr(std.os.STDIN_FILENO);
     var term = orig;
     term.iflag.BRKINT = false;
@@ -22,7 +23,7 @@ pub fn enableRawMode(self: *@This()) !void {
     self.orig_termios = orig;
 }
 
-pub fn disableRawMode(self: *@This()) !void {
+pub fn disableRawMode(self: *Terminal) !void {
     if (self.orig_termios) |orig| {
         try std.os.tcsetattr(std.os.STDIN_FILENO, std.os.TCSA.FLUSH, orig);
     }
@@ -33,7 +34,7 @@ pub const WindowSize = struct {
     cols: u32,
 };
 
-pub fn getWindowSize(_: *const @This()) !WindowSize {
+pub fn getWindowSize(_: *const Terminal) !WindowSize {
     switch (buildtin.os.tag) {
         .linux => {
             var ws: std.os.linux.winsize = undefined;

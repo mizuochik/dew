@@ -1,3 +1,4 @@
+const Module = @This();
 const std = @import("std");
 const Keyboard = @import("Keyboard.zig");
 const CommandLine = @import("CommandLine.zig");
@@ -17,10 +18,10 @@ ptr: *anyopaque,
 definition: *const ModuleDefinition,
 vtable: *const VTable,
 
-pub fn runCommand(self: *@This(), command: *const Command, input: std.io.AnyReader, output: std.io.AnyWriter) anyerror!void {
+pub fn runCommand(self: *Module, command: *const Command, input: std.io.AnyReader, output: std.io.AnyWriter) anyerror!void {
     try self.vtable.runCommand(self.ptr, command, input, output);
 }
 
-pub fn deinit(self: *const @This()) void {
+pub fn deinit(self: *const Module) void {
     self.vtable.deinit(self.ptr);
 }

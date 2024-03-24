@@ -1,3 +1,4 @@
+const BufferSelector = @This();
 const std = @import("std");
 const Text = @import("Text.zig");
 const Editor = @import("Editor.zig");
@@ -6,7 +7,7 @@ allocator: std.mem.Allocator,
 file_buffers: std.StringHashMap(*Text),
 editor: *Editor,
 
-pub fn init(allocator: std.mem.Allocator, editor: *Editor) !@This() {
+pub fn init(allocator: std.mem.Allocator, editor: *Editor) !BufferSelector {
     var file_text = try Text.init(allocator);
     errdefer file_text.deinit();
 
@@ -26,7 +27,7 @@ pub fn init(allocator: std.mem.Allocator, editor: *Editor) !@This() {
     };
 }
 
-pub fn deinit(self: *@This()) void {
+pub fn deinit(self: *BufferSelector) void {
     var it = self.file_buffers.iterator();
     while (it.next()) |entry| {
         self.allocator.free(entry.key_ptr.*); // second
@@ -35,7 +36,7 @@ pub fn deinit(self: *@This()) void {
     self.file_buffers.deinit();
 }
 
-pub fn openFileBuffer(self: *@This(), name: []const u8) !void {
+pub fn openFileBuffer(self: *BufferSelector, name: []const u8) !void {
     if (self.file_buffers.getEntry(name)) |entry| {
         try self.editor.client.putFileRef(entry.key_ptr.*, entry.value_ptr.*);
         return;
@@ -53,7 +54,7 @@ pub fn openFileBuffer(self: *@This(), name: []const u8) !void {
     try self.editor.client.putFileRef(key, text);
 }
 
-pub fn saveFileBuffer(self: *@This(), name: []const u8) !void {
+pub fn saveFileBuffer(self: *BufferSelector, name: []const u8) !void {
     const text = try self.editor.client.getActiveFile().?.selection.text.clone();
     errdefer text.deinit();
     const key = try self.allocator.dupe(u8, name);
@@ -72,5 +73,5 @@ pub fn saveFileBuffer(self: *@This(), name: []const u8) !void {
 }
 
 test {
-    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(BufferSelector);
 }

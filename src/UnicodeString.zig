@@ -1,11 +1,12 @@
+const UnicodeString = @This();
 const std = @import("std");
 
 buffer: std.ArrayList(u8),
 u8_index: std.ArrayList(usize),
 width_index: std.ArrayList(usize),
 
-pub fn init(allocator: std.mem.Allocator) !@This() {
-    var buf = @This(){
+pub fn init(allocator: std.mem.Allocator) !UnicodeString {
+    var buf = UnicodeString{
         .buffer = std.ArrayList(u8).init(allocator),
         .u8_index = std.ArrayList(usize).init(allocator),
         .width_index = std.ArrayList(usize).init(allocator),
@@ -14,25 +15,25 @@ pub fn init(allocator: std.mem.Allocator) !@This() {
     return buf;
 }
 
-pub fn deinit(self: *const @This()) void {
+pub fn deinit(self: *const UnicodeString) void {
     self.buffer.deinit();
     self.u8_index.deinit();
     self.width_index.deinit();
 }
 
-pub fn insert(self: *@This(), i: usize, c: u21) !void {
+pub fn insert(self: *UnicodeString, i: usize, c: u21) !void {
     var enc: [4]u8 = undefined;
     const to = try std.unicode.utf8Encode(c, &enc);
     try self.buffer.insertSlice(self.u8_index.items[i], enc[0..to]);
     try self.refreshIndex();
 }
 
-pub fn appendSlice(self: *@This(), s: []const u8) !void {
+pub fn appendSlice(self: *UnicodeString, s: []const u8) !void {
     try self.buffer.appendSlice(s);
     try self.refreshIndex();
 }
 
-pub fn remove(self: *@This(), i: usize) !void {
+pub fn remove(self: *UnicodeString, i: usize) !void {
     const from = self.u8_index.items[i];
     const to = self.u8_index.items[i + 1];
     for (from..to) |_| {
@@ -41,27 +42,27 @@ pub fn remove(self: *@This(), i: usize) !void {
     try self.refreshIndex();
 }
 
-pub fn clear(self: *@This()) !void {
+pub fn clear(self: *UnicodeString) !void {
     const allocator = self.buffer.allocator;
     self.buffer.clearAndFree();
     self.buffer = std.ArrayList(u8).init(allocator);
     try self.refreshIndex();
 }
 
-pub fn sliceAsRaw(self: *const @This(), i: usize, j: usize) []u8 {
+pub fn sliceAsRaw(self: *const UnicodeString, i: usize, j: usize) []u8 {
     return self.buffer.items[self.u8_index.items[i]..self.u8_index.items[j]];
 }
 
-pub fn utf8View(self: *@This(), i: usize, j: usize) !std.unicode.Utf8View {
+pub fn utf8View(self: *UnicodeString, i: usize, j: usize) !std.unicode.Utf8View {
     return std.unicode.Utf8View.init(self.buffer.items[self.u8_index.items[i]..self.u8_index.items[j]]);
 }
 
-fn refreshIndex(self: *@This()) !void {
+fn refreshIndex(self: *UnicodeString) !void {
     try self.refreshU8Index();
     try self.refreshWidthIndex();
 }
 
-fn refreshU8Index(self: *@This()) !void {
+fn refreshU8Index(self: *UnicodeString) !void {
     var new_u8_index = std.ArrayList(usize).init(self.buffer.allocator);
     errdefer new_u8_index.deinit();
 
@@ -77,7 +78,7 @@ fn refreshU8Index(self: *@This()) !void {
     self.u8_index = new_u8_index;
 }
 
-fn refreshWidthIndex(self: *@This()) !void {
+fn refreshWidthIndex(self: *UnicodeString) !void {
     var new_width_index = std.ArrayList(usize).init(self.buffer.allocator);
     errdefer new_width_index.deinit();
     var j: usize = 0;
@@ -90,15 +91,15 @@ fn refreshWidthIndex(self: *@This()) !void {
     self.width_index = new_width_index;
 }
 
-pub fn getLen(self: *const @This()) usize {
+pub fn getLen(self: *const UnicodeString) usize {
     return self.u8_index.items.len - 1;
 }
 
-pub fn getWidth(self: *const @This()) usize {
+pub fn getWidth(self: *const UnicodeString) usize {
     return self.width_index.items[self.width_index.items.len - 1];
 }
 
-pub fn clone(self: *const @This()) !@This() {
+pub fn clone(self: *const UnicodeString) !UnicodeString {
     const buffer = try self.buffer.clone();
     errdefer buffer.deinit();
     const u8_index = try self.u8_index.clone();
@@ -113,7 +114,7 @@ pub fn clone(self: *const @This()) !@This() {
 }
 
 test "UnicodeString: insert" {
-    var lb = try @This().init(std.testing.allocator);
+    var lb = try UnicodeString.init(std.testing.allocator);
     defer lb.deinit();
 
     try lb.insert(0, '世');
@@ -127,7 +128,7 @@ test "UnicodeString: insert" {
 }
 
 test "UnicodeString: remove" {
-    var lb = try @This().init(std.testing.allocator);
+    var lb = try UnicodeString.init(std.testing.allocator);
     defer lb.deinit();
     try lb.appendSlice("こんにちは");
     std.debug.assert(std.mem.eql(u8, "こんにちは", lb.buffer.items));
@@ -142,7 +143,7 @@ test "UnicodeString: remove" {
 }
 
 test "UnicodeString: clear" {
-    var s = try @This().init(std.testing.allocator);
+    var s = try UnicodeString.init(std.testing.allocator);
     defer s.deinit();
     try s.appendSlice("foobar");
     try s.clear();

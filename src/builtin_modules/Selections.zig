@@ -1,3 +1,4 @@
+const Selections = @This();
 const std = @import("std");
 const Editor = @import("../Editor.zig");
 const parser = @import("../parser.zig");
@@ -10,8 +11,8 @@ const Position = @import("../Position.zig");
 editor: *Editor,
 definition: ModuleDefinition,
 
-pub fn init(editor: *Editor) !*@This() {
-    const selections = try editor.allocator.create(@This());
+pub fn init(editor: *Editor) !*Selections {
+    const selections = try editor.allocator.create(Selections);
     errdefer editor.allocator.destroy(selections);
     selections.* = .{
         .editor = editor,
@@ -20,7 +21,7 @@ pub fn init(editor: *Editor) !*@This() {
     return selections;
 }
 
-pub fn module(self: *@This()) Module {
+pub fn module(self: *Selections) Module {
     return .{
         .ptr = self,
         .vtable = &.{
@@ -32,13 +33,13 @@ pub fn module(self: *@This()) Module {
 }
 
 fn deinit(ctx: *anyopaque) void {
-    var self: *@This() = @ptrCast(@alignCast(ctx));
+    var self: *Selections = @ptrCast(@alignCast(ctx));
     self.definition.deinit();
     self.editor.allocator.destroy(self);
 }
 
 fn runCommand(ctx: *anyopaque, command: *const Command, _: std.io.AnyReader, _: std.io.AnyWriter) anyerror!void {
-    var self: *@This() = @ptrCast(@alignCast(ctx));
+    var self: *Selections = @ptrCast(@alignCast(ctx));
     if (std.mem.eql(u8, command.subcommand.?.name, "get")) {
         return;
     }

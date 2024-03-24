@@ -1,10 +1,11 @@
+const Command = @This();
 const std = @import("std");
 
 allocator: std.mem.Allocator,
 name: []const u8,
 options: std.StringArrayHashMap(Value),
 positionals: []Value,
-subcommand: ?*@This(),
+subcommand: ?*Command,
 
 pub const Value = union(enum) {
     int: i64,
@@ -13,7 +14,7 @@ pub const Value = union(enum) {
     bool: bool,
 };
 
-pub fn deinit(self: *@This()) void {
+pub fn deinit(self: *Command) void {
     self.allocator.free(self.name);
 
     var options = self.options.iterator();

@@ -1,3 +1,4 @@
+const ResourceRegistry = @This();
 const std = @import("std");
 const builtin_resources = @import("builtin_resources.zig");
 const Editor = @import("Editor.zig");
@@ -8,14 +9,14 @@ const Method = *const fn (editor: *Editor, params: [][]const u8) anyerror!void;
 allocator: std.mem.Allocator,
 resources: std.StringHashMap(Resource),
 
-pub fn init(allocator: std.mem.Allocator) @This() {
+pub fn init(allocator: std.mem.Allocator) ResourceRegistry {
     return .{
         .allocator = allocator,
         .resources = std.StringHashMap(Resource).init(allocator),
     };
 }
 
-pub fn get(self: *const @This(), name: []const u8) !Resource.Method {
+pub fn get(self: *const ResourceRegistry, name: []const u8) !Resource.Method {
     var it = std.mem.split(u8, name, ".");
     const resource_name = it.next() orelse return error.InvalidMethod;
     const method_name = it.next() orelse return error.InvalidMethod;
@@ -23,7 +24,7 @@ pub fn get(self: *const @This(), name: []const u8) !Resource.Method {
     return resource.getMethod(method_name) orelse error.MethodNotFound;
 }
 
-pub fn registerBuiltinResources(self: *@This()) !void {
+pub fn registerBuiltinResources(self: *ResourceRegistry) !void {
     var editor = try builtin_resources.editor.init(self.allocator);
     errdefer editor.deinit();
     try self.resources.putNoClobber("editor", editor);
@@ -46,7 +47,7 @@ pub fn registerBuiltinResources(self: *@This()) !void {
     errdefer _ = self.resources.remove("command-line");
 }
 
-pub fn deinit(self: *@This()) void {
+pub fn deinit(self: *ResourceRegistry) void {
     var methods = self.resources.valueIterator();
     while (methods.next()) |method| {
         method.deinit();

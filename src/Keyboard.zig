@@ -1,3 +1,4 @@
+const Keyboard = @This();
 const std = @import("std");
 
 pub const Key = union(enum) {
@@ -32,7 +33,7 @@ pub const Arrow = enum {
 
 fixed_buffer_stream: ?std.io.FixedBufferStream([]const u8) = null, // for testing only
 
-pub fn inputKey(self: *@This()) !Key {
+pub fn inputKey(self: *Keyboard) !Key {
     var k = try self.readByte();
     if (k == 0x1b) {
         k = try self.readByte();
@@ -63,7 +64,7 @@ pub fn inputKey(self: *@This()) !Key {
     return .{ .plain = try std.unicode.utf8Decode(buf[0..l]) };
 }
 
-fn readByte(self: *@This()) anyerror!u8 {
+fn readByte(self: *Keyboard) anyerror!u8 {
     if (self.fixed_buffer_stream) |*fixed| {
         return try fixed.reader().readByte();
     }
@@ -85,7 +86,7 @@ test "Keyboard: inputKey" {
         .{ .given = "\x7f", .expected = Key.del },
     };
     inline for (cases) |case| {
-        var k = @This(){
+        var k = Keyboard{
             .fixed_buffer_stream = std.io.fixedBufferStream(case.given),
         };
         const actual = try k.inputKey();

@@ -1,14 +1,15 @@
+const Position = @This();
 const std = @import("std");
 const parser = @import("./parser.zig");
 
 x: usize,
 y: usize,
 
-pub fn format(self: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
+pub fn format(self: Position, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
     try writer.print("{d}:{d}", .{ self.y + 1, self.x + 1 });
 }
 
-pub fn parse(allocator: std.mem.Allocator, input: []const u8) !@This() {
+pub fn parse(allocator: std.mem.Allocator, input: []const u8) !Position {
     var state: parser.State = .{
         .input = input,
         .allocator = allocator,

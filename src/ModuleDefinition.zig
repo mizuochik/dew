@@ -1,3 +1,4 @@
+const ModuleDefinition = @This();
 const std = @import("std");
 const c = @import("c.zig");
 
@@ -51,16 +52,14 @@ pub const ModuleOption = struct {
     default: DefaultValue,
 };
 
-pub fn deinit(self: *@This()) void {
+pub fn deinit(self: *ModuleDefinition) void {
     self.arena.deinit();
 }
 
-pub fn parse(allocator: std.mem.Allocator, source: []const u8) !@This() {
+pub fn parse(allocator: std.mem.Allocator, source: []const u8) !ModuleDefinition {
     var parser = try Parser.init(allocator, source);
     return parser.moduleDefinition();
 }
-
-const ModuleDefinition = @This();
 
 const Parser = struct {
     const Error = error{
@@ -71,7 +70,7 @@ const Parser = struct {
     arena: std.heap.ArenaAllocator,
     yaml_parser: c.yaml_parser_t,
 
-    fn init(allocator: std.mem.Allocator, input: []const u8) !@This() {
+    fn init(allocator: std.mem.Allocator, input: []const u8) !Parser {
         var parser: c.yaml_parser_t = undefined;
         _ = c.yaml_parser_initialize(&parser);
         errdefer c.yaml_parser_delete(&parser);
@@ -82,11 +81,11 @@ const Parser = struct {
         };
     }
 
-    fn deinit(self: *@This()) void {
+    fn deinit(self: *Parser) void {
         c.yaml_parser_delete(&self.yaml_parser);
     }
 
-    fn moduleDefinition(self: *@This()) !ModuleDefinition {
+    fn moduleDefinition(self: *Parser) !ModuleDefinition {
         errdefer self.arena.deinit();
 
         var manifest_version: ?[]const u8 = null;
@@ -157,7 +156,7 @@ const Parser = struct {
         };
     }
 
-    fn moduleOptions(self: *@This()) ![]ModuleOption {
+    fn moduleOptions(self: *Parser) ![]ModuleOption {
         {
             var event: c.yaml_event_s = undefined;
             if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
@@ -182,7 +181,7 @@ const Parser = struct {
         return options.toOwnedSlice();
     }
 
-    fn moduleOption(self: *@This()) !ModuleOption {
+    fn moduleOption(self: *Parser) !ModuleOption {
         var name: ?[]const u8 = null;
         var type_: ?ValueType = null;
         var description: ?[]const u8 = null;
@@ -216,7 +215,7 @@ const Parser = struct {
         };
     }
 
-    fn scalarString(self: *@This()) ![]const u8 {
+    fn scalarString(self: *Parser) ![]const u8 {
         var event: c.yaml_event_s = undefined;
         if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
             return Error.YamlParseError;
@@ -226,7 +225,7 @@ const Parser = struct {
         return self.arena.allocator().dupe(u8, event.data.scalar.value[0..event.data.scalar.length]);
     }
 
-    fn valueType(self: *@This()) !ValueType {
+    fn valueType(self: *Parser) !ValueType {
         const s = try self.scalarString();
         return if (std.mem.eql(u8, s, "int"))
             .int
@@ -240,7 +239,7 @@ const Parser = struct {
             Error.UnexpectedInput;
     }
 
-    fn defaultValue(self: *@This()) !DefaultValue {
+    fn defaultValue(self: *Parser) !DefaultValue {
         var event: c.yaml_event_s = undefined;
         if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
             return Error.YamlParseError;
@@ -256,7 +255,7 @@ const Parser = struct {
             .{ .str = try self.arena.allocator().dupe(u8, source) };
     }
 
-    fn command(self: *@This(), module_name: ?[]const u8) !Command {
+    fn command(self: *Parser, module_name: ?[]const u8) !Command {
         if (module_name) |_| {
             var event: c.yaml_event_s = undefined;
             if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
@@ -306,7 +305,7 @@ const Parser = struct {
         };
     }
 
-    fn optionArguments(self: *@This()) ![]OptionArgument {
+    fn optionArguments(self: *Parser) ![]OptionArgument {
         {
             var event: c.yaml_event_s = undefined;
             if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
@@ -329,7 +328,7 @@ const Parser = struct {
         return try arguments.toOwnedSlice();
     }
 
-    fn optionArgument(self: *@This()) !OptionArgument {
+    fn optionArgument(self: *Parser) !OptionArgument {
         var long: ?[]const u8 = null;
         var short: ?[]const u8 = null;
         var type_: ?ValueType = null;
@@ -369,7 +368,7 @@ const Parser = struct {
         };
     }
 
-    fn positionalArguments(self: *@This()) ![]PositionalArgument {
+    fn positionalArguments(self: *Parser) ![]PositionalArgument {
         {
             var event: c.yaml_event_s = undefined;
             if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
@@ -392,7 +391,7 @@ const Parser = struct {
         return try arguments.toOwnedSlice();
     }
 
-    fn positionalArgument(self: *@This()) !PositionalArgument {
+    fn positionalArgument(self: *Parser) !PositionalArgument {
         var name: ?[]const u8 = null;
         var type_: ?ValueType = null;
         var description: ?[]const u8 = null;
@@ -424,7 +423,7 @@ const Parser = struct {
         };
     }
 
-    fn subcommands(self: *@This()) anyerror![]Command {
+    fn subcommands(self: *Parser) anyerror![]Command {
         {
             var event: c.yaml_event_s = undefined;
             if (c.yaml_parser_parse(&self.yaml_parser, &event) != 1)
@@ -449,7 +448,7 @@ const Parser = struct {
 };
 
 test "parseByLibYaml" {
-    var actual = try @This().parse(std.testing.allocator, @embedFile("builtin_modules/selections.yaml"));
+    var actual = try ModuleDefinition.parse(std.testing.allocator, @embedFile("builtin_modules/selections.yaml"));
     defer actual.deinit();
     try std.testing.expectEqualDeep(ModuleDefinition{
         .arena = actual.arena,

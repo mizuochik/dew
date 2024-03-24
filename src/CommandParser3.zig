@@ -1,3 +1,4 @@
+const CommandParser3 = @This();
 const std = @import("std");
 const parser = @import("parser.zig");
 const ModuleDefinition = @import("ModuleDefinition.zig");
@@ -14,7 +15,7 @@ const State = struct {
     error_message: ?[]const u8 = null,
     pos: usize = 0,
 
-    pub fn deinit(self: *const @This()) void {
+    pub fn deinit(self: *const State) void {
         if (self.error_message) |m|
             self.allocator.free(m);
     }
@@ -289,7 +290,7 @@ test "parse command" {
         .{ .given = "selections move --cursor 1 10:5", .expected = .{ .name = "selections", .subcommand_name = "move", .option = "cursor", .index = 1, .target = "10:5" } },
         .{ .given = "selections move --anchor 1 10:5", .expected = .{ .name = "selections", .subcommand_name = "move", .option = "anchor", .index = 1, .target = "10:5" } },
     }) |case| {
-        var actual = try @This().parse(std.testing.allocator, &[_]ModuleDefinition.Command{definition.command}, case.given);
+        var actual = try CommandParser3.parse(std.testing.allocator, &[_]ModuleDefinition.Command{definition.command}, case.given);
         defer actual.deinit();
         try std.testing.expectEqualStrings(case.expected.name, actual.name);
         try std.testing.expectEqualStrings(case.expected.subcommand_name, actual.subcommand.?.name);

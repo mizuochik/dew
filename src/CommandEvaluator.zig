@@ -1,3 +1,4 @@
+const CommandEvaluator = @This();
 const CommandParser = @import("CommandParser.zig");
 const CommandParser3 = @import("CommandParser3.zig");
 const CommandLine = @import("CommandLine.zig");
@@ -11,7 +12,7 @@ const Resource = @import("Resource.zig");
 
 editor: *Editor,
 
-pub fn evaluate(self: *@This(), raw_command_line: UnicodeString) !void {
+pub fn evaluate(self: *CommandEvaluator, raw_command_line: UnicodeString) !void {
     var parser = try CommandParser.init(self.editor.allocator, &self.editor.buffer_selector, &self.editor.client.status);
     defer parser.deinit();
     if (self.parseAsResourceCommand(raw_command_line)) |*command_line| {
@@ -23,13 +24,13 @@ pub fn evaluate(self: *@This(), raw_command_line: UnicodeString) !void {
     } else |_| try self.evaluateAsModuleCommand(raw_command_line);
 }
 
-fn parseAsResourceCommand(self: *@This(), raw_command_line: UnicodeString) !CommandLine {
+fn parseAsResourceCommand(self: *CommandEvaluator, raw_command_line: UnicodeString) !CommandLine {
     var parser = try CommandParser.init(self.editor.allocator, &self.editor.buffer_selector, &self.editor.client.status);
     defer parser.deinit();
     return parser.parse(raw_command_line.buffer.items);
 }
 
-fn evaluateAsModuleCommand(self: *@This(), raw_command_line: UnicodeString) !void {
+fn evaluateAsModuleCommand(self: *CommandEvaluator, raw_command_line: UnicodeString) !void {
     var definitions = std.ArrayList(ModuleDefinition.Command).init(self.editor.allocator);
     defer definitions.deinit();
     var it = self.editor.module_registry.iterator();
@@ -43,7 +44,7 @@ fn evaluateAsModuleCommand(self: *@This(), raw_command_line: UnicodeString) !voi
     try module.runCommand(command, undefined, undefined);
 }
 
-pub fn evaluateFormat(self: *@This(), comptime fmt: []const u8, args: anytype) !void {
+pub fn evaluateFormat(self: *CommandEvaluator, comptime fmt: []const u8, args: anytype) !void {
     const command = try std.fmt.allocPrint(self.editor.allocator, fmt, args);
     defer self.editor.allocator.free(command);
     var command_u = try UnicodeString.init(self.editor.allocator);
