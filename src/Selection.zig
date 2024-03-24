@@ -37,14 +37,14 @@ pub fn moveToEndOfLine(self: *Selection) !void {
 
 pub fn getPosition(self: *const Selection) Position {
     return .{
-        .x = self.x,
-        .y = self.y,
+        .character = self.x,
+        .line = self.y,
     };
 }
 
 pub fn setPosition(self: *Selection, pos: Position) !void {
-    self.x = pos.x;
-    self.y = pos.y;
+    self.x = pos.character;
+    self.y = pos.line;
 }
 
 fn getCurrentRow(self: *const Selection) UnicodeString {

@@ -2,11 +2,11 @@ const Position = @This();
 const std = @import("std");
 const parser = @import("./parser.zig");
 
-x: usize,
-y: usize,
+character: usize,
+line: usize,
 
 pub fn format(self: Position, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
-    try writer.print("{d}:{d}", .{ self.y + 1, self.x + 1 });
+    try writer.print("{d}:{d}", .{ self.line + 1, self.character + 1 });
 }
 
 pub fn parse(allocator: std.mem.Allocator, input: []const u8) !Position {
@@ -19,8 +19,8 @@ pub fn parse(allocator: std.mem.Allocator, input: []const u8) !Position {
     _ = try parser.character(&state, ':');
     const character: usize = @intCast(try parser.number(&state));
     return .{
-        .x = character - 1,
-        .y = line - 1,
+        .character = character - 1,
+        .line = line - 1,
     };
 }
 

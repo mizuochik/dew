@@ -207,8 +207,8 @@ fn updateActiveSelectionPosition(self: *Display) void {
         self.active_selection_position = position;
     if (self.command_view.viewSelection(&self.client.command_line_ref)) |position|
         self.active_selection_position = .{
-            .x = position.x,
-            .y = position.y + self.size.rows - 1,
+            .character = position.character,
+            .line = position.line + self.size.rows - 1,
         };
 }
 
@@ -240,7 +240,7 @@ fn drawBuffer(self: *const Display) !void {
         }
     }
     if (self.active_selection_position) |position| {
-        try self.moveTerminalSelection(arena.allocator(), &tmp, position.x, position.y);
+        try self.moveTerminalSelection(arena.allocator(), &tmp, position.character, position.line);
     }
     try std.io.getStdOut().writeAll(tmp.items);
 }

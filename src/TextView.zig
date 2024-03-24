@@ -53,13 +53,13 @@ pub fn viewSelection(self: *const TextView, edit: *TextRef) ?Position {
         return null;
     }
     const selection = self.getSelection(edit);
-    const y_offset = if (selection.y >= edit.y_scroll) selection.y - edit.y_scroll else return null;
+    const y_offset = if (selection.line >= edit.y_scroll) selection.line - edit.y_scroll else return null;
     if (y_offset >= self.height) {
         return null;
     }
     return .{
-        .x = selection.x,
-        .y = y_offset,
+        .character = selection.character,
+        .line = y_offset,
     };
 }
 
@@ -72,8 +72,8 @@ pub fn getSelection(self: *const TextView, edit: *TextRef) Position {
     const c_x = selection.x;
     if (self.rows.items.len <= 0) {
         return .{
-            .x = 0,
-            .y = 0,
+            .character = 0,
+            .line = 0,
         };
     }
     var j: usize = self.rows.items.len;
@@ -90,8 +90,8 @@ pub fn getSelection(self: *const TextView, edit: *TextRef) Position {
         }
     } else 0;
     return .{
-        .x = x,
-        .y = y,
+        .character = x,
+        .line = y,
     };
 }
 
@@ -100,19 +100,19 @@ pub fn getNumberOfLines(self: *const TextView) usize {
 }
 
 pub fn getBufferPosition(self: *const TextView, edit: *TextRef, view_position: Position) Position {
-    const row_slice = self.rows.items[view_position.y];
+    const row_slice = self.rows.items[view_position.line];
     const buffer_row = edit.text.rows.items[row_slice.buf_y];
     const start_width = buffer_row.width_index.items[row_slice.buf_x_start];
     const buf_x = for (row_slice.buf_x_start..row_slice.buf_x_end) |bx| {
         const view_x_left = buffer_row.width_index.items[bx] - start_width;
         const view_x_right = buffer_row.width_index.items[bx + 1] - start_width;
-        if (view_x_left <= view_position.x and view_position.x + 1 <= view_x_right) {
+        if (view_x_left <= view_position.character and view_position.character + 1 <= view_x_right) {
             break bx;
         }
     } else row_slice.buf_x_end;
     return .{
-        .x = buf_x,
-        .y = row_slice.buf_y,
+        .character = buf_x,
+        .line = row_slice.buf_y,
     };
 }
 
@@ -120,17 +120,17 @@ pub fn getNormalizedSelection(self: *TextView, edit: *TextRef) Position {
     const upper_limit = edit.y_scroll;
     const bottom_limit = edit.y_scroll + self.height;
     const selection = self.getSelection(edit);
-    if (selection.y < upper_limit) {
-        return .{ .x = selection.x, .y = upper_limit };
+    if (selection.line < upper_limit) {
+        return .{ .character = selection.character, .line = upper_limit };
     }
-    if (selection.y >= bottom_limit) {
-        return .{ .x = selection.x, .y = bottom_limit - 1 };
+    if (selection.line >= bottom_limit) {
+        return .{ .character = selection.character, .line = bottom_limit - 1 };
     }
     return selection;
 }
 
 pub fn updateLastSelectionX(self: *TextView, edit: *TextRef) void {
-    edit.selection.last_view_x = self.getSelection(edit).x;
+    edit.selection.last_view_x = self.getSelection(edit).character;
 }
 
 pub fn setSize(self: *TextView, width: usize, height: usize) !void {
@@ -210,7 +210,7 @@ pub fn render(self: *TextView, buffer: *Display.Buffer, edit: *TextRef) !void {
     self.rows.deinit();
     self.rows = new_rows;
     if (self.viewSelection(edit)) |selection| {
-        if (cells[selection.y * buffer.width + selection.x]) |*cell| {
+        if (cells[selection.line * buffer.width + selection.character]) |*cell| {
             cell.background = .gray;
         }
     }

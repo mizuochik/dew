@@ -30,12 +30,12 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
         return;
     }
     const view = getCurrentView(editor);
-    const view_y = view.getSelection(edit).y;
+    const view_y = view.getSelection(edit).line;
     if (std.mem.eql(u8, location, "next-line")) {
         if (view_y >= view.getNumberOfLines() - 1) {
             return;
         }
-        const pos = view.getBufferPosition(edit, .{ .x = edit.selection.last_view_x, .y = view_y + 1 });
+        const pos = view.getBufferPosition(edit, .{ .character = edit.selection.last_view_x, .line = view_y + 1 });
         try edit.selection.setPosition(pos);
         return;
     }
@@ -43,7 +43,7 @@ fn moveTo(editor: *Editor, params: [][]const u8) anyerror!void {
         if (view_y <= 0) {
             return;
         }
-        const pos = view.getBufferPosition(edit, .{ .x = edit.selection.last_view_x, .y = view_y - 1 });
+        const pos = view.getBufferPosition(edit, .{ .character = edit.selection.last_view_x, .line = view_y - 1 });
         try edit.selection.setPosition(pos);
         return;
     }

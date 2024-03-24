@@ -56,16 +56,16 @@ pub fn clone(self: *const Text) !*Text {
 }
 
 pub fn insertChar(self: *Text, pos: Position, c: u21) !void {
-    try self.rows.items[pos.y].insert(pos.x, c);
+    try self.rows.items[pos.line].insert(pos.character, c);
 }
 
 pub fn deleteChar(self: *Text, pos: Position) !void {
-    var row = &self.rows.items[pos.y];
-    if (pos.x >= row.getLen()) {
+    var row = &self.rows.items[pos.line];
+    if (pos.character >= row.getLen()) {
         try self.joinLine(pos);
         return;
     }
-    try row.remove(pos.x);
+    try row.remove(pos.character);
 }
 
 pub fn deleteBackwardChar(self: *Text) !void {
@@ -74,23 +74,23 @@ pub fn deleteBackwardChar(self: *Text) !void {
 }
 
 pub fn joinLine(self: *Text, pos: Position) !void {
-    if (pos.y >= self.rows.items.len - 1) {
+    if (pos.line >= self.rows.items.len - 1) {
         return;
     }
-    var row = &self.rows.items[pos.y];
-    var next_row = &self.rows.items[pos.y + 1];
+    var row = &self.rows.items[pos.line];
+    var next_row = &self.rows.items[pos.line + 1];
     try row.appendSlice(next_row.buffer.items);
     next_row.deinit();
-    _ = self.rows.orderedRemove(pos.y + 1);
+    _ = self.rows.orderedRemove(pos.line + 1);
 }
 
 pub fn killLine(self: *Text, pos: Position) !void {
-    var row = &self.rows.items[pos.y];
-    if (pos.x >= row.getLen()) {
+    var row = &self.rows.items[pos.line];
+    if (pos.character >= row.getLen()) {
         try self.deleteChar(pos);
         return;
     }
-    for (0..row.getLen() - pos.x) |_| {
+    for (0..row.getLen() - pos.character) |_| {
         try self.deleteChar(pos);
     }
 }
@@ -98,14 +98,14 @@ pub fn killLine(self: *Text, pos: Position) !void {
 pub fn breakLine(self: *Text, pos: Position) !void {
     var new_row = try UnicodeString.init(self.allocator);
     errdefer new_row.deinit();
-    const row = &self.rows.items[pos.y];
-    if (pos.x < row.getLen()) {
-        for (0..row.getLen() - pos.x) |_| {
-            try new_row.appendSlice(row.buffer.items[row.u8_index.items[pos.x]..row.u8_index.items[pos.x + 1]]);
+    const row = &self.rows.items[pos.line];
+    if (pos.character < row.getLen()) {
+        for (0..row.getLen() - pos.character) |_| {
+            try new_row.appendSlice(row.buffer.items[row.u8_index.items[pos.character]..row.u8_index.items[pos.character + 1]]);
             try self.deleteChar(pos);
         }
     }
-    try self.rows.insert(pos.y + 1, new_row);
+    try self.rows.insert(pos.line + 1, new_row);
 }
 
 pub fn clear(self: *Text) !void {

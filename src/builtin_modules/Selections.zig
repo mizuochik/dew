@@ -63,7 +63,7 @@ fn parsePosition(state: *parser.State) !Position {
     _ = try parser.character(state, ':');
     const character = try parser.number(state);
     return .{
-        .x = @intCast(@max(0, character - 1)),
-        .y = @intCast(@max(0, line - 1)),
+        .character = @intCast(@max(0, character - 1)),
+        .line = @intCast(@max(0, line - 1)),
     };
 }
