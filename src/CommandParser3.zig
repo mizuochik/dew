@@ -162,17 +162,25 @@ const ArgumentParser = struct {
     fn typedValue(state: *State, value_type: ModuleDefinition.ValueType) !Command.Value {
         const pos = state.pos;
         errdefer state.pos = pos;
-        defer state.pos += 1;
-        switch (value_type) {
-            .bool => return .{ .bool = true },
-            .int => {
-                unreachable;
+        return switch (value_type) {
+            .bool => .{ .bool = true },
+            .int => .{
+                .int = i: {
+                    const i = try std.fmt.parseInt(i64, state.arguments[state.pos], 10);
+                    state.pos += 1;
+                    break :i i;
+                },
             },
-            .str => return .{
-                .str = try state.allocator.dupe(u8, state.arguments[state.pos]),
+            .str => .{
+                .str = s: {
+                    const s = try state.allocator.dupe(u8, state.arguments[state.pos]);
+                    errdefer state.allocator.free(s);
+                    state.pos += 1;
+                    break :s s;
+                },
             },
             else => unreachable,
-        }
+        };
     }
 
     fn commandPositionals(state: *State, definition: ModuleDefinition.Command) ![]Command.Value {
@@ -278,14 +286,15 @@ test "parse command" {
     var definition = try ModuleDefinition.parse(std.testing.allocator, @embedFile("builtin_modules/selections.yaml"));
     defer definition.deinit();
     inline for (.{
-        .{ .given = "selections -s 1 move 10:5", .expected = .{ .name = "selections", .subcommand_name = "move", .index = "1", .target = "10:5" } },
-        .{ .given = "selections -s 1 move 10:5", .expected = .{ .name = "selections", .subcommand_name = "move", .index = "1", .target = "10:5" } },
+        .{ .given = "selections move --cursor 1 10:5", .expected = .{ .name = "selections", .subcommand_name = "move", .option = "cursor", .index = 1, .target = "10:5" } },
+        .{ .given = "selections move --anchor 1 10:5", .expected = .{ .name = "selections", .subcommand_name = "move", .option = "anchor", .index = 1, .target = "10:5" } },
     }) |case| {
         var actual = try @This().parse(std.testing.allocator, &[_]ModuleDefinition.Command{definition.command}, case.given);
         defer actual.deinit();
         try std.testing.expectEqualStrings(case.expected.name, actual.name);
-        try std.testing.expectEqualStrings(case.expected.index, actual.options.get("s").?.str);
-        try std.testing.expectEqualStrings(case.expected.target, actual.subcommand.?.positionals[0].str);
         try std.testing.expectEqualStrings(case.expected.subcommand_name, actual.subcommand.?.name);
+        try std.testing.expect(actual.subcommand.?.options.get(case.expected.option).?.bool);
+        try std.testing.expectEqual(case.expected.index, actual.subcommand.?.positionals[0].int);
+        try std.testing.expectEqualStrings(case.expected.target, actual.subcommand.?.positionals[1].str);
     }
 }
