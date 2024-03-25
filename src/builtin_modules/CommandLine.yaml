@@ -1,0 +1,14 @@
+manifest_version: "0.1"
+name: command-line
+description: A command line handles and executes any Dew commands.
+command:
+  description: Control a command line.
+  subcommands:
+    - name: toggle
+      description: Toggle a command line.
+    - name: put
+      description: Put a string to a command line.
+      positionals:
+        - name: text
+          type: str
+          description: Command string
