@@ -152,7 +152,7 @@ const Parser = struct {
             .name = name orelse return Error.UnexpectedInput,
             .description = description orelse return Error.UnexpectedInput,
             .command = command_ orelse return Error.UnexpectedInput,
-            .options = module_options orelse return Error.UnexpectedInput,
+            .options = module_options orelse &[_]ModuleOption{},
         };
     }
 
