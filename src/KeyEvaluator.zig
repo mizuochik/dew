@@ -76,9 +76,9 @@ pub fn installDefaultKeyMap(self: *KeyEvaluator) !void {
     try self.putBuiltinKeyMap("C+h", .{"text.delete-backward-character"});
     try self.putBuiltinKeyMap("del", .{"text.delete-backward-character"});
     try self.putBuiltinKeyMap("C+s", .{"files.save"});
-    try self.putBuiltinKeyMap("C+x", .{"command-line.toggle"});
+    try self.putBuiltinKeyMap("C+x", .{"command-line toggle"});
     try self.putBuiltinKeyMap("C+o", .{
-        \\command-line.put "files.open "
+        \\command-line put "files.open "
     });
 }
 

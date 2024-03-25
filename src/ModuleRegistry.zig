@@ -36,7 +36,10 @@ pub fn get(self: *const ModuleRegistry, name: []const u8) ?Module {
 pub fn appendBuiltinModules(self: *ModuleRegistry) !void {
     var selections = try builtin_modules.Selections.init(self.editor);
     errdefer selections.module().deinit();
+    var command_line = try builtin_modules.CommandLine.init(self.editor);
+    errdefer command_line.module().deinit();
     try self.append(selections.module());
+    try self.append(command_line.module());
 }
 
 pub fn iterator(self: *ModuleRegistry) std.StringHashMap(Module).ValueIterator {
