@@ -272,7 +272,7 @@ const RawParser = struct {
         parser.spaces(state) catch {};
         while (true) {
             {
-                const arg = try argument(state);
+                const arg = try (argument(state) catch doubleQuotedArgument(state));
                 errdefer state.allocator.free(arg);
                 try args.append(arg);
             }
@@ -297,6 +297,19 @@ const RawParser = struct {
                 try arg.append(c)
             else |_|
                 return arg.toOwnedSlice();
+    }
+
+    fn doubleQuotedArgument(state: *parser.State) ![]const u8 {
+        const in = state.input;
+        errdefer state.input = in;
+        var arg = std.ArrayList(u8).init(state.allocator);
+        errdefer arg.deinit();
+        _ = try parser.character(state, '"');
+        while (argumentCharacter(state) catch parser.character(state, ' ')) |c|
+            try arg.append(c)
+        else |_|
+            _ = try parser.character(state, '"');
+        return arg.toOwnedSlice();
     }
 
     fn argumentCharacter(state: *parser.State) !u8 {
